@@ -21,27 +21,27 @@ Plotter for drawing vector graphics in gcode format with a pen:
 
 | Part | Material | Quantity |
 | ---- | -------- | -------- |
-| <img src="./print/png/carriage_penholder_base.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/carriage_penholder_connector_fitting.png"/> | TPU | 1 |
-| <img src="./print/png/carriage_penholder_connector_head.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/carriage_penholder_connector_screw.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/carriage.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/flat_steel_flange.png"/> | PLA / PETG | 4 |
-| <img src="./print/png/flat_steel_lever.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/frame_back.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/frame_front.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/housing_back.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/housing_front.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/housing_feet.png"/> | PLA / PETG | 4 |
-| <img src="./print/png/paper_guide_1.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/paper_guide_2.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/paper_guide_lever.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/paper_guide_pusher.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/paper_guide_lever.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/paper_intake_support.png"/> | PLA / PETG | 1 |
-| <img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | optional, if no standard couplers are used |
-| <img src="./print/png/shaft_end_flange.png"> | PLA / PETG | 1 |
-| <img src="./print/png/solenoid_slider.png"> | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/carriage_penholder_base.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/carriage_penholder_connector_fitting.stl) | TPU | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/carriage_penholder_connector_head.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/carriage_penholder_connector_screw.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/carriage.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/flat_steel_flange.stl) | PLA / PETG | 4 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/flat_steel_lever.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/frame_back.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/frame_front.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/housing_back.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/housing_front.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/housing_feet.stl) | PLA / PETG | 4 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/paper_guide_1.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/paper_guide_2.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/paper_guide_lever.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/paper_guide_pusher.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/paper_guide_lever.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/paper_intake_support.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/shaft_connector_flange.stl) | PLA / PETG | optional, if no standard couplers are used |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/shaft_end_flange.stl) | PLA / PETG | 1 |
+| [STL-Vorschau](https://viewstl.com/?embedded&url=https://raw.githubusercontent.com/Smengerl/plotter/main/print/stl/solenoid_slider.stl) | PLA / PETG | 1 |
 
 ### Standard parts
 
