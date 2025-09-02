@@ -32,8 +32,7 @@ Plotter for drawing vector graphics in gcode format with a pen:
 | 1 | `./print/stl/frame_front.stl`</BR><img src="./print/png/frame_front.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/housing_back.stl`</BR><img src="./print/png/housing_back.png"/> | PLA / PETG | optional |
 | 1 | `./print/stl/housing_front.stl`</BR><img src="./print/png/housing_front.png"/> | PLA / PETG | optional |
-| 4 | `./print/stl/| 4 | `./print/stl/carriage_penholder_base.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Can use standard rubber dampers instead, e.g. https://de.aliexpress.com/item/1005008240903321.html |
-.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Can use standard rubber dampers instead, e.g. https://de.aliexpress.com/item/1005008240903321.html |
+| 4 | `./print/png/housing_feet.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Can use standard rubber dampers instead, e.g. https://de.aliexpress.com/item/1005008240903321.html |
 | 1 | `./print/stl/paper_guide_1.stl`</BR><img src="./print/png/paper_guide_1.png"/> | PLA / PETG | Use light supports |
 | 1 | `./print/stl/paper_guide_2.stl`</BR><img src="./print/png/paper_guide_2.png"/> | PLA / PETG | Use light supports |
 | 1 | `./print/stl/paper_guide_lever.stl`</BR><img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
