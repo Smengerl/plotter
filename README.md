@@ -19,8 +19,8 @@ Plotter for drawing vector graphics in gcode format with a pen:
 
 ### 3D printed parts
 
-| Quantity | Part | Material |
-| ---- | -------- | -------- |
+| Quantity | Part | Material | Notes |
+| -------- | ---- | -------- | ----- |
 | 1 | `./print/stl/carriage_penholder_base.stl`</BR><img src="./print/png/carriage_penholder_base.png"/> | PLA / PETG | |
 | 1 | `./print/stl/carriage_penholder_connector_fitting.stl`</BR><img src="./print/png/carriage_penholder_connector_fitting.png"/> | TPU | |
 | 1 | `./print/stl/carriage_penholder_connector_head.stl`</BR><img src="./print/png/carriage_penholder_connector_head.png"/> | PLA / PETG | |
