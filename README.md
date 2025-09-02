@@ -26,7 +26,7 @@ Plotter for drawing vector graphics in gcode format with a pen:
 | 1 | <img src="./print/png/carriage_penholder_connector_head.png"/> | PLA / PETG | |
 | 1 | <img src="./print/png/carriage_penholder_connector_screw.png"/> | PLA / PETG | |
 | 1 | <img src="./print/png/carriage.png"/> | PLA / PETG | |
-| 4 | <img src="./print/png/flat_steel_flange.png"/> | PLA / PETG |  |
+| 2 | <img src="./print/png/flat_steel_flange.png"/> | PLA / PETG |  |
 | 1 | <img src="./print/png/flat_steel_lever.png"/> | PLA / PETG |  |
 | 1 | <img src="./print/png/frame_back.png"/> | PLA / PETG |  |
 | 1 | <img src="./print/png/frame_front.png"/> | PLA / PETG |  |
@@ -36,9 +36,9 @@ Plotter for drawing vector graphics in gcode format with a pen:
 | 1 | <img src="./print/png/paper_guide_1.png"/> | PLA / PETG | Use light supports |
 | 1 | <img src="./print/png/paper_guide_2.png"/> | PLA / PETG | Use light supports |
 | 1 | <img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
-| 1 | <img src="./print/png/paper_guide_pusher.png"/> | PLA / PETG |  |
-| 1 | <img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
-| 1 | <img src="./print/png/paper_intake_support.png"/> | PLA / PETG |  |
+| 2 | <img src="./print/png/paper_guide_pusher.png"/> | PLA / PETG |  |
+| 2 | <img src="./print/png/paper_guide_roll_holder.png"/> | PLA / PETG |  |
+| 4 | <img src="./print/png/paper_intake_support.png"/> | PLA / PETG |  |
 | 1 | <img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | optional, if no standard couplers are used |
 | 1 | <img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
 | 1 | <img src="./print/png/solenoid_slider.png"> | PLA / PETG | If pull solenoid is used |
