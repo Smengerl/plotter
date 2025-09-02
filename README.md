@@ -65,7 +65,7 @@ This plotter draws vector graphics in G-code format using a pen.
 | 1 | Timing Belt Idler Pulley, 5mm width | McMaster Part No: 3693N11 | 
 | 1 | hexagon socket screw, DIN EN ISO 4762 - M2 x 12 | For solenoid pin |
 | 1 | hexagon nut, DIN 439-2 - M2 x 0.4 | For solenoid pin |
-| 22 | hexagon socket screw, DIN EN ISO 4762 - M3 x 6 | Standard screw used unless otherwise specified |
+| 26 | hexagon socket screw, DIN EN ISO 4762 - M3 x 6 | Standard screw used unless otherwise specified |
 | 4 | hexagon socket screw, DIN EN ISO 4762 - M3 x 30 | For shaft stepper |
 | 10 | hexagon nut, DIN 439-2 - M3 x 0.6 | Insert into the front and back frame. |
 | 1 | threaded pin, DIN EN ISO 4027 - M4 x 16 | For timing belt idler |
@@ -80,8 +80,8 @@ This plotter draws vector graphics in G-code format using a pen.
 The following steps illustrate the assembly process. The order is chosen for clarity and may not reflect the optimal assembly sequence.
 
 
-Assemble the pen carriage, slide it over the rounded steel rods, and attach the timing pulley:
-<img src="./print/zsb/carriage.png.png">
+Assemble the pen carriage, slide it over the rounded steel rods, and attach the timing pulley. Make sure to fix the idler with the threaded pin:
+<img src="./print/zsb/carriage.png">
 <img src="./print/zsb/carriage_timing_belt.png">
 
 Overview of the base frame structure with supporting square rods:
