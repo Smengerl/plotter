@@ -41,8 +41,7 @@ Plotter for drawing vector graphics in gcode format with a pen:
 | 2 | `./print/stl/paper_guide_roll_holder.stl`</BR><img src="./print/png/paper_guide_roll_holder.png"/> | PLA / PETG |  |
 | 4 | `./print/stl/paper_intake_support.stl`</BR><img src="./print/png/paper_intake_support.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/shaft_connector_flange.stl`</BR><img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | optional, if no standard couplers are used |
-| 1 | `./print/stl/| 1 | `./print/stl/carriage_penholder_base.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
-.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
+| 1 | `./print/stl/shaft_end_flange.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
 | 1 | `./print/stl/solenoid_slider.stl`</BR><img src="./print/png/solenoid_slider.png"> | PLA / PETG | If pull solenoid is used |
 
 ### Standard parts
