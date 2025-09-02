@@ -21,8 +21,6 @@ Plotter for drawing vector graphics in gcode format with a pen:
 
 | Quantity | Part | Material |
 | ---- | -------- | -------- |
-| 1 | <script src="https://embed.github.com/view/3d/smengerl/plotter/stl/carriage_penholder_base.stl"></script> | PLA / PETG | |
-
 | 1 | <img src="./print/png/carriage_penholder_base.png"/> | PLA / PETG | |
 | 1 | <img src="./print/png/carriage_penholder_connector_fitting.png"/> | TPU | |
 | 1 | <img src="./print/png/carriage_penholder_connector_head.png"/> | PLA / PETG | |
@@ -94,7 +92,7 @@ Assemble shaft by screwing coupler to stepper, slide in steel shaft and fix with
 
 
 Assemble pen carriage, slide over rounded steel rods and fix timing pulley:
-<img src="./print/zsb/carriage.png.png">
+<img src="./print/zsb/carriage.png">
 
 
 Full assembly:
