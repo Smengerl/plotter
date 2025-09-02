@@ -21,27 +21,29 @@ Plotter for drawing vector graphics in gcode format with a pen:
 
 | Quantity | Part | Material |
 | ---- | -------- | -------- |
-| 1 | <img src="./print/png/carriage_penholder_base.png"/> | PLA / PETG | |
-| 1 | <img src="./print/png/carriage_penholder_connector_fitting.png"/> | TPU | |
-| 1 | <img src="./print/png/carriage_penholder_connector_head.png"/> | PLA / PETG | |
-| 1 | <img src="./print/png/carriage_penholder_connector_screw.png"/> | PLA / PETG | |
-| 1 | <img src="./print/png/carriage.png"/> | PLA / PETG | |
-| 2 | <img src="./print/png/flat_steel_flange.png"/> | PLA / PETG |  |
-| 1 | <img src="./print/png/flat_steel_lever.png"/> | PLA / PETG |  |
-| 1 | <img src="./print/png/frame_back.png"/> | PLA / PETG |  |
-| 1 | <img src="./print/png/frame_front.png"/> | PLA / PETG |  |
-| 1 | <img src="./print/png/housing_back.png"/> | PLA / PETG | optional |
-| 1 | <img src="./print/png/housing_front.png"/> | PLA / PETG | optional |
-| 4 | <img src="./print/png/housing_feet.png"/> | TPU | Can use standard rubber dampers instead, e.g. https://de.aliexpress.com/item/1005008240903321.html |
-| 1 | <img src="./print/png/paper_guide_1.png"/> | PLA / PETG | Use light supports |
-| 1 | <img src="./print/png/paper_guide_2.png"/> | PLA / PETG | Use light supports |
-| 1 | <img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
-| 2 | <img src="./print/png/paper_guide_pusher.png"/> | PLA / PETG |  |
-| 2 | <img src="./print/png/paper_guide_roll_holder.png"/> | PLA / PETG |  |
-| 4 | <img src="./print/png/paper_intake_support.png"/> | PLA / PETG |  |
-| 1 | <img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | optional, if no standard couplers are used |
-| 1 | <img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
-| 1 | <img src="./print/png/solenoid_slider.png"> | PLA / PETG | If pull solenoid is used |
+| 1 | `./print/stl/carriage_penholder_base.stl`</BR><img src="./print/png/carriage_penholder_base.png"/> | PLA / PETG | |
+| 1 | `./print/stl/carriage_penholder_connector_fitting.stl`</BR><img src="./print/png/carriage_penholder_connector_fitting.png"/> | TPU | |
+| 1 | `./print/stl/carriage_penholder_connector_head.stl`</BR><img src="./print/png/carriage_penholder_connector_head.png"/> | PLA / PETG | |
+| 1 | `./print/stl/carriage_penholder_connector_screw.stl`</BR><img src="./print/png/carriage_penholder_connector_screw.png"/> | PLA / PETG | |
+| 1 | `./print/stl/carriage.stl`</BR><img src="./print/png/carriage.png"/> | PLA / PETG | |
+| 2 | `./print/stl/flat_steel_flange.stl`</BR><img src="./print/png/flat_steel_flange.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/flat_steel_lever.stl`</BR><img src="./print/png/flat_steel_lever.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/frame_back.stl`</BR><img src="./print/png/frame_back.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/frame_front.stl`</BR><img src="./print/png/frame_front.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/housing_back.stl`</BR><img src="./print/png/housing_back.png"/> | PLA / PETG | optional |
+| 1 | `./print/stl/housing_front.stl`</BR><img src="./print/png/housing_front.png"/> | PLA / PETG | optional |
+| 4 | `./print/stl/| 4 | `./print/stl/carriage_penholder_base.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Can use standard rubber dampers instead, e.g. https://de.aliexpress.com/item/1005008240903321.html |
+.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Can use standard rubber dampers instead, e.g. https://de.aliexpress.com/item/1005008240903321.html |
+| 1 | `./print/stl/paper_guide_1.stl`</BR><img src="./print/png/paper_guide_1.png"/> | PLA / PETG | Use light supports |
+| 1 | `./print/stl/paper_guide_2.stl`</BR><img src="./print/png/paper_guide_2.png"/> | PLA / PETG | Use light supports |
+| 1 | `./print/stl/paper_guide_lever.stl`</BR><img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
+| 2 | `./print/stl/paper_guide_pusher.stl`</BR><img src="./print/png/paper_guide_pusher.png"/> | PLA / PETG |  |
+| 2 | `./print/stl/paper_guide_roll_holder.stl`</BR><img src="./print/png/paper_guide_roll_holder.png"/> | PLA / PETG |  |
+| 4 | `./print/stl/paper_intake_support.stl`</BR><img src="./print/png/paper_intake_support.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/shaft_connector_flange.stl`</BR><img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | optional, if no standard couplers are used |
+| 1 | `./print/stl/| 1 | `./print/stl/carriage_penholder_base.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
+.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
+| 1 | `./print/stl/solenoid_slider.stl`</BR><img src="./print/png/solenoid_slider.png"> | PLA / PETG | If pull solenoid is used |
 
 ### Standard parts
 
