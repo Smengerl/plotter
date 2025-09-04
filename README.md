@@ -31,16 +31,16 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | 1 | `./print/stl/flat_steel_lever.stl`</BR><img src="./print/png/flat_steel_lever.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/frame_back.stl`</BR><img src="./print/png/frame_back.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/frame_front.stl`</BR><img src="./print/png/frame_front.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/housing_back.stl`</BR><img src="./print/png/housing_back.png"/> | PLA / PETG | Optional: Can be replaced with standard rubber dampers. |
-| 1 | `./print/stl/housing_front.stl`</BR><img src="./print/png/housing_front.png"/> | PLA / PETG | Optional: Can be replaced with standard rubber dampers. |
-| 4 | `./print/png/housing_feet.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Standard rubber dampers can be used instead, e.g. https://de.aliexpress.com/item/1005008240903321.html |
+| optional | `./print/stl/housing_back.stl`</BR><img src="./print/png/housing_back.png"/> | PLA / PETG | In case a housing is required. |
+| optional | `./print/stl/housing_front.stl`</BR><img src="./print/png/housing_front.png"/> | PLA / PETG | In case a housing is required |
+| optional: 4 | `./print/png/housing_feet.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Only required if housing is required and no standard rubber dampers are used instead, e.g. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
 | 1 | `./print/stl/paper_guide_1.stl`</BR><img src="./print/png/paper_guide_1.png"/> | PLA / PETG | Requires light supports. |
 | 1 | `./print/stl/paper_guide_2.stl`</BR><img src="./print/png/paper_guide_2.png"/> | PLA / PETG | Requires light supports. |
 | 1 | `./print/stl/paper_guide_lever.stl`</BR><img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
 | 2 | `./print/stl/paper_guide_pusher.stl`</BR><img src="./print/png/paper_guide_pusher.png"/> | PLA / PETG |  |
 | 2 | `./print/stl/paper_guide_roll_holder.stl`</BR><img src="./print/png/paper_guide_roll_holder.png"/> | PLA / PETG |  |
 | 4 | `./print/stl/paper_intake_support.stl`</BR><img src="./print/png/paper_intake_support.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/shaft_connector_flange.stl`</BR><img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | Optional: Only required if standard couplers are not used. |
+| optional | `./print/stl/shaft_connector_flange.stl`</BR><img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | Only required if standard couplers are not used. |
 | 1 | `./print/stl/shaft_end_flange.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
 | 1 | `./print/stl/solenoid_slider.stl`</BR><img src="./print/png/solenoid_slider.png"> | PLA / PETG | If a pull solenoid is used. |
 
@@ -50,9 +50,8 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | 3 | 12mm square rod aluminium/steel | Minimum length for A4: 250 mm without housing, 380 mm with housing. |
 | 2 | 6mm rounded aluminium/steel rod | Minimum length for A4: 250 mm. |
 | 1 | 12mm shaft | Minimum length for A4: 250 mm. |
-| 1 | Pull Solenoid 12V TAU-0530 | https://de.aliexpress.com/item/32748229525.html |
-| 4 | Brass oil bar plain bearing, 6mm bore, 8mm outer diameter |  |
-| 4 | Rubber foam dampers | Optional; can also be 3D-printed. https://de.aliexpress.com/item/1005008240903321.html |
+| 1 | Pull Solenoid 12V TAU-0530 | [AliExpress](https://de.aliexpress.com/item/32748229525.html) |
+| 4 | Rubber foam dampers | Optional; can also be 3D-printed. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
 | 4 | Flanged Sleeve Bearing, 6 mm ID, 8 mm OD | McMaster Part No: 6659K216 |
 | 1 | Compression spring, >=10 mm Long, 7-9 mm OD | McMaster Part No: 94125K203 |
 | 1 | 5mm/12mm shaft diameter couplings |
@@ -81,7 +80,7 @@ The following steps illustrate the assembly process. The order is chosen for cla
 
 #### Carriage
 
-Assemble the pen carriage by screwing the top part via M3 x 10 mm screws to the base. Insert the printed connector screw into the top part, add the TPU fitting, and secure it with the head. Press in the bearings and slide the carriage over the rounded steel rods.
+Assemble the pen carriage by screwing the top part via M3 x 10 mm screws to the base. Snap-in the compression spring between base and top part. Insert the printed connector screw into the top part, add the TPU fitting, and secure it with the head. Press in the bearings and slide the carriage over the rounded steel rods.
 Wrap the timing belt around the pulley attached to the stepper and the idler on the opposite side of the frame. Secure the idler with the threaded pin.
 Cut the timing belt to length and press it into the belt clamp on the underside of the carriage:
 
