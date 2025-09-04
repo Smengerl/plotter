@@ -1,0 +1,13 @@
+gcode
+pen-plotter
+3d-printing
+cnc
+hardware
+diy
+maker
+open-source
+electronics
+vector-graphics
+robotics
+stepper-motor
+mechanical-design
