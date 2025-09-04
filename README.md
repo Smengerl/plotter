@@ -22,9 +22,9 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 
 | Quantity | Part | Material | Notes |
 | ------- | ---- | -------- | ----- |
-| 1 | `./print/stl/carriage_penholder_base.stl`</BR><img src="./print/png/carriage_penholder_base.png"/> | PLA / PETG | |
+| 1 | `./print/stl/carriage_penholder_base.stl`</BR><img src="./print/png/carriage_penholder_base.png"/> | PLA / PETG | Recutting the thread after printing recommended |
 | 1 | `./print/stl/carriage_penholder_connector_fitting.stl`</BR><img src="./print/png/carriage_penholder_connector_fitting.png"/> | TPU | |
-| 1 | `./print/stl/carriage_penholder_connector_head.stl`</BR><img src="./print/png/carriage_penholder_connector_head.png"/> | PLA / PETG | |
+| 1 | `./print/stl/carriage_penholder_connector_head.stl`</BR><img src="./print/png/carriage_penholder_connector_head.png"/> | PLA / PETG | Recutting the thread after printing recommended |
 | 1 | `./print/stl/carriage_penholder_connector_screw.stl`</BR><img src="./print/png/carriage_penholder_connector_screw.png"/> | PLA / PETG | |
 | 1 | `./print/stl/carriage.stl`</BR><img src="./print/png/carriage.png"/> | PLA / PETG | |
 | 2 | `./print/stl/flat_steel_flange.stl`</BR><img src="./print/png/flat_steel_flange.png"/> | PLA / PETG |  |
@@ -34,8 +34,8 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | optional | `./print/stl/housing_back.stl`</BR><img src="./print/png/housing_back.png"/> | PLA / PETG | In case a housing is required. |
 | optional | `./print/stl/housing_front.stl`</BR><img src="./print/png/housing_front.png"/> | PLA / PETG | In case a housing is required |
 | optional: 4 | `./print/png/housing_feet.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Only required if housing is required and no standard rubber dampers are used instead, e.g. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
-| 1 | `./print/stl/paper_guide_1.stl`</BR><img src="./print/png/paper_guide_1.png"/> | PLA / PETG | Requires light supports. |
-| 1 | `./print/stl/paper_guide_2.stl`</BR><img src="./print/png/paper_guide_2.png"/> | PLA / PETG | Requires light supports. |
+| 1 | `./print/stl/paper_guide_1.stl`</BR><img src="./print/png/paper_guide_1.png"/> | PLA / PETG | Requires light supports when printing. |
+| 1 | `./print/stl/paper_guide_2.stl`</BR><img src="./print/png/paper_guide_2.png"/> | PLA / PETG | Requires light supports when printing. |
 | 1 | `./print/stl/paper_guide_lever.stl`</BR><img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
 | 2 | `./print/stl/paper_guide_pusher.stl`</BR><img src="./print/png/paper_guide_pusher.png"/> | PLA / PETG |  |
 | 2 | `./print/stl/paper_guide_roll_holder.stl`</BR><img src="./print/png/paper_guide_roll_holder.png"/> | PLA / PETG |  |
@@ -51,7 +51,7 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | 2 | 6mm rounded aluminium/steel rod | Minimum length for A4: 250 mm. |
 | 1 | 12mm shaft | Minimum length for A4: 250 mm. |
 | 1 | Pull Solenoid 12V TAU-0530 | [AliExpress](https://de.aliexpress.com/item/32748229525.html) |
-| 4 | Rubber foam dampers | Optional; can also be 3D-printed. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
+| optional: 4 | Rubber foam dampers | Optional; can also be 3D-printed. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
 | 4 | Flanged Sleeve Bearing, 6 mm ID, 8 mm OD | McMaster Part No: 6659K216 |
 | 1 | Compression spring, >=10 mm Long, 7-9 mm OD | McMaster Part No: 94125K203 |
 | 1 | 5mm/12mm shaft diameter couplings |
