@@ -52,15 +52,15 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | 1 | 12mm shaft | Minimum length for A4: 250 mm. |
 | 1 | Pull Solenoid 12V TAU-0530 | [AliExpress](https://de.aliexpress.com/item/32748229525.html) |
 | optional: 4 | Rubber foam dampers | Optional; can also be 3D-printed. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
-| 4 | Flanged Sleeve Bearing, 6 mm ID, 8 mm OD | McMaster Part No: 6659K216 |
-| 1 | Compression spring, >=10 mm Long, 7-9 mm OD | McMaster Part No: 94125K203 |
+| 4 | Flanged Sleeve Bearing| McMaster Carr Part No: 6659K216 |
+| 1 | Compression spring, >=10 mm Long, 7-9 mm OD | McMaster Carr Part No: 94125K203 |
 | 1 | 5mm/12mm shaft diameter couplings |
-| 3 | Stainless Steel Ball Bearing, Flanged | McMaster Part No: 57155K563 |
-| 2 | Stepper Motor with Square Body, NEMA 17 | McMaster Part No: 6627T64 |
-| 1 | Extension Spring with Loop Ends | McMaster Part No: 8464n179 |
-| 1 | Timing Belt Pulley, 5mm width | McMaster Part No: 3684N12 |
+| 3 | Stainless Steel Ball Bearing, F624ZZ | Flanged, 4mm ID, 13mm OD, McMaster Carr Part No: 57155K563 |
+| 2 | Stepper Motor with Square Body, NEMA 17 | McMaster Carr Part No: 6627T64 |
+| 1 | Extension Spring with Loop Ends | McMaster Carr Part No: 8464n179 |
+| 1 | Timing Belt Pulley, 5mm width | McMaster Carr Part No: 3684N12 |
 | 1 | Timing Belt, 5mm width |
-| 1 | Timing Belt Idler Pulley, 5mm width | McMaster Part No: 3693N11 | 
+| 1 | Timing Belt Idler Pulley, 5mm width | McMaster Carr Part No: 3693N11 | 
 | 1 | hexagon socket screw, DIN EN ISO 4762 - M2 x 12 | For solenoid pin |
 | 1 | hexagon nut, DIN 439-2 - M2 x 0.4 | For solenoid pin |
 | 26 | hexagon socket screw, DIN EN ISO 4762 - M3 x 6 | Standard screw used unless otherwise specified |
