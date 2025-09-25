@@ -87,7 +87,8 @@ Assemble the pen carriage by screwing the top part via M3 x 10 mm screws to the 
 Wrap the timing belt around the pulley attached to the stepper and the idler on the opposite side of the frame. Secure the idler with the threaded pin.
 Cut the timing belt to length and press it into the belt clamp on the underside of the carriage:
 
-<video width="630" height="300" src="https://github.com/Smengerl/plotter/raw/refs/heads/main/print/zsb/carriage_assembly.mp4"></video>
+<img src="./print/zsb/carriage_assembly.gif">
+
 
 Fully assembled carriage:
 <img src="./print/zsb/carriage.png">
