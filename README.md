@@ -37,7 +37,8 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | 1 | `./print/stl/paper_guide_1.stl`</BR><img src="./print/png/paper_guide_1.png"/> | PLA / PETG | Requires light supports when printing. |
 | 1 | `./print/stl/paper_guide_2.stl`</BR><img src="./print/png/paper_guide_2.png"/> | PLA / PETG | Requires light supports when printing. |
 | 1 | `./print/stl/paper_guide_lever.stl`</BR><img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
-| 2 | `./print/stl/paper_guide_pusher.stl`</BR><img src="./print/png/paper_guide_pusher.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/paper_guide_pusher_front.stl`</BR><img src="./print/png/paper_guide_pusher_front.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/paper_guide_pusher_back.stl`</BR><img src="./print/png/paper_guide_pusher_back.png"/> | PLA / PETG |  |
 | 2 | `./print/stl/paper_guide_roll_fork.stl`</BR><img src="./print/png/paper_guide_roll_fork.png"/> | PLA / PETG |  |
 | 2 | `./print/stl/paper_guide_roll_holder.stl`</BR><img src="./print/png/paper_guide_roll_holder.png"/> | PLA / PETG |  |
 | 4 | `./print/stl/paper_intake_support.stl`</BR><img src="./print/png/paper_intake_support.png"/> | PLA / PETG |  |
