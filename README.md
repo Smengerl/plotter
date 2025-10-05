@@ -34,14 +34,15 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | optional | `./print/stl/housing_back.stl`</BR><img src="./print/png/housing_back.png"/> | PLA / PETG | In case a housing is required. |
 | optional | `./print/stl/housing_front.stl`</BR><img src="./print/png/housing_front.png"/> | PLA / PETG | In case a housing is required |
 | optional: 4 | `./print/png/housing_feet.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Only required if housing is required and no standard rubber dampers are used instead, e.g. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
-| 1 | `./print/stl/paper_guide_1.stl`</BR><img src="./print/png/paper_guide_1.png"/> | PLA / PETG | Requires light supports when printing. |
-| 1 | `./print/stl/paper_guide_2.stl`</BR><img src="./print/png/paper_guide_2.png"/> | PLA / PETG | Requires light supports when printing. |
+| 1 | `./print/stl/paper_guide_left_back.stl`</BR><img src="./print/png/paper_guide_left_back.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/paper_guide_right_back.stl`</BR><img src="./print/png/paper_guide_right_back.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/paper_guide_left_front.stl`</BR><img src="./print/png/paper_guide_left_front.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/paper_guide_right_front.stl`</BR><img src="./print/png/paper_guide_right_front.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/paper_guide_lever.stl`</BR><img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/paper_guide_pusher_front.stl`</BR><img src="./print/png/paper_guide_pusher_front.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/paper_guide_pusher_back.stl`</BR><img src="./print/png/paper_guide_pusher_back.png"/> | PLA / PETG |  |
 | 2 | `./print/stl/paper_guide_roll_fork.stl`</BR><img src="./print/png/paper_guide_roll_fork.png"/> | PLA / PETG |  |
 | 2 | `./print/stl/paper_guide_roll_holder.stl`</BR><img src="./print/png/paper_guide_roll_holder.png"/> | PLA / PETG |  |
-| 4 | `./print/stl/paper_intake_support.stl`</BR><img src="./print/png/paper_intake_support.png"/> | PLA / PETG |  |
 | optional | `./print/stl/shaft_connector_flange.stl`</BR><img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | Only required if standard couplers are not used. |
 | 1 | `./print/stl/shaft_end_flange.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
 | 1 | `./print/stl/solenoid_slider.stl`</BR><img src="./print/png/solenoid_slider.png"> | PLA / PETG | If a pull solenoid is used. |
@@ -54,10 +55,10 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | 1 | 12mm shaft | Minimum length for A4: 250 mm. |
 | 1 | Pull Solenoid 12V TAU-0530 | [AliExpress](https://de.aliexpress.com/item/32748229525.html) |
 | optional: 4 | Rubber foam dampers | Optional; can also be 3D-printed. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
-| 4 | Flanged Sleeve Bearing| McMaster Carr Part No: 6659K216 |
+| 2 | Linear ball Bearing| McMaster Carr Part No: 6659K216 |
 | 1 | Compression spring, >=10 mm Long, 7-9 mm OD | McMaster Carr Part No: 94125K203 |
 | 1 | 5mm/12mm shaft diameter couplings |
-| 3 | Stainless Steel Ball Bearing, F624ZZ | Flanged, 4mm ID, 13mm OD, McMaster Carr Part No: 57155K563 |
+| 7 | Stainless Steel Ball Bearing, F624ZZ | Flanged, 4mm ID, 13mm OD, McMaster Carr Part No: 57155K563 |
 | 2 | Stepper Motor with Square Body, NEMA 17 | McMaster Carr Part No: 6627T64 |
 | 1 | Extension Spring with Loop Ends 30mm idle / >=50mm max | McMaster Carr Part No: 8464n179 |
 | 2 | Extension Spring with Loop Ends 17mm idle / >=25mm max | McMaster Carr Part No: 5108N951 |
@@ -66,15 +67,12 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | 1 | Timing Belt Idler Pulley, 5mm width | McMaster Carr Part No: 3693N11 | 
 | 1 | hexagon socket screw, DIN EN ISO 4762 - M2 x 12 | For solenoid pin |
 | 1 | hexagon nut, DIN 439-2 - M2 x 0.4 | For solenoid pin |
-| 30 | hexagon socket screw, DIN EN ISO 4762 - M3 x 6 | Standard screw used unless otherwise specified |
-| 4 | hexagon socket screw, DIN EN ISO 4762 - M3 x 20 | For tension springs in rollers |
-| 4 | hexagon socket screw, DIN EN ISO 4762 - M3 x 30 | For shaft stepper |
-| 14 | hexagon nut, DIN 439-2 - M3 x 0.6 | Insert into the front and back frame. |
+| 36 | hexagon socket screw, DIN EN ISO 4762 - M3 x 6 | Standard screw used unless otherwise specified |
+| 4 | hexagon socket screw, DIN EN ISO 4762 - M3 x 20 | For shaft stepper |
+| 4 | hexagon socket screw, DIN EN ISO 4762 - M3 x 16 | For tension springs in rollers |
+| 12 | hexagon nut, DIN 439-2 - M3 x 0.6 | Insert into the front and back frame. |
 | 1 | threaded pin, DIN EN ISO 4027 - M4 x 16 | For timing belt idler |
 | 2 | hexagon socket screw, DIN EN ISO 4762 - M3 x 10 | For carriage. |
-| 2 | hexagon nut, DIN 439-2 - M5 x 0.8 | For rollers. |
-| 2 | hexagon socket screw, DIN EN ISO 4762 - M5 x 20 | For rollers. |
-| 2 | V nut POM wheel roller | For rollers. |
 
 
 ### Assembly
@@ -119,15 +117,13 @@ Finally fix all parts in their final position by M3 x 10 screws.
 <img src="./print/zsb/paper_guide_detail_back.png">
 <img src="./print/zsb/paper_guide_detail_front.png">
 
-#### Paper guide
 
-Assemble the paper intake support flat steel bars by pressing in the fittings on both ends and press them into front and back frame:
+#### Paper intake support
+
+Add the paper guides to both sides of the front and rear fram by pushing them on the corresponding wholes. 
+Then assemble the paper intake support flat steel bars by pressing in the fittings in the paper guide on the front and back frame:
 <img src="./print/zsb/paper_intake_support.png">
 
-Add the paper guides to both sides of the frame by clicking them on the paper intake supports and the square rods. Optionally fix them to the frame by M3 x 10 screws. If you want to use optical end stops, fix them via these screws.
-
-Detail of the front and back frame with the assembled paper intake support and paper guide:
-<img src="./print/zsb/paper_intake_support_detail_front.png">
 
 #### Paper drive
 
