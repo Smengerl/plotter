@@ -34,10 +34,8 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | optional | `./print/stl/housing_back.stl`</BR><img src="./print/png/housing_back.png"/> | PLA / PETG | In case a housing is required. |
 | optional | `./print/stl/housing_front.stl`</BR><img src="./print/png/housing_front.png"/> | PLA / PETG | In case a housing is required |
 | optional: 4 | `./print/png/housing_feet.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Only required if housing is required and no standard rubber dampers are used instead, e.g. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
-| 1 | `./print/stl/paper_guide_left_back.stl`</BR><img src="./print/png/paper_guide_left_back.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/paper_guide_right_back.stl`</BR><img src="./print/png/paper_guide_right_back.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/paper_guide_left_front.stl`</BR><img src="./print/png/paper_guide_left_front.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/paper_guide_right_front.stl`</BR><img src="./print/png/paper_guide_right_front.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/paper_guide_back.stl`</BR><img src="./print/png/paper_guide_back.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/paper_guide_front.stl`</BR><img src="./print/png/paper_guide_front.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/paper_guide_lever.stl`</BR><img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/paper_guide_pusher_front.stl`</BR><img src="./print/png/paper_guide_pusher_front.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/paper_guide_pusher_back.stl`</BR><img src="./print/png/paper_guide_pusher_back.png"/> | PLA / PETG |  |
