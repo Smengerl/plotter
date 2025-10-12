@@ -44,6 +44,7 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 | optional | `./print/stl/shaft_connector_flange.stl`</BR><img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | Only required if standard couplers are not used. |
 | 1 | `./print/stl/shaft_end_flange.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
 | 1 | `./print/stl/solenoid_slider.stl`</BR><img src="./print/png/solenoid_slider.png"> | PLA / PETG | If a pull solenoid is used. |
+| optional | `./print/stl/cable_management.stl`</BR><img src="./print/png/cable_management.png"> | PLA / PETG | Print as many as needed |
 
 ### Standard Parts
 | Quantity | Part | Notes |
