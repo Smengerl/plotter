@@ -1,152 +1,109 @@
 # G-code Pen Plotter
 
+This plotter draws vector graphics in G-code format using a pen. It is compatible with pens up to 11 mm in diameter, relies on inexpensive and widely available components, and uses a mostly 3D-printed frame with a few off-the-shelf mechanical parts.
+
+![Assembly overview](./print/zsb/full_nocolor.png)
 
 
 
-This plotter draws vector graphics in G-code format using a pen. It is compatible with pens up to 11 mm in diameter, features a rigid frame construction, and uses affordable, widely available components.
-
-<img src="./print/zsb/full_nocolor.png" alt="full assembly"/>
-
-
-
-# Table of Contents
-- [Mechanics](#Mechanics)
-- [Electronics](#Electronics)
-- [Software](#Software)
-- [Acknowledgements](#Acknowledgements)
+# Table of contents
+- [Overview](#overview)
+- [Features](#features)
+- [Bill of Materials](#bill-of-materials)
+- [Assembly](#assembly)
+- [Electronics](#electronics)
+- [Software](#software)
+- [License and Acknowledgements](#license-and-acknowledgements)
 
 
-## Mechanics
+## Overview
 
-### 3D-Printed Parts
-
-| Quantity | Part | Material | Notes |
-| ------- | ---- | -------- | ----- |
-| 1 | `./print/stl/carriage_penholder_base.stl`</BR><img src="./print/png/carriage_penholder_base.png"/> | PLA / PETG | Recutting the thread after printing recommended |
-| 1 | `./print/stl/carriage_penholder_connector_fitting.stl`</BR><img src="./print/png/carriage_penholder_connector_fitting.png"/> | TPU | |
-| 1 | `./print/stl/carriage_penholder_connector_head.stl`</BR><img src="./print/png/carriage_penholder_connector_head.png"/> | PLA / PETG | Recutting the thread after printing recommended |
-| 1 | `./print/stl/carriage_penholder_connector_screw.stl`</BR><img src="./print/png/carriage_penholder_connector_screw.png"/> | PLA / PETG | |
-| 1 | `./print/stl/carriage.stl`</BR><img src="./print/png/carriage.png"/> | PLA / PETG | |
-| 2 | `./print/stl/flat_steel_flange.stl`</BR><img src="./print/png/flat_steel_flange.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/flat_steel_lever.stl`</BR><img src="./print/png/flat_steel_lever.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/frame_back.stl`</BR><img src="./print/png/frame_back.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/frame_front.stl`</BR><img src="./print/png/frame_front.png"/> | PLA / PETG |  |
-| optional | `./print/stl/housing_back.stl`</BR><img src="./print/png/housing_back.png"/> | PLA / PETG | In case a housing is required. |
-| optional | `./print/stl/housing_front.stl`</BR><img src="./print/png/housing_front.png"/> | PLA / PETG | In case a housing is required |
-| optional: 4 | `./print/png/housing_feet.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Only required if housing is required and no standard rubber dampers are used instead, e.g. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
-| 1 | `./print/stl/paper_guide_back.stl`</BR><img src="./print/png/paper_guide_back.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/paper_guide_front.stl`</BR><img src="./print/png/paper_guide_front.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/paper_guide_lever.stl`</BR><img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/paper_guide_pusher_front.stl`</BR><img src="./print/png/paper_guide_pusher_front.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/paper_guide_pusher_back.stl`</BR><img src="./print/png/paper_guide_pusher_back.png"/> | PLA / PETG |  |
-| 2 | `./print/stl/paper_guide_roll_fork.stl`</BR><img src="./print/png/paper_guide_roll_fork.png"/> | PLA / PETG |  |
-| 2 | `./print/stl/paper_guide_roll_holder.stl`</BR><img src="./print/png/paper_guide_roll_holder.png"/> | PLA / PETG |  |
-| optional | `./print/stl/shaft_connector_flange.stl`</BR><img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | Only required if standard couplers are not used. |
-| 1 | `./print/stl/shaft_end_flange.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
-| 1 | `./print/stl/solenoid_slider.stl`</BR><img src="./print/png/solenoid_slider.png"> | PLA / PETG | If a pull solenoid is used. |
-| optional | `./print/stl/cable_management.stl`</BR><img src="./print/png/cable_management.png"> | PLA / PETG | Print as many as needed |
-
-### Standard Parts
-| Quantity | Part | Notes |
-| ------- | ---- | ----- |
-| 3 | 12mm square rod aluminium/steel | Minimum length for A4: 250 mm without housing, 380 mm with housing. |
-| 2 | 6mm rounded aluminium/steel rod | Minimum length for A4: 250 mm. |
-| 1 | 12mm shaft | Minimum length for A4: 250 mm. |
-| 1 | Pull Solenoid 12V TAU-0530 | [AliExpress](https://de.aliexpress.com/item/32748229525.html) |
-| optional: 4 | Rubber foam dampers | Optional; can also be 3D-printed. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
-| 2 | Linear ball Bearing| McMaster Carr Part No: 6659K216 |
-| 1 | Compression spring, >=10 mm Long, 7-9 mm OD | McMaster Carr Part No: 94125K203 |
-| 1 | 5mm/12mm shaft diameter couplings |
-| 7 | Stainless Steel Ball Bearing, F624ZZ | Flanged, 4mm ID, 13mm OD, McMaster Carr Part No: 57155K563 |
-| 2 | Stepper Motor with Square Body, NEMA 17 | McMaster Carr Part No: 6627T64 |
-| 1 | Extension Spring with Loop Ends 30mm idle / >=50mm max | McMaster Carr Part No: 8464n179 |
-| 2 | Extension Spring with Loop Ends 17mm idle / >=25mm max | McMaster Carr Part No: 5108N951 |
-| 1 | Timing Belt Pulley, 5mm width | McMaster Carr Part No: 3684N12 |
-| 1 | Timing Belt, 5mm width |
-| 1 | Timing Belt Idler Pulley, 5mm width | McMaster Carr Part No: 3693N11 | 
-| 1 | hexagon socket screw, DIN EN ISO 4762 - M2 x 12 | For solenoid pin |
-| 1 | hexagon nut, DIN 439-2 - M2 x 0.4 | For solenoid pin |
-| 36 | hexagon socket screw, DIN EN ISO 4762 - M3 x 6 | Standard screw used unless otherwise specified |
-| 4 | hexagon socket screw, DIN EN ISO 4762 - M3 x 20 | For shaft stepper |
-| 4 | hexagon socket screw, DIN EN ISO 4762 - M3 x 16 | For tension springs in rollers |
-| 12 | hexagon nut, DIN 439-2 - M3 x 0.6 | Insert into the front and back frame. |
-| 1 | threaded pin, DIN EN ISO 4027 - M4 x 16 | For timing belt idler |
-| 2 | hexagon socket screw, DIN EN ISO 4762 - M3 x 10 | For carriage. |
+This pen plotter is meant for hobbyists and makers who want a low-cost machine to draw vector artwork on paper. It uses two stepper-driven axes, a simple pen carriage with a lift mechanism via solenoid for automated pen up/down control. Most structural parts are 3D-printed and a number of standard mechanical parts (rods, bearings, springs, belt and pulleys) complete the build.
 
 
-### Assembly
+## Features
+
+- Compatible with pens up to 11 mm diameter
+- Mostly 3D-printed components for easy reproduction
+- Solenoid-based pen actuator
+- Uses commonly available NEMA 17 stepper motors and standard bearings
+- Designed for A4-sized paper by default (adjustable)
 
 
-The following steps illustrate the assembly process. The order is chosen for clarity and may not reflect the optimal assembly sequence.
+## Bill of Materials
 
-#### Carriage
-
-Assemble the pen carriage by screwing the top part via M3 x 10 mm screws to the base. Snap-in the compression spring between base and top part. Insert the printed connector screw into the top part, add the TPU fitting, and secure it with the head. Press in the bearings and slide the carriage over the rounded steel rods.
-Wrap the timing belt around the pulley attached to the stepper and the idler on the opposite side of the frame. Secure the idler with the threaded pin.
-Cut the timing belt to length and press it into the belt clamp on the underside of the carriage:
-
-<img src="./print/zsb/carriage_assembly.gif">
+Below are the main 3D-printed parts and standard hardware used in the project. See the [full BOM](BOM.md) and the `print/` directory for the source STL/PNG files and visual references.
 
 
-Fully assembled carriage:
-<img src="./print/zsb/carriage.png">
-Carriage on rods with timing pulley assembly
-<img src="./print/zsb/carriage_timing_belt.png">
+### 3D-printed parts (selected)
 
-Overview of the base frame structure with supporting square rods:
-<img src="./print/zsb/frame_front_back.png">
+Refer to the `print/stl/` and `print/png/` folders for all printable parts and preview images.
 
+- `frame_front.stl`, `frame_back.stl` — frame halves
+- `housing_front.stl`, `housing_back.stl`, `housing_feet.stl` — optional housing
+- `carriage_penholder_base.stl`, `carriage_penholder_connector_screw.stl` — carriage and pen holder
+- `flat_steel_flange.stl`, `flat_steel_lever.stl` — parts that interface with the steel pen-raising strip
+- `paper_guide_*.stl` — paper guide and rollers
+- `shaft_end_flange.stl`, `shaft_connector_flange.stl` — shaft support parts
+- `solenoid_slider.stl` — slider to make the pull solenoid a push solenoid (optional)
+- `cable_management.stl` — optional cable management clips
 
-#### Flat steel pen raiser
+### Standard hardware (selected)
 
-Slide the flanges onto the flat steel, insert them into the flanged bearing pressed into the frame, and secure by attaching the lever to the square rod of the flange. Install the solenoid and attach the slider cap:
-<img src="./print/zsb/flat_steel.png">
-<img src="./print/zsb/flat_steel_detail_back.png">
-<img src="./print/zsb/flat_steel_detail_front.png">
+- 12 mm square rods 
+- 6 mm round rods 
+- 12 mm steel shaft
+- 2x 6mm linear ball bearings
+- 2x NEMA 17 stepper motors
+- 2GT 5mm timing belt, timing pulley and idler pulley
+- Assorted M2/M3/M4 screws and nuts (details in original BOM)
+- Bearings: F624ZZ bearings used in the rollers
+- Springs: compression and extension springs as needed for pen lift and paper drive
+- Pull solenoid 12 V (example: TAU-0530)
 
-
-#### Paper rollers
-
-Prepare two paper rollers. For each of them mount the POM rolls to the fork via a M5 x 20 screw and nut. Then attach the fork to the roller housing and secure by two M3 x 6 screws. Make sure not to tighten the screws too much as you want the fork to be able to swing in the housing. Finallz fix the tension spring on the housing and the fork via M3 x 20 screws and secure via a nut. Final assembly will look like this:
-<img src="./print/zsb/paper_guide_roller.png">
-
-Assemble the paper guide by sliding on the flange the rollers and a lever on each side with the rounded part facing outside, then insert it into the frame. Now place the lever to the back end and attaching the tension spring.
-Finally fix all parts in their final position by M3 x 10 screws.
-<img src="./print/zsb/paper_guide.png">
-<img src="./print/zsb/paper_guide_detail_back.png">
-<img src="./print/zsb/paper_guide_detail_front.png">
-
-
-#### Paper intake support
-
-Add the paper guides to both sides of the front and rear fram by pushing them on the corresponding wholes. 
-Then assemble the paper intake support flat steel bars by pressing in the fittings in the paper guide on the front and back frame:
-<img src="./print/zsb/paper_intake_support.png">
+For a complete part list including quantities and McMaster/AliExpress references, see the original [BOM](BOM.md) in the repository.
 
 
-#### Paper drive
+## Assembly
 
-Assemble the shaft by attaching the coupler to the stepper, sliding in the steel shaft, and securing it with the end flange to the bearing on the opposite side of the frame:
-<img src="./print/zsb/shaft.png">
-<img src="./print/zsb/shaft_detail_back.png">
-<img src="./print/zsb/shaft_detail_front.png">
+The repository contains step-by-step photos and GIFs in `print/zsb/` that show how parts fit together. The high-level assembly steps are:
 
+1. Prepare the back frame: press in M3 nuts, install bearings, fit the timing-belt pulley and mount the optical endstop and solenoid.
+2. Prepare the front frame: press in M3 nuts, install bearings, attach stepper motor and shaft coupler, and mount the drive pulley and endstop.
+3. Join both frame halves: insert the paper guide rods, shaft, and the movable flat-steel strip used for pen lifting.
+4. Slide the carriage onto the guide rods and secure the timing belt to the carriage. Fit the belt around the drive and idler pulleys and tension appropriately.
+5. Assemble and install the paper guide rollers and springs that hold and move the paper.
+6. Optionally assemble and attach the housing halves for a finished enclosure.
 
-#### Final assembly and case
+Important: some assembly steps (press-fitting nuts and bearings, re-threading printed holes) may require light machining or careful rework for reliable operation.
 
-The completed assembly will look like this:
-<img src="./print/zsb/full_no_housing.png">
-
-
-Optional: Glue the feet to the housing shells, slide them over the frame and rods, and secure with screws to the frame:  
-<img src="./print/zsb/full.png">
 
 ## Electronics
 
-Detailed instructions for electronics setup will be provided in future updates.
+Wiring and electronics are intentionally simple to keep the project accessible.
 
+- Route the stepper motor and endstop cables through the frame openings into the enclosure.
+- Secure cables with cable ties and cable management clips to avoid interference with moving parts.
+- The optional solenoid (if installed) mounts to the carriage or frame and is wired to a 12 V supply with a suitable MOSFET or driver circuit controlled by the microcontroller.
+
+Detailed wiring diagrams and a recommended controller (e.g., an ESP32 or Arduino-compatible board with stepper drivers) will be provided in a future update. Feel free to open an issue or pull request if you want to add wiring diagrams or a controller BOM.
 
 
 ## Software
 
-Detailed instructions for software setup will be provided in future updates.
+The software stack for the plotter is not included in this README yet. Typical setups use firmware that accepts G-code (for example GRBL or a custom ESPHome/Marlin build) and a host program to convert vector graphics to G-code (Inkscape, custom scripts, or online tools).
+
+Planned software documentation:
+
+- Recommended firmware and pinouts
+- Example G-code files and test patterns
+- A short guide to convert SVG/vector graphics to G-code suitable for this plotter
+
+If you have working firmware or scripts, contributions are welcome.
+
+
+## License and Acknowledgements
+
+This project is provided under the license included in this repository. See `LICENSE.txt` for details.
+
+Thanks to the open-source community and suppliers of affordable components. If you found or adapted any parts from other projects, please credit them in the repository history or in a CONTRIBUTORS file.
