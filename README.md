@@ -2,7 +2,7 @@
 
 This plotter draws vector graphics in G-code format using a pen. It is compatible with pens up to 11 mm in diameter, relies on inexpensive and widely available components, and uses a mostly 3D-printed frame with a few off-the-shelf mechanical parts.
 
-![Assembly overview](./print/zsb/full_nocolor.png)
+![Assembly overview](./print/zsb/full.png)
 
 
 
@@ -70,10 +70,32 @@ For a complete part list including quantities and McMaster/AliExpress references
 The repository contains step-by-step photos and GIFs in `print/zsb/` that show how parts fit together. The high-level assembly steps are:
 
 1. Prepare the back frame: press in M3 nuts, install bearings, fit the timing-belt pulley and mount the optical endstop and solenoid.
+
 2. Prepare the front frame: press in M3 nuts, install bearings, attach stepper motor and shaft coupler, and mount the drive pulley and endstop.
+
 3. Join both frame halves: insert the paper guide rods, shaft, and the movable flat-steel strip used for pen lifting.
+
+Fully assembled lever mechanism:
+<img src="./print/zsb/lever_assembly.png">
+
+Fully assembled drive shaft:
+<img src="./print/zsb/drive_assembly.png">
+
 4. Slide the carriage onto the guide rods and secure the timing belt to the carriage. Fit the belt around the drive and idler pulleys and tension appropriately.
+
+Fully assembled carriage and timing belt mechanism:
+<img src="./print/zsb/carriage_assembly.png">
+
+
 5. Assemble and install the paper bail rollers and springs that hold and move the paper.
+
+Detail for each paper bail roller:
+<img src="./print/zsb/paper_bail_roller_assembly.png">
+
+Fully assembled paper bail:
+<img src="./print/zsb/paper_bail_assembly.png">
+
+
 6. Optionally assemble and attach the housing halves for a finished enclosure.
 
 Important: some assembly steps (press-fitting nuts and bearings, re-threading printed holes) may require light machining or careful rework for reliable operation.
@@ -111,6 +133,8 @@ Thanks to the open-source community and suppliers of affordable components. If y
 ## Development
 
 Contributions are welcome — see `CONTRIBUTING.md` for details.
+
+All .stl, .png and assembly pictures are automatically exported via my Fusion add-in, see [here](https://github.com/smengerl/fusion-exporter)
 
 ## License
 
