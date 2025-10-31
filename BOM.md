@@ -85,4 +85,5 @@ All `.stl` files are in the `print/stl/` folder. Preview images are available in
 | 1 | DC power jack connector, 5.5 x 2.1mm | e.g. aliexpress.com/item/1005004979253130.html |
 | 1 | 12V Power supply, 5.5 x 2.1mm | e.g. aliexpress.com/item/32874871456.html |
 | 1 | TZT1 MOSFET Driver | drives solenoid, e.g. aliexpress.com/item/32803005422.html |
+| 1 | 4 pushbutton module | aliexpress.com/item/1005007272677522.html |
 | 2 | Optical endstop | e.g. aliexpress.com/item/1005006173344380.html |
