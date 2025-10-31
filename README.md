@@ -43,7 +43,8 @@ Refer to the `print/stl/` and `print/png/` folders for all printable parts and p
 - `housing_front.stl`, `housing_back.stl`, `housing_feet.stl` — optional housing
 - `carriage_penholder_base.stl`, `carriage_penholder_connector_screw.stl` — carriage and pen holder
 - `flat_steel_flange.stl`, `flat_steel_lever.stl` — parts that interface with the steel pen-raising strip
-- `paper_guide_*.stl` — paper guide and rollers
+- `paper_bail_*.stl` — paper bail and rollers
+- `paper_guide_front.stl`, `paper_guide_back.stl` — paper gudie
 - `shaft_end_flange.stl`, `shaft_connector_flange.stl` — shaft support parts
 - `solenoid_slider.stl` — slider to make the pull solenoid a push solenoid (optional)
 - `cable_management.stl` — optional cable management clips
@@ -72,7 +73,7 @@ The repository contains step-by-step photos and GIFs in `print/zsb/` that show h
 2. Prepare the front frame: press in M3 nuts, install bearings, attach stepper motor and shaft coupler, and mount the drive pulley and endstop.
 3. Join both frame halves: insert the paper guide rods, shaft, and the movable flat-steel strip used for pen lifting.
 4. Slide the carriage onto the guide rods and secure the timing belt to the carriage. Fit the belt around the drive and idler pulleys and tension appropriately.
-5. Assemble and install the paper guide rollers and springs that hold and move the paper.
+5. Assemble and install the paper bail rollers and springs that hold and move the paper.
 6. Optionally assemble and attach the housing halves for a finished enclosure.
 
 Important: some assembly steps (press-fitting nuts and bearings, re-threading printed holes) may require light machining or careful rework for reliable operation.
@@ -102,8 +103,23 @@ Planned software documentation:
 If you have working firmware or scripts, contributions are welcome.
 
 
-## License and Acknowledgements
-
-This project is provided under the license included in this repository. See `LICENSE.txt` for details.
+## Acknowledgements
 
 Thanks to the open-source community and suppliers of affordable components. If you found or adapted any parts from other projects, please credit them in the repository history or in a CONTRIBUTORS file.
+
+
+## Development
+
+Contributions are welcome — see `CONTRIBUTING.md` for details.
+
+## License
+
+This project is licensed under the Beerware License — see `LICENSE.txt` for details.
+
+## Authors
+
+- Simon Gerlach <https://github.com/Smenger>
+
+---
+
+If something in this README is missing or unclear, please open an issue in the repository so the instructions can be improved.
