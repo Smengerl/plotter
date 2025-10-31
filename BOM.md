@@ -28,11 +28,11 @@ All `.stl` files are in the `print/stl/` folder. Preview images are available in
 | optional: 4 | `./print/png/housing_feet.stl`</BR><img src="./print/png/housing_feet.png"/> | TPU | Only required if housing is required and no standard rubber dampers are used instead, e.g. [AliExpress](https://de.aliexpress.com/item/1005008240903321.html) |
 | 1 | `./print/stl/paper_guide_back.stl`</BR><img src="./print/png/paper_guide_back.png"/> | PLA / PETG |  |
 | 1 | `./print/stl/paper_guide_front.stl`</BR><img src="./print/png/paper_guide_front.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/paper_guide_lever.stl`</BR><img src="./print/png/paper_guide_lever.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/paper_guide_pusher_front.stl`</BR><img src="./print/png/paper_guide_pusher_front.png"/> | PLA / PETG |  |
-| 1 | `./print/stl/paper_guide_pusher_back.stl`</BR><img src="./print/png/paper_guide_pusher_back.png"/> | PLA / PETG |  |
-| 2 | `./print/stl/paper_guide_roll_fork.stl`</BR><img src="./print/png/paper_guide_roll_fork.png"/> | PLA / PETG |  |
-| 2 | `./print/stl/paper_guide_roll_holder.stl`</BR><img src="./print/png/paper_guide_roll_holder.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/paper_bail_lever.stl`</BR><img src="./print/png/paper_bail_lever.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/paper_bail_pusher_front.stl`</BR><img src="./print/png/paper_bail_pusher_front.png"/> | PLA / PETG |  |
+| 1 | `./print/stl/paper_bail_pusher_back.stl`</BR><img src="./print/png/paper_bail_pusher_back.png"/> | PLA / PETG |  |
+| 2 | `./print/stl/paper_bail_roll_fork.stl`</BR><img src="./print/png/paper_bail_roll_fork.png"/> | PLA / PETG |  |
+| 2 | `./print/stl/paper_bail_roll_holder.stl`</BR><img src="./print/png/paper_bail_roll_holder.png"/> | PLA / PETG |  |
 | optional | `./print/stl/shaft_connector_flange.stl`</BR><img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | Only required if standard couplers are not used. |
 | 1 | `./print/stl/shaft_end_flange.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
 | 1 | `./print/stl/solenoid_slider.stl`</BR><img src="./print/png/solenoid_slider.png"> | PLA / PETG | If a pull solenoid is used. |
