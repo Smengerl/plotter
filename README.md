@@ -105,11 +105,16 @@ Important: some assembly steps (press-fitting nuts and bearings, re-threading pr
 
 Wiring and electronics are intentionally simple to keep the project accessible.
 
-- Route the stepper motor and endstop cables through the frame openings into the enclosure.
-- Secure cables with cable ties and cable management clips to avoid interference with moving parts.
-- The optional solenoid (if installed) mounts to the carriage or frame and is wired to a 12 V supply with a suitable MOSFET or driver circuit controlled by the microcontroller.
+1. Route the stepper motor and endstop cables through the frame openings into the enclosure.
+2. Secure cables with cable ties and cable management clips to avoid interference with moving parts.
+3. The optional solenoid (if installed) mounts to the carriage or frame and is wired to a 12 V supply with a suitable MOSFET or driver circuit controlled by the microcontroller.
+4. Prepare the PCB holder by pressing in the M3 nuts. Screw the Arduino to it. Add the CNC shield and the stepper drivers to the arduino. Finally slide PCB holder over the rods. 
+5. Assemble all wires according to schematics below
+6. Attach housing and fix it to PCB holder and to the rods by M3 screws. Make sure USB port and power jack is visible
 
-Detailed wiring diagrams and a recommended controller (e.g., an ESP32 or Arduino-compatible board with stepper drivers) will be provided in a future update. Feel free to open an issue or pull request if you want to add wiring diagrams or a controller BOM.
+TBD:
+Detailed wiring diagrams 
+
 
 
 ## Software

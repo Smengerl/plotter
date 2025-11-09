@@ -36,6 +36,7 @@ All `.stl` files are in the `print/stl/` folder. Preview images are available in
 | optional | `./print/stl/shaft_connector_flange.stl`</BR><img src="./print/png/shaft_connector_flange.png"> | PLA / PETG | Only required if standard couplers are not used. |
 | 1 | `./print/stl/shaft_end_flange.stl`</BR><img src="./print/png/shaft_end_flange.png"> | PLA / PETG |  |
 | 1 | `./print/stl/solenoid_slider.stl`</BR><img src="./print/png/solenoid_slider.png"> | PLA / PETG | If a pull solenoid is used. |
+| optional | `./print/stl/pcb_holder.stl`</BR><img src="./print/png/pcb_holder.png"/> | PLA / PETG |  |
 | optional | `./print/stl/cable_management.stl`</BR><img src="./print/png/cable_management.png"> | PLA / PETG | Print as needed |
 
 
@@ -82,7 +83,6 @@ All `.stl` files are in the `print/stl/` folder. Preview images are available in
 | ------- | ---- | ----- |
 | 1 | Arduino Uno |  |
 | 1 | Arduino Uno CNC Shield incl. 2 Stepper Drivers (DRV8825, A4988, or similar) |  |
-| 1 | DC power jack connector, 5.5 x 2.1mm | e.g. aliexpress.com/item/1005004979253130.html |
 | 1 | 12V Power supply, 5.5 x 2.1mm | e.g. aliexpress.com/item/32874871456.html |
 | 1 | TZT1 MOSFET Driver | drives solenoid, e.g. aliexpress.com/item/32803005422.html |
 | 1 | 4 pushbutton module | aliexpress.com/item/1005007272677522.html |
