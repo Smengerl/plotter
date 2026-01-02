@@ -1,5 +1,9 @@
 # G-code Pen Plotter
 
+[![3D Printing](https://img.shields.io/badge/3D_printing-STL-green)](#)
+[![C/C++](https://img.shields.io/badge/C/C++-firmware-green)](#)
+[![License](https://img.shields.io/badge/license-Beerware-green)](#)
+
 This plotter draws vector graphics in G-code format using a pen. It is compatible with pens up to 11 mm in diameter, relies on inexpensive and widely available components, and uses a mostly 3D-printed frame with a few off-the-shelf mechanical parts.
 
 ![Assembly overview](./print/zsb/full.png)
