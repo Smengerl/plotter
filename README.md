@@ -141,7 +141,8 @@ Thanks to the open-source community and suppliers of affordable components. If y
 
 ## Development
 
-Contributions are welcome — see `CONTRIBUTING.md` for details.
+Contributions are welcome.  
+See `CONTRIBUTING.md` for details and follow the `CODE_OF_CONDUCT.md` when contributing.
 
 All .stl, .png and assembly pictures are automatically exported via my Fusion add-in, see [here](https://github.com/smengerl/fusion-exporter)
 
