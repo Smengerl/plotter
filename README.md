@@ -15,8 +15,9 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 - [Features](#features)
 - [Bill of Materials](#bill-of-materials)
 - [Assembly](#assembly)
-- [Electronics](#electronics)
-- [Software](#software)
+- [Electronics](#electronics) — see [electronics.md](electronics.md) for full details
+- [Software](#software) — see [grbl.md](grbl.md) for full details
+- [Testing](#testing) — see [testing.md](testing.md) for full details
 - [License and Acknowledgements](#license-and-acknowledgements)
 
 
@@ -107,31 +108,45 @@ Important: some assembly steps (press-fitting nuts and bearings, re-threading pr
 
 ## Electronics
 
-Wiring and electronics are intentionally simple to keep the project accessible.
+The electronics are intentionally simple: an Arduino Uno with a CNC Shield v3 and two A4988 stepper drivers.
+A solenoid controlled via a MOSFET handles pen lift.
+
+For full details on wiring, pin mapping, microstepping, endstops and the solenoid circuit see **[electronics.md](electronics.md)**.
+
+Assembly steps:
 
 1. Route the stepper motor and endstop cables through the frame openings into the enclosure.
 2. Secure cables with cable ties and cable management clips to avoid interference with moving parts.
-3. The optional solenoid (if installed) mounts to the carriage or frame and is wired to a 12 V supply with a suitable MOSFET or driver circuit controlled by the microcontroller.
-4. Prepare the PCB holder by pressing in the M3 nuts. Screw the Arduino to it. Add the CNC shield and the stepper drivers to the arduino. Finally slide PCB holder over the rods. 
-5. Assemble all wires according to schematics below
-6. Attach housing and fix it to PCB holder and to the rods by M3 screws. Make sure USB port and power jack is visible
-
-TBD:
-Detailed wiring diagrams 
-
+3. Prepare the PCB holder by pressing in the M3 nuts. Screw the Arduino to it. Add the CNC Shield and the stepper drivers. Finally slide the PCB holder over the rods.
+4. Assemble all wires according to [electronics.md](electronics.md).
+5. Attach the housing and fix it to the PCB holder and rods with M3 screws. Make sure the USB port and power jack are accessible.
 
 
 ## Software
 
-The software stack for the plotter is not included in this README yet. Typical setups use firmware that accepts G-code (for example GRBL or a custom ESPHome/Marlin build) and a host program to convert vector graphics to G-code (Inkscape, custom scripts, or online tools).
+The plotter runs [GRBL](https://github.com/gnea/grbl) v1.1 on the Arduino Uno.
+All firmware sources live in `firmware/`; GRBL is included as a Git submodule under `grbl/`.
 
-Planned software documentation:
+For build instructions, flashing, GRBL parameter setup and G-code tooling see **[grbl.md](grbl.md)**.
 
-- Recommended firmware and pinouts
-- Example G-code files and test patterns
-- A short guide to convert SVG/vector graphics to G-code suitable for this plotter
+Quick start:
 
-If you have working firmware or scripts, contributions are welcome.
+```bash
+git clone --recurse-submodules https://github.com/Smengerl/plotter.git
+cd plotter/firmware
+pio run -t upload   # build and flash
+pio device monitor  # open serial console at 115200 baud
+```
+
+
+## Testing
+
+A dedicated test suite verifies each hardware component before running GRBL.  
+See **[testing.md](testing.md)** for the full procedure.
+
+Summary:
+- **Phase 1** — Four standalone Arduino sketches test X-axis movement, X endstops, Y-axis movement, and the pen-lift solenoid individually, without GRBL.
+- **Phase 2** — The same four functions are verified through GRBL using G-code commands from a PC.
 
 
 ## Acknowledgements

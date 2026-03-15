@@ -3,3 +3,7 @@ print/.DS_Store
 .DS_Store
 print/full_export.f3z
 grbl/
+
+# PlatformIO build artefacts
+firmware/.pio/
+firmware/.vscode/
