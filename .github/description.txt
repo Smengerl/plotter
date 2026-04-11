@@ -1,0 +1,1 @@
+A compact, open-source G-code pen plotter designed with affordable components for makers and DIY enthusiasts.
