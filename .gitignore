@@ -7,3 +7,13 @@ grbl/
 # PlatformIO build artefacts
 firmware/.pio/
 firmware/.vscode/
+
+# Generierte Test-Ausgaben (PNG + SVG)
+pipeline/tests/output/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.pyc
+.venv/
