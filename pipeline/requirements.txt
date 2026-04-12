@@ -1,0 +1,54 @@
+# pipeline/requirements.txt
+# Pinned dependency versions for reproducible environments.
+#
+# Hinweis: Einige Stylizer verwenden optionale, große oder GPU‑abhängige
+# Pakete. Diese sind weiter unten als separate Gruppen kommentiert.
+
+# Kernabhängigkeiten (immer benötigt)
+numpy==1.26.4
+opencv-python==4.9.0.80
+pyserial==3.5
+
+# Bild-/IO‑Hilfsbibliotheken
+Pillow==12.2.0
+
+# Neuronale Kantenerkennung (HED / DexiNed / Lineart) - installiert per Default
+# Achtung: Diese Pakete sind groß und können plattform‑/GPU‑abhängig sein.
+# Falls du GPU (CUDA) nutzt, installiere die passenden PyTorch/onnxruntime builds
+# manuell nach Anleitung auf https://pytorch.org und https://onnxruntime.ai
+controlnet-aux==0.0.10
+# Note: torch/torchvision wheels are platform and GPU dependent. We keep them
+# unpinned here so pip will attempt to fetch a compatible wheel for your
+# platform. If you need a specific build (CUDA/MPS), install following
+# instructions from https://pytorch.org
+torch
+torchvision
+timm==0.9.2
+
+# Informative Drawings (ONNX preferred, fallback to PyTorch)
+huggingface-hub==1.10.1
+onnxruntime==1.24.4
+
+# Optional: mediapipe (einige controlnet_aux utilities nutzen es)
+# Hinweis: Für neuere macOS / Python Versionen sind nur mediapipe 0.10.x wheels
+# auf PyPI verfügbar. Falls Du die controlnet_aux face‑Annotatoren benötigst,
+# verwende eine mediapipe 0.10.x Version, z.B.:
+# pip install mediapipe==0.10.30
+#
+# Wenn Du eine ältere mediapipe API (mp.solutions) erwartest, kannst du stattdessen
+# ein dediziertes venv mit einer geeigneten mediapipe-Version anlegen. Siehe
+# ../setup_pipeline.sh für Hilfestellungen.
+
+# Hinweis zum Kompatibilitäts-Adapter:
+# Das Projekt enthält `pipeline/compat/mediapipe_compat.py`, das versucht,
+# sowohl die alte `mp.solutions` API als auch die neuere `mediapipe.tasks`
+# API zu verwenden. Beim Laden neuronaler Stilisierer patchen wir zur Laufzeit
+# die controlnet_aux-Helfer, sodass sie unsere Adapter-Funktion verwenden
+# (keine permanente Änderung von site-packages nötig).
+
+# Anmerkung:
+# - Diese Pins sind vernünftige, gut getestete Kombinationen (Stand 2024–2026).
+# - Abhängig von deiner Plattform (macOS‑ARM vs x86, CUDA Version) sind
+#   speziell torch / onnxruntime‑gpu Versionen anzupassen.
+# - Wenn du GPU‑Beschleunigung nutzen möchtest, installiere die passenden
+#   CUDA/ROCm‑builds von PyTorch / onnxruntime entsprechend deiner GPU.
