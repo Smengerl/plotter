@@ -20,9 +20,9 @@
   Expected behaviour
   ------------------
   1. Serial prompt asks operator to centre the carriage.
-  2. After confirmation the carriage moves RIGHT (DIR HIGH) 400 steps.
+  2. After confirmation the carriage moves RIGHT (DIR HIGH) 25 steps (~5 mm).
   3. Serial prompt asks operator to confirm direction.
-  4. Carriage moves LEFT (DIR LOW) 800 steps (back past centre).
+  4. Carriage moves LEFT (DIR LOW) 50 steps (~10 mm, back past centre).
   5. Serial prompt asks operator to confirm direction.
   6. Test ends with PASS / FAIL summary.
 */
@@ -31,10 +31,10 @@
 #include "../plotter_pins.h" // pin numbers derived from GRBL cpu_map.h
 
 // ── Motion parameters ─────────────────────────────────────────────────────
-// 80 steps/mm @ 1/16 microstepping → 400 steps = 5 mm
-static constexpr uint16_t STEPS_PER_MOVE = 400; // steps per single move
-static constexpr uint16_t STEP_DELAY_US = 500;  // µs between step pulses (≈ slow/safe)
-static constexpr uint8_t STEP_PULSE_US = 10;    // µs pulse width
+// 5 steps/mm @ full step (no MS jumpers) → 25 steps = 5 mm
+static constexpr uint16_t STEPS_PER_MOVE = 25; // steps per single move
+static constexpr uint16_t STEP_DELAY_US = 500; // µs between step pulses (≈ slow/safe)
+static constexpr uint8_t STEP_PULSE_US = 10;   // µs pulse width
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 static void waitForEnter(const char *prompt)

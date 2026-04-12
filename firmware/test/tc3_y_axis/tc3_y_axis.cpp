@@ -28,8 +28,8 @@
 #include "../plotter_pins.h" // pin numbers derived from GRBL cpu_map.h
 
 // ── Motion parameters ──────────────────────────────────────────────────────
-// 80 steps/mm → 1600 steps = 20 mm (enough to see clear paper movement)
-static constexpr uint16_t STEPS_PER_MOVE = 1600;
+// 5 steps/mm @ full step (no MS jumpers) → 100 steps = 20 mm (enough to see clear paper movement)
+static constexpr uint16_t STEPS_PER_MOVE = 100;
 static constexpr uint16_t STEP_DELAY_US = 500;
 static constexpr uint8_t STEP_PULSE_US = 10;
 

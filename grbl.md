@@ -90,8 +90,8 @@ After flashing, connect to the serial monitor and verify/set the following param
 All values are stored persistently in EEPROM.
 
 ```gcode
-$100=80      ; X steps/mm
-$101=80      ; Y steps/mm
+$100=5       ; X steps/mm
+$101=5       ; Y steps/mm
 $110=3000    ; X max rate (mm/min)
 $111=3000    ; Y max rate (mm/min)
 $120=200     ; X acceleration (mm/s²)
@@ -112,10 +112,11 @@ Perform a homing cycle with `$H` after the settings are saved.
 ### Steps/mm calculation
 
 ```
-steps/mm = (200 steps/rev × 16 microsteps) / (20 teeth × 2 mm/tooth) = 80
+steps/mm = (200 steps/rev × 1 full step) / (20 teeth × 2 mm/tooth) = 5
 ```
 
-Adjust `$100` / `$101` if you use a different pulley tooth count or microstepping setting.
+No MS jumpers are installed on the CNC Shield — the A4988 operates in full-step mode.  
+Adjust `$100` / `$101` if you change the pulley tooth count or enable microstepping.
 
 ### Pen lift G-code
 

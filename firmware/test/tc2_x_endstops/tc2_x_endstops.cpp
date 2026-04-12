@@ -41,7 +41,7 @@
 // ── Motion parameters ──────────────────────────────────────────────────────
 static constexpr uint16_t STEP_DELAY_US = 800; // slow creep toward endstop
 static constexpr uint8_t STEP_PULSE_US = 10;
-static constexpr uint32_t MAX_STEPS = 30000UL; // safety limit (~375 mm)
+static constexpr uint32_t MAX_STEPS = 1500UL; // safety limit (~300 mm @ 5 steps/mm full step)
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 static bool endstopTriggered(uint8_t pin)

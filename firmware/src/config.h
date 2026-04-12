@@ -18,7 +18,7 @@
     - Spindle PWM output (D11) drives the pen-lift solenoid via a MOSFET
     - Homing enabled on X and Y; home position = front-left corner
     - Soft limits enabled once work area is measured
-    - Steps/mm tuned for 2GT belt + 20T pulley + A4988 @ 1/16 microstepping
+    - Steps/mm tuned for 2GT belt + 20T pulley + A4988 @ full-step (no MS jumpers)
 */
 
 #ifndef config_h
@@ -36,12 +36,12 @@
 
 // Steps/mm calculation:
 //   Motor:       200 full steps/rev
-//   Microstepping: 1/16  →  3200 steps/rev
+//   Microstepping: none (full step) →  200 steps/rev
 //   Pulley:      20 teeth × 2 mm pitch = 40 mm/rev
-//   → 3200 / 40 = 80 steps/mm
-#define DEFAULT_X_STEPS_PER_MM 80.0
-#define DEFAULT_Y_STEPS_PER_MM 80.0
-#define DEFAULT_Z_STEPS_PER_MM 80.0 // Z unused but must be defined
+//   → 200 / 40 = 5 steps/mm
+#define DEFAULT_X_STEPS_PER_MM 5.0
+#define DEFAULT_Y_STEPS_PER_MM 5.0
+#define DEFAULT_Z_STEPS_PER_MM 5.0 // Z unused but must be defined
 
 // Feed rates (mm/min)
 #define DEFAULT_X_MAX_RATE 3000.0
