@@ -1,0 +1,35 @@
+# pipeline/tests/pipeline_configs/stylize_xdog.yaml
+#
+# Test pipeline with XDoG (Extended Difference of Gaussians).
+# Produces sketch-like, artistic lines.
+
+steps:
+  - step: stylise_xdog
+    config:
+      style_res: 1024 # longest side of intermediate image in pixels
+      sigma: 0.4 # σ of small Gaussian function
+      k_sigma: 1.6 # ratio σ_large / σ_small
+      epsilon: 0.0 # threshold (-1..1, 0 = adaptive)
+      phi: 10.0 # steepness of sigmoid function
+      threshold: 20.0 # final binarization threshold (0–255)
+
+  - step: vectorise
+    config:
+      min_path_px: 10
+      simplify_eps: 1.5
+
+  - step: gcode_gen
+    config:
+      target_width_mm: 180.0
+      target_height_mm: 250.0
+      origin_x: 5.0
+      origin_y: 5.0
+      keep_aspect: true
+      feedrate_draw: 1500
+      feedrate_travel: 3000
+      pen_down_cmd: "M3 S1000"
+      pen_up_cmd: "M5"
+      pen_delay_ms: 100
+
+  - step: save_gcode
+    config: {}

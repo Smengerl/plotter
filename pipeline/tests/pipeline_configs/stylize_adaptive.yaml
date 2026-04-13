@@ -1,0 +1,34 @@
+# pipeline/tests/pipeline_configs/stylize_adaptive.yaml
+#
+# Test pipeline with adaptive threshold binarization.
+# Robust with uneven illumination.
+
+steps:
+  - step: stylise_adaptive
+    config:
+      style_res: 1024 # longest side of intermediate image in pixels
+      block_size: 11 # local neighborhood in pixels (must be odd, ≥ 3)
+      adapt_c: 2.0 # subtraction constant
+      adapt_method: gaussian # gaussian | mean
+      adapt_blur: 0 # blur before thresholding (0 = off)
+
+  - step: vectorise
+    config:
+      min_path_px: 10
+      simplify_eps: 1.5
+
+  - step: gcode_gen
+    config:
+      target_width_mm: 180.0
+      target_height_mm: 250.0
+      origin_x: 5.0
+      origin_y: 5.0
+      keep_aspect: true
+      feedrate_draw: 1500
+      feedrate_travel: 3000
+      pen_down_cmd: "M3 S1000"
+      pen_up_cmd: "M5"
+      pen_delay_ms: 100
+
+  - step: save_gcode
+    config: {}

@@ -7,6 +7,7 @@ For firmware and GRBL configuration see [grbl.md](grbl.md).
 - [Controller and shield](#controller-and-shield)
 - [Stepper drivers](#stepper-drivers)
 - [Power supply](#power-supply)
+- [5 V / GND distribution board](#5-v--gnd-distribution-board)
 - [Pin mapping](#pin-mapping-cnc-shield-v3--arduino-uno)
 - [Microstepping jumpers](#microstepping-jumpers)
 - [Wiring steps](#wiring-steps)
@@ -35,8 +36,37 @@ Only **2 of the 4 possible axes** on the CNC Shield are used:
 ## Power supply
 
 - **12 V DC** for NEMA 17 motors and solenoid
-- Use a supply rated for the **combined peak current** of both stepper motors and the solenoid (typically 3-5 A is sufficient)
-- The Arduino is powered separately via USB during flashing; under normal operation the CNC Shield's power jack supplies everything
+- Use a supply rated for the **combined peak current** of both stepper motors and the solenoid
+
+### 12 V power supply
+
+The 12 V supply connects to the **screw terminals on the CNC Shield** (labelled GND and V+), **not** to the Arduino's barrel jack.
+From those terminals the voltage is passed through to the Arduino Uno's VIN pin via the shield's stacking header.
+The Arduino's on-board voltage regulator converts VIN to the 5 V and 3.3 V rails used by the microcontroller and peripherals.
+Use the 12 V supply to also power the MOSFET circuit power input as it will also drive the solenoid.
+
+### USB and 12 V simultaneously
+
+The Arduino Uno contains a power-path selector between the VIN from Stepper shield (and for its own barrel-jack) supply and the USB 5 V rail:
+
+- **12 V via CNC Shield only** — the on-board regulator powers the Arduino; USB is not connected.
+- **USB only (no 12 V via barrel jack/stepper shield)** — the Arduino runs from USB 5 V; the stepper drivers and solenoid are unpowered. Use this mode when flashing firmware without the motors connected.
+- **Both 12 V and USB simultaneously** — this is the normal setup (UGS command sending from PC while the machine runs). The on-board Schottky diode prevents current from flowing back from the Arduino's 5 V rail into the host PC's USB port. No special precautions are needed.
+
+
+## 5 V / GND distribution board
+
+Several consumers need a regulated 5 V supply and a common GND:
+
+| Consumer | Supply needed |
+|----------|--------------|
+| Optical endstops (× 2) | +5 V, GND |
+| MOSFET gate circuit | GND (gate pull-down) |
+| Button / switch strip (if fitted) | +5 V, GND |
+
+The CNC Shield exposes only a limited number of 5 V and GND pins on its headers, which is not enough for all consumers at once.
+The recommended solution is a small **stripboard / perfboard distribution board**.
+> Keep the total current draw of 5 V consumers well below 500 mA — the Arduino's on-board regulator (when powered from 12 V via the shield) can supply roughly 300–400 mA at 5 V before thermal throttling. Optical endstops typically draw < 20 mA each, so two endstops + a MOSFET pull-down are well within budget.
 
 
 ## Pin mapping (CNC Shield v3 -> Arduino Uno)
@@ -62,31 +92,33 @@ Verify pin assignments against `firmware/src/config.h`.
 
 ## Microstepping jumpers
 
-Install **all three MS jumpers** (MS1, MS2, MS3) under each stepper driver on the CNC Shield for **1/16 microstepping**.
-This matches `DEFAULT_X/Y_STEPS_PER_MM = 80` in `firmware/src/config.h`.
+**Leave all MS jumpers unpopulated** (MS1, MS2, MS3 all open) for **full-step operation**.
+This matches `DEFAULT_X/Y_STEPS_PER_MM = 5` in `firmware/src/config.h`.
 
 | MS1 | MS2 | MS3 | Mode |
 |-----|-----|-----|------|
-| - | - | - | Full step |
+| - | - | - | **Full step ← use this** |
 | x | - | - | 1/2 |
 | - | x | - | 1/4 |
 | x | x | - | 1/8 |
-| x | x | x | **1/16** <- use this |
+| x | x | x | 1/16 |
 
 
 ## Wiring steps
 
 1. Stack the CNC Shield v3 onto the Arduino Uno.
-2. Set the microstepping jumpers (see above).
+2. Leave all MS jumpers **unpopulated** (full-step operation, no jumpers needed).
 3. Insert the A4988 stepper drivers for the X and Y slots; leave Z and A empty.
 4. Attach heat sinks to the drivers.
-5. Route stepper motor and endstop cables through the frame openings into the enclosure.
-6. Connect stepper motors to the X and Y terminals on the shield.
-7. Connect the optical endstops to the **X-** and **Y-** endstop headers (3-pin: GND / 5 V / Signal).
-8. Connect the solenoid MOSFET circuit to **D11** (see solenoid section below).
-9. Secure all cables with cable ties and cable management clips to avoid interference with moving parts.
-10. Screw the Arduino/Shield assembly onto the PCB holder, slide it onto the rods, and attach the housing.
-11. Make sure the USB port and power jack remain accessible.
+5. Build and mount the 5 V / GND distribution board (see section above); connect it to the Arduino's 5 V and GND pins.
+6. Route stepper motor and endstop cables through the frame openings into the enclosure.
+7. Connect stepper motors to the X and Y terminals on the shield.
+8. Connect the optical endstops to the **X-** and **Y-** endstop headers (3-pin: GND / 5 V / Signal); take GND and 5 V from the distribution board.
+9. Connect the solenoid MOSFET circuit to **D11**; connect the gate pull-down GND to the distribution board (see solenoid section below).
+10. Connect the 12 V supply to the **screw terminals on the CNC Shield** (not the Arduino barrel jack).
+11. Secure all cables with cable ties and cable management clips to avoid interference with moving parts.
+12. Screw the Arduino/Shield assembly onto the PCB holder, slide it onto the rods, and attach the housing.
+13. Make sure the USB port and the CNC Shield power terminals remain accessible.
 
 
 ## Endstops

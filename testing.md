@@ -62,7 +62,7 @@ pio run -e tc1_x_axis -t upload
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Prompts operator to centre the carriage | — |
-| 2 | Moves X axis RIGHT (DIR=HIGH), 400 steps (~5 mm) | Carriage moves right |
+| 2 | Moves X axis RIGHT (DIR=HIGH), 25 steps (~5 mm) | Carriage moves right |
 | 3 | Asks: "Did the carriage move RIGHT?" | Operator confirms |
 | 4 | Moves X axis LEFT (DIR=LOW), 800 steps (~10 mm) | Carriage moves left past centre |
 | 5 | Asks: "Did the carriage move LEFT?" | Operator confirms |
@@ -127,9 +127,9 @@ pio run -e tc3_y_axis -t upload
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Prompts operator to insert a sheet of paper into the paper bail | — |
-| 2 | Drives Y axis IN (DIR=HIGH), 1600 steps (~20 mm) | Paper pulled into plotter |
+| 2 | Drives Y axis IN (DIR=HIGH), 100 steps (~20 mm) | Paper pulled into plotter |
 | 3 | Asks: "Was paper pulled IN?" | Operator confirms |
-| 4 | Drives Y axis OUT (DIR=LOW), 1600 steps (~20 mm) | Paper ejected |
+| 4 | Drives Y axis OUT (DIR=LOW), 100 steps (~20 mm) | Paper ejected |
 | 5 | Asks: "Was paper pushed OUT?" | Operator confirms |
 | 6 | Prints PASS / FAIL | — |
 

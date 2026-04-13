@@ -1,0 +1,77 @@
+# pipeline/configs/standard_pipeline.yaml
+#
+# Standard pipeline for image simplification using Informative Drawings.
+# Produces sketch-like line drawings suitable for pen plotting.
+#
+# Usage with PipelineRunner:
+#
+#   import yaml
+#   from pipeline.core.runner import PipelineRunner
+#
+#   with open("pipeline/configs/standard_pipeline.yaml") as f:
+#       cfg = yaml.safe_load(f)
+#   runner = PipelineRunner(cfg["steps"])
+#
+# The informative stylizer uses a neural network to create artistic,
+# simplified drawings from photos. This is the recommended default
+# for most image-to-plot workflows.
+
+steps:
+  # Step 1: Apply artistic style using ControlNet + SD 1.5
+  #
+  # This step converts the input image to an artistic style
+  # guided by the text prompt and ControlNet conditioning.
+  - step: stylise_controlnet
+    config:
+      # Style prompt - adjust to your artistic goal
+      prompt: "ink drawing, pen sketch, detailed line art, professional illustration, monochrome"
+      negative_prompt: "watercolor, photorealistic, color, blurry, low quality, distorted"
+
+      # ControlNet type - determines what structure is preserved
+      # Options: canny, lineart, softedge, scribble, pose, depth, normal, seg
+      controlnet_type: lineart
+
+      # Diffusion settings
+      num_inference_steps: 25 # Higher = better quality, slower
+      guidance_scale: 7.5 # How much to follow prompt (1–15)
+      strength: 0.8 # How much to modify image (0–1)
+
+      # Model and device
+      model_id: "runwayml/stable-diffusion-v1-5"
+      device: auto # auto | cpu | cuda | mps
+      enable_model_cpu_offload: false # Reduce VRAM at cost of speed
+
+  # Step 2: Convert image to vector paths
+  - step: vectorise
+    config:
+      min_path_px: 10 # Minimum path length in pixels (shorter paths discarded)
+      simplify_eps: 1.5 # Ramer-Douglas-Peucker tolerance in pixels
+
+  # Step 3: Generate GCode for GRBL plotter
+  - step: gcode_gen
+    config:
+      target_width_mm: 180.0 # Drawing width in mm (X-axis)
+      target_height_mm: 250.0 # Drawing height in mm (Y-axis)
+      origin_x: 5.0 # Left margin in mm
+      origin_y: 5.0 # Bottom margin in mm
+      keep_aspect: true # Maintain aspect ratio
+      feedrate_draw: 1500 # Feedrate drawing (mm/min)
+      feedrate_travel: 3000 # Feedrate travel (mm/min)
+      pen_down_cmd: "M3 S1000" # GRBL command pen down
+      pen_up_cmd: "M5" # GRBL command pen up
+      pen_delay_ms: 100 # Wait time after pen down in ms
+
+  # Step 4: Save GCode to file
+  - step: save_gcode
+    config: {}
+
+  # Step 5 (Optional): Send GCode to GRBL hardware
+  # Set enabled: true to send directly to plotter.
+  # Requires proper serial port configuration.
+  - step: send_gcode
+    enabled: false # false = step is skipped by runner
+    config:
+      port: /dev/tty.usbmodem1101 # Serial port (check your system)
+      baud: 115200 # Baud rate for GRBL
+      dry_run: false # false = really send to plotter
+      response_timeout_s: 30.0 # Timeout per GCode line in seconds

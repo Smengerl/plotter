@@ -8,9 +8,8 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 
 ![Assembly overview](./print/zsb/full.png)
 
-
-
 # Table of contents
+
 - [Overview](#overview)
 - [Features](#features)
 - [Bill of Materials](#bill-of-materials)
@@ -20,11 +19,9 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 - [Testing](#testing) — see [testing.md](testing.md) for full details
 - [License and Acknowledgements](#license-and-acknowledgements)
 
-
 ## Overview
 
 This pen plotter is meant for hobbyists and makers who want a low-cost machine to draw vector artwork on paper. It uses two stepper-driven axes, a simple pen carriage with a lift mechanism via solenoid for automated pen up/down control. Most structural parts are 3D-printed and a number of standard mechanical parts (rods, bearings, springs, belt and pulleys) complete the build.
-
 
 ## Features
 
@@ -34,11 +31,9 @@ This pen plotter is meant for hobbyists and makers who want a low-cost machine t
 - Uses commonly available NEMA 17 stepper motors and standard bearings
 - Designed for A4-sized paper by default (adjustable)
 
-
 ## Bill of Materials
 
 Below are the main 3D-printed parts and standard hardware used in the project. See the [full BOM](BOM.md) and the `print/` directory for the source STL/PNG files and visual references.
-
 
 ### 3D-printed parts (selected)
 
@@ -56,8 +51,8 @@ Refer to the `print/stl/` and `print/png/` folders for all printable parts and p
 
 ### Standard hardware (selected)
 
-- 12 mm square rods 
-- 6 mm round rods 
+- 12 mm square rods
+- 6 mm round rods
 - 12 mm steel shaft
 - 2x 6mm linear ball bearings
 - 2x NEMA 17 stepper motors
@@ -68,7 +63,6 @@ Refer to the `print/stl/` and `print/png/` folders for all printable parts and p
 - Pull solenoid 12 V (example: TAU-0530)
 
 For a complete part list including quantities and McMaster/AliExpress references, see the original [BOM](BOM.md) in the repository.
-
 
 ## Assembly
 
@@ -86,13 +80,12 @@ Fully assembled lever mechanism:
 Fully assembled drive shaft:
 <img src="./print/zsb/drive_assembly.png">
 
-4. Slide the carriage onto the guide rods and secure the timing belt to the carriage. Fit the belt around the drive and idler pulleys and tension appropriately.
+1. Slide the carriage onto the guide rods and secure the timing belt to the carriage. Fit the belt around the drive and idler pulleys and tension appropriately.
 
 Fully assembled carriage and timing belt mechanism:
 <img src="./print/zsb/carriage_assembly.png">
 
-
-5. Assemble and install the paper bail rollers and springs that hold and move the paper.
+1. Assemble and install the paper bail rollers and springs that hold and move the paper.
 
 Detail for each paper bail roller:
 <img src="./print/zsb/paper_bail_roller_assembly.png">
@@ -100,11 +93,9 @@ Detail for each paper bail roller:
 Fully assembled paper bail:
 <img src="./print/zsb/paper_bail_assembly.png">
 
-
-6. Optionally assemble and attach the housing halves for a finished enclosure.
+1. Optionally assemble and attach the housing halves for a finished enclosure.
 
 Important: some assembly steps (press-fitting nuts and bearings, re-threading printed holes) may require light machining or careful rework for reliable operation.
-
 
 ## Electronics
 
@@ -120,7 +111,6 @@ Assembly steps:
 3. Prepare the PCB holder by pressing in the M3 nuts. Screw the Arduino to it. Add the CNC Shield and the stepper drivers. Finally slide the PCB holder over the rods.
 4. Assemble all wires according to [electronics.md](electronics.md).
 5. Attach the housing and fix it to the PCB holder and rods with M3 screws. Make sure the USB port and power jack are accessible.
-
 
 ## Software
 
@@ -138,21 +128,19 @@ pio run -t upload   # build and flash
 pio device monitor  # open serial console at 115200 baud
 ```
 
-
 ## Testing
 
 A dedicated test suite verifies each hardware component before running GRBL.  
 See **[testing.md](testing.md)** for the full procedure.
 
 Summary:
+
 - **Phase 1** — Four standalone Arduino sketches test X-axis movement, X endstops, Y-axis movement, and the pen-lift solenoid individually, without GRBL.
 - **Phase 2** — The same four functions are verified through GRBL using G-code commands from a PC.
-
 
 ## Acknowledgements
 
 Thanks to the open-source community and suppliers of affordable components. If you found or adapted any parts from other projects, please credit them in the repository history or in a CONTRIBUTORS file.
-
 
 ## Development
 
@@ -163,7 +151,7 @@ All .stl, .png and assembly pictures are automatically exported via my Fusion ad
 
 ## License
 
-This project is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0) — see `LICENSE.txt` for details or visit http://creativecommons.org/licenses/by-sa/4.0/
+This project is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0) — see `LICENSE.txt` for details or visit <http://creativecommons.org/licenses/by-sa/4.0/>
 
 ## Authors
 

@@ -1,10 +1,10 @@
 """
-pipeline/tests/test_gcode_gen.py — Unit-Tests für die GCode-Generierung
+pipeline/tests/test_gcode_gen.py - Unit tests for GCode generation
 
-Läuft ohne Hardware (kein Plotter, kein GRBL).
-Kein cv2 oder Modell nötig — nur numpy.
+Runs without hardware (no plotter, no GRBL).
+No cv2 or model needed - just numpy.
 
-Aufruf:
+Usage:
     cd plotter/pipeline
     pytest tests/
 """
@@ -15,19 +15,19 @@ import pytest
 import sys
 from pathlib import Path
 
-# Sicherstellen, dass 'pipeline/' im Suchpfad liegt
+# Ensure 'pipeline/' is in search path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from pipeline.gcode_gen import generate_gcode
-from pipeline.grbl_sender import _filter_gcode
+from pipeline.steps.gcode_gen_step import generate_gcode
+from pipeline.steps.send_gcode_step import _filter_gcode
 
 
 # ---------------------------------------------------------------------------
-# Hilfsfunktionen
+# Helper functions
 # ---------------------------------------------------------------------------
 
 def _simple_paths() -> list:
-    """Zwei einfache L-förmige Pfade in Pixelkoordinaten."""
+    """Two simple L-shaped paths in pixel coordinates."""
     path1 = np.array([[0, 0], [100, 0], [100, 100]], dtype=np.float32)
     path2 = np.array([[10, 10], [50, 90]], dtype=np.float32)
     return [path1, path2]
@@ -39,7 +39,7 @@ def _parse_coord(token: str) -> float:
 
 
 def _extract_moves(lines: list[str]) -> list[tuple[float, float]]:
-    """Extrahiert (X, Y) aus allen G1-Zeilen."""
+    """Extracts (X, Y) from all G1 lines."""
     moves = []
     for line in lines:
         clean = line.split(";")[0].strip()
@@ -67,8 +67,8 @@ class TestGenerateGcode:
     def test_contains_initialisation_commands(self):
         lines = generate_gcode(_simple_paths(), image_shape=(200, 200))
         joined = "\n".join(lines)
-        assert "G21" in joined       # Maßeinheit mm
-        assert "G90" in joined       # Absolute Koordinaten
+        assert "G21" in joined       # Unit mm
+        assert "G90" in joined       # Absolute coordinates
 
     def test_pen_down_and_up_commands_present(self):
         lines = generate_gcode(
@@ -92,7 +92,7 @@ class TestGenerateGcode:
         assert "M3 S500" in joined
 
     def test_coordinates_within_target_bounds(self):
-        """Alle Koordinaten müssen innerhalb des definierten Zeichenbereichs liegen."""
+        """All coordinates must be within the defined drawing area."""
         w, h = 150.0, 200.0
         ox, oy = 10.0, 10.0
         lines = generate_gcode(
@@ -107,13 +107,13 @@ class TestGenerateGcode:
         moves = _extract_moves(lines)
         assert len(moves) > 0
         for x, y in moves:
-            assert ox - 0.01 <= x <= ox + w + 0.01, f"X={x} außerhalb [{ox}, {ox+w}]"
-            assert oy - 0.01 <= y <= oy + h + 0.01, f"Y={y} außerhalb [{oy}, {oy+h}]"
+            assert ox - 0.01 <= x <= ox + w + 0.01, f"X={x} outside [{ox}, {ox+w}]"
+            assert oy - 0.01 <= y <= oy + h + 0.01, f"Y={y} outside [{oy}, {oy+h}]"
 
     def test_aspect_ratio_preserved(self):
-        """Bei keep_aspect=True darf nur eine Achse die volle Länge nutzen."""
-        img_w, img_h = 200, 100  # 2:1 Bild
-        target_w, target_h = 100.0, 100.0  # quadratisches Ziel
+        """With keep_aspect=True, only one axis can use the full length."""
+        img_w, img_h = 200, 100  # 2:1 image
+        target_w, target_h = 100.0, 100.0  # square target
         lines = generate_gcode(
             _simple_paths(),
             image_shape=(img_h, img_w),
@@ -126,12 +126,12 @@ class TestGenerateGcode:
         moves = _extract_moves(lines)
         max_x = max(x for x, y in moves)
         max_y = max(y for x, y in moves)
-        # Bild 2:1 → X nutzt 100mm voll, Y maximal 50mm
+        # Image 2:1 → X uses 100mm fully, Y max 50mm
         assert max_x <= target_w + 0.01
         assert max_y <= target_h / 2.0 + 0.01
 
     def test_no_aspect_ratio(self):
-        """Bei keep_aspect=False können beide Achsen voll genutzt werden."""
+        """With keep_aspect=False, both axes can use the full length."""
         lines = generate_gcode(
             [np.array([[0, 0], [200, 100]], dtype=np.float32)],
             image_shape=(100, 200),
@@ -178,12 +178,12 @@ class TestGenerateGcode:
 
     def test_y_axis_flip(self):
         """
-        Ein Punkt am oberen Bildrand (py=0) muss die höchste Y-Koordinate haben.
-        Ein Punkt am unteren Bildrand (py=img_h) muss die kleinste Y-Koordinate haben.
+        A point at the top image border (py=0) must have the highest Y coordinate.
+        A point at the bottom image border (py=img_h) must have the smallest Y coordinate.
         """
         img_h = 100
-        path_top    = np.array([[50,  0 ]], dtype=np.float32)  # oben im Bild
-        path_bottom = np.array([[50, 100]], dtype=np.float32)  # unten im Bild
+        path_top    = np.array([[50,  0 ]], dtype=np.float32)  # top of image
+        path_bottom = np.array([[50, 100]], dtype=np.float32)  # bottom of image
 
         lines_top = generate_gcode(
             [np.array([[50, 0], [50, 1]], dtype=np.float32)],

@@ -1,0 +1,44 @@
+# pipeline/tests/pipeline_configs/stylize_controlnet.yaml
+#
+# Test pipeline with ControlNet + Stable Diffusion 1.5 style transfer.
+# Uses lineart ControlNet to apply an artistic style via text prompt.
+#
+# This produces photorealistic but stylized results that are then
+# binarized for pen plotting.
+
+steps:
+  # Step 1: Apply style transfer using ControlNet + SD 1.5
+  - step: stylise_controlnet
+    config:
+      prompt: "ink drawing, pen sketch, detailed line art, professional illustration"
+      negative_prompt: "blurry, watercolor, photorealistic"
+      controlnet_type: lineart # Options: canny, lineart, softedge, scribble, pose, depth
+      num_inference_steps: 20
+      guidance_scale: 7.5
+      strength: 0.8
+      enable_model_cpu_offload: false
+      device: auto
+      model_id: "runwayml/stable-diffusion-v1-5"
+
+  # Step 2: Vectorization - Convert to paths
+  - step: vectorise
+    config:
+      min_path_px: 10
+      simplify_eps: 1.5
+
+  # Step 3: GCode generation
+  - step: gcode_gen
+    config:
+      target_width_mm: 180.0
+      target_height_mm: 250.0
+      origin_x: 5.0
+      origin_y: 5.0
+      keep_aspect: true
+      feedrate_draw: 1500
+      feedrate_travel: 3000
+      pen_down_cmd: "M3 S1000"
+      pen_up_cmd: "M5"
+      pen_delay_ms: 100
+
+  - step: save_gcode
+    config: {}

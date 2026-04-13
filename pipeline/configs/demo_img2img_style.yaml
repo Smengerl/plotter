@@ -1,0 +1,79 @@
+# pipeline/configs/demo_img2img_style.yaml
+#
+# Demo pipeline: Image-to-Image style transfer using Stable Diffusion 2.1
+#
+# This pipeline applies artistic styles to images using img2img without ControlNet.
+# Lighter and faster than ControlNet, but with less control over structure.
+#
+# Key differences from ControlNet:
+# - Uses lighter SD 2.1 model (smaller VRAM requirement)
+# - Faster processing (~1–3 min on GPU)
+# - No ControlNet conditioning (less structural preservation)
+# - Adjustable strength parameter for modification intensity
+#
+# Notes:
+# - Requires: pip install diffusers transformers safetensors torch accelerate
+# - First run downloads ~2GB of models (smaller than ControlNet)
+# - CPU-only: ~10–30 minutes per image
+# - GPU (CUDA): ~1–3 minutes per image
+# - GPU (M1/M2/M3): ~3–10 minutes per image
+
+steps:
+  # Step 1: Apply artistic style using img2img
+  #
+  # This step modifies the input image to match the specified style,
+  # without ControlNet conditioning.
+  - step: stylise_img2img
+    config:
+      # Style prompt - adjust to your artistic goal
+      prompt: "oil painting, impressionist style, vibrant colors, beautiful brushstrokes"
+      negative_prompt: "watercolor, photorealistic, blurry, low quality, distorted"
+
+      # Strength: how much to modify (0.0–1.0)
+      # Lower (0.3–0.5): subtle style change, preserves more original content
+      # Medium (0.6–0.8): balanced style transfer
+      # Higher (0.8–0.99): aggressive transformation, might lose original structure
+      strength: 0.75
+
+      # Diffusion settings
+      num_inference_steps: 25 # Higher = better quality, slower
+      guidance_scale: 7.5 # How much to follow prompt (1–15)
+
+      # Model and device
+      model_id: "stabilityai/stable-diffusion-2-1-base" # Lightweight model
+      hf_token_path: ".hf_token" # Path to HuggingFace token (optional, for gated models)
+      device: auto # auto | cpu | cuda | mps
+      enable_model_cpu_offload: false # Reduce VRAM at cost of speed
+
+  # Step 2: Convert to vector paths
+  - step: vectorise
+    config:
+      min_path_px: 10 # Minimum path length (shorter = more detail)
+      simplify_eps: 1.5 # Path simplification tolerance
+
+  # Step 3: Generate GCode
+  - step: gcode_gen
+    config:
+      target_width_mm: 180.0
+      target_height_mm: 250.0
+      origin_x: 5.0
+      origin_y: 5.0
+      keep_aspect: true
+      feedrate_draw: 1500
+      feedrate_travel: 3000
+      pen_down_cmd: "M3 S1000"
+      pen_up_cmd: "M5"
+      pen_delay_ms: 100
+
+  # Step 4: Save GCode to file
+  - step: save_gcode
+    config: {}
+
+  # Step 5 (Optional): Send directly to GRBL plotter
+  - step: send_gcode
+    enabled: false
+    config:
+      port: /dev/tty.usbmodem1101
+      baud: 115200
+      dry_run: false
+      response_timeout_s: 30.0
