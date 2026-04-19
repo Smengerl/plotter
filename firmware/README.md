@@ -130,19 +130,40 @@ Note: this repository's G-code profile (`pipeline/configs/grbl_a4_pen.toml`) is 
 
 If your hardware is wired the other way (energized = pen DOWN), swap the M3/M5 commands in the G-code profile or rewire the solenoid/MOSFET accordingly.
 
-| G-code | Action (repository default) |
-|--------|---------------------------|
-| `M3 S1000` | Solenoid ON → solenoid energized (repo default: pen UP) |
-| `M5` | Solenoid OFF → solenoid de-energized (repo default: pen DOWN via spring) |
-
 
 ## GRBL integration tests
 
 After flashing GRBL, run the following tests **in order** to verify the complete system via G-code before the first real plot.  
 Each test is sent via the MDI console of a G-code sender (e.g. [UGS](https://universalgcodesender.com/)) at **115200 baud**.
 
-> **Prerequisite:** all Phase 1 standalone tests (TC1–TC4) must have passed first.  
-> See [testing.md](../testing.md) for the full test documentation.
+Phase 1 — Standalone Arduino tests (TC1–TC4)
+
+Before running the GRBL integration tests you should run the Phase 1 standalone Arduino sketches. The sketch filenames and PlatformIO env names correspond directly to the TC numbers below (the numbering in the source tree matches the TC number shown here):
+
+```
+firmware/test/
+├── tc1_x_axis/       tc1_x_axis.cpp      # TC1 — X-Axis Movement
+├── tc2_x_endstops/   tc2_x_endstops.cpp  # TC2 — X-Axis Endstops
+├── tc3_y_axis/       tc3_y_axis.cpp      # TC3 — Y-Axis Movement
+└── tc4_pen_lift/     tc4_pen_lift.cpp    # TC4 — Pen Lift (Solenoid)
+```
+
+Flash / run each test with PlatformIO (open serial monitor at 115200 baud after upload):
+
+```bash
+cd firmware
+pio run -e tc1_x_axis     -t upload   # flash TC1
+pio run -e tc2_x_endstops -t upload   # flash TC2
+pio run -e tc3_y_axis     -t upload   # flash TC3
+pio run -e tc4_pen_lift   -t upload   # flash TC4
+pio device monitor
+```
+
+**Prerequisite:** all Phase 1 standalone tests (TC1–TC4) must have passed first.  
+See [testing.md](../testing.md) for the full test documentation.
+
+
+Additionally, a host-side helper to write recommended GRBL `$` settings is provided as a commissioning testcase (TC5) and is intended to be run on the commissioning PC after the Phase 1 standalone sketches and before the Phase 2 G-code integration tests.
 
 ---
 
@@ -266,78 +287,15 @@ M5
 ```
 
 **Expected:**
-1. `M3 S1000` — solenoid fires immediately, pen moves **down** (audible click).
-2. `G4 P1` — 1-second dwell; pen stays down.
-3. `M5` — solenoid de-energises, pen returns **up** via spring.
+1. `M3 S1000` — solenoid fires immediately, pen moves **up** (lift).
+2. `G4 P1` — 1-second dwell; pen stays up.
+3. `M5` — solenoid de-energises, pen returns **down** via spring.
 
 > If the solenoid does not fire: run `$$` and verify `$30=1000` (max spindle speed) and `$31=0` (min spindle speed).
 
 ---
 
 See [testing.md](../testing.md) for the complete Phase 2 procedure including failure hints and a result log table.
-
-### Helper script: Set recommended EEPROM settings
-
-To make first-time setup easier, this repository includes an interactive helper
-script that writes the recommended GRBL `$` settings into EEPROM. The script
-is located at `firmware/tools/set_grbl_eeprom.py`.
-
-Requirements:
-
-- Python 3
-- pyserial (install with `pip install pyserial`)
-
-Usage (example):
-
-```bash
-python3 firmware/tools/set_grbl_eeprom.py --port /dev/tty.usbmodemXXXX
-```
-
-To run non-interactively (apply defaults without confirmation):
-
-```bash
-python3 firmware/tools/set_grbl_eeprom.py --port /dev/tty.usbmodemXXXX --yes
-```
-
-Note about how the script determines the values
-------------------------------------------------
-
-The helper script attempts to read the firmware's compile-time defaults directly from
-`firmware/src/config.h` using the system C preprocessor (gcc/clang/cpp) to reliably
-extract `#define DEFAULT_*` macros. This makes the script test and apply the exact
-settings that the firmware was built with — there is no separate hard-coded source of
-truth in the helper.
-
-If a system C preprocessor is not available on the host, the script falls back to a
-best-effort regex-based parse of `config.h`. The preprocessor method is preferred because
-it correctly expands included headers and macro expressions.
-
-New flag: `--dry-run`
----------------------
-
-Use `--dry-run` to preview the planned `$` settings without writing them to the device:
-
-```bash
-python3 firmware/tools/set_grbl_eeprom.py --port /dev/tty.usbmodemXXXX --dry-run
-```
-
-This is useful for verifying the values that will be written, and to avoid extra EEPROM
-writes while you confirm wiring and homing behavior.
-
-What the script does:
-
-- Connects to the GRBL serial port (default 115200 baud)
-- Prints current `$$` settings
-- Shows the planned settings and asks for confirmation (unless `--yes`)
-- Applies each `$` setting one-by-one and re-prints `$$` for verification
-
-Safety notes:
-
-- Always verify endstop wiring and homing behavior before enabling soft/hard
-  limits. The helper will set `$20/$21` to 0 (disabled) and `$22` to 1
-  (homing enabled) but you should not enable limits until homing is tested.
-- The script writes directly to EEPROM — use `--yes` only when you are sure
-  about the target port and settings.
 
 
 ## Converting SVG/vector graphics to G-code
@@ -348,7 +306,7 @@ Recommended tools:
 - **[vpype](https://github.com/abey79/vpype)** + **[vpype-gcode](https://github.com/plottertools/vpype-gcode)** plug-in
 - **[svg2gcode](https://github.com/sameer/svg2gcode)** — simple CLI converter
 
-Pen-up/pen-down: configure the tool to emit `M3 S1000` (pen down) and `M5` (pen up) at path boundaries, or insert them manually.
+Pen-up/pen-down: configure the tool to emit `M3 S1000` (pen UP) and `M5` (pen DOWN) at path boundaries, or insert them manually.
 
 
 ## Sending G-code to the plotter

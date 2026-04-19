@@ -110,8 +110,6 @@ void setup()
     waitForEnter("Confirm flyback diode is installed and 12 V supply is ON. "
                  "Mount the pen carriage so you can observe the pen movement.");
 
-    uint8_t actuatedCount = 0;
-
     for (uint8_t cycle = 1; cycle <= CYCLES; cycle++)
     {
         Serial.println();

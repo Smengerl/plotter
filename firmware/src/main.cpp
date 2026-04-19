@@ -49,11 +49,16 @@
   Flyback diode across solenoid coil (cathode to +12 V)
   MOSFET source ── GND
 
-  Pen up/down G-code
-  ──────────────────
-  M3 S1000  → solenoid ON  → pen DOWN (or pen UP, depending on your mechanism)
-  M5        → solenoid OFF → pen UP   (spring returns)
-  Adjust polarity by swapping solenoid wires or inverting the MOSFET logic.
+    Pen up/down G-code (repository default)
+    ───────────────────────────────
+    The repository default and G-code profiles assume an "inverted" solenoid
+    mounting where the solenoid being ENERGIZED = pen UP (lift). That means:
+
+        M3 S1000  → solenoid ON  → pen UP (lift)
+        M5        → solenoid OFF → pen DOWN (spring returns)
+
+    If your hardware uses the opposite mapping (energized = pen DOWN), either
+    swap M3/M5 in the G-code templates or invert the solenoid wiring.
 */
 
 extern "C"
