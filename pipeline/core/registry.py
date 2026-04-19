@@ -39,7 +39,7 @@ from pipeline.steps.stylise_informative_step import StyliseInformativeStep
 from pipeline.steps.stylise_controlnet_step import StyliseControlNetStep
 from pipeline.steps.stylise_img2img_step import StyliseImg2ImgStep
 from pipeline.steps.vectorize_step import VectorizeStep
-from pipeline.steps.archive.gcode_gen_step import GCodeGenStep
+from pipeline.steps.gcode_gen_step import GCodeGenStep
 from pipeline.steps.gcode_from_svg_step import GCodeFromSvgStep
 from pipeline.steps.save_gcode_step import SaveGCodeStep
 from pipeline.steps.send_gcode_step import SendGcodeStep
