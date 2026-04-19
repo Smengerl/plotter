@@ -7,17 +7,17 @@ and pipes the input image through all configured steps.
 
 Usage examples
 --------------
-Normal execution::
+Normal execution (run from the project root)::
 
-    python main.py --config pipeline/configs/standard_pipeline.yaml --input foto.jpg --output out.gcode
+    python pipeline/main.py --config pipeline/configs/standard_pipeline.yaml --input foto.jpg --output out.gcode
 
 List steps only without executing::
 
-    python main.py --config pipeline/configs/standard_pipeline.yaml --input foto.jpg --output out.gcode --dry-run
+    python pipeline/main.py --config pipeline/configs/standard_pipeline.yaml --input foto.jpg --output out.gcode --dry-run
 
 Custom configuration::
 
-    python main.py --config configs/my_pipeline.yaml --input image.png --output image.gcode
+    python pipeline/main.py --config pipeline/configs/my_pipeline.yaml --input image.png --output image.gcode
 """
 
 from __future__ import annotations
@@ -27,6 +27,10 @@ import logging
 import sys
 from pathlib import Path
 from typing import Any
+
+# Ensure the project root (parent of pipeline/) is on sys.path so that
+# `from pipeline.core...` imports work when the script is invoked directly.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 logger = logging.getLogger(__name__)
 

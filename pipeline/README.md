@@ -32,7 +32,7 @@ It is a modular, sequential processing chain built in Python 3.13.
 The pipeline is set up with a single script:
 
 ```bash
-./setup_pipeline.sh
+./pipeline/setup_pipeline.sh
 ```
 
 This installs all core dependencies including:
@@ -219,7 +219,7 @@ python pipeline/examples/run_controlnet_example.py \
 **Run via main.py CLI**:
 
 ```bash
-python main.py \
+python pipeline/main.py \
     --config pipeline/configs/demo_controlnet_style.yaml \
     --input photo.jpg \
     --output result.gcode \
@@ -376,7 +376,7 @@ python pipeline/examples/run_img2img_example.py --strength 0.9
 **Run via main.py CLI**:
 
 ```bash
-python main.py \
+python pipeline/main.py \
     --config pipeline/configs/demo_img2img_style.yaml \
     --input photo.jpg \
     --output result.gcode \
@@ -710,14 +710,14 @@ steps:
 
 ```bash
 # Using main.py
-python main.py \
+python pipeline/main.py \
   --config pipeline/configs/standard_pipeline.yaml \
   --input photo.jpg \
   --output photo.gcode \
   --verbose
 
 # Dry-run (list steps, don't execute)
-python main.py \
+python pipeline/main.py \
   --config pipeline/configs/standard_pipeline.yaml \
   --input photo.jpg \
   --output photo.gcode \

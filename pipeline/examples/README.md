@@ -8,13 +8,13 @@ Complete guide to running the image-to-GCode pipeline with different example scr
 
 ```bash
 # With test image
-python main.py \
+python pipeline/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
     --input pipeline/tests/testimage.png \
     --output output/result.gcode
 
 # With your own image
-python main.py \
+python pipeline/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
     --input ~/photos/myimage.jpg \
     --output ~/output/myimage.gcode
@@ -115,7 +115,7 @@ steps:
 Run it:
 
 ```bash
-python main.py \
+python pipeline/main.py \
     --config my_pipeline.yaml \
     --input image.jpg \
     --output image.gcode
@@ -177,7 +177,7 @@ Step 3: gcode_gen ✅ Enabled
 ### Validate Pipeline (Dry-Run)
 
 ```bash
-python main.py \
+python pipeline/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
     --input pipeline/tests/testimage.png \
     --output output/test.gcode \

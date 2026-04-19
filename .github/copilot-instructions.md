@@ -50,7 +50,7 @@ For detailed step parameters and architecture, see **`pipeline/README.md`**.
 
 ## Dependencies
 
-**Python Version**: 3.13 (explicitly configured in `setup_pipeline.sh`)
+**Python Version**: 3.13 (explicitly configured in `pipeline/setup_pipeline.sh`)
 
 **requirements.txt Structure**:
 ```

@@ -42,7 +42,7 @@ echo "   Config: pipeline/configs/standard_pipeline.yaml"
 echo "   Stylizer: Neural network-based sketch generation"
 echo ""
 
-"$PYTHON" main.py \
+"$PYTHON" pipeline/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
     --input "$TEST_IMAGE" \
     --output "$OUTPUT_DIR/standard_pipeline.gcode" \
@@ -79,7 +79,7 @@ echo "3️⃣  Dry Run - Validate Pipeline Structure"
 echo "   Tests pipeline configuration without processing"
 echo ""
 
-"$PYTHON" main.py \
+"$PYTHON" pipeline/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
     --input "$TEST_IMAGE" \
     --output "$OUTPUT_DIR/dry_run.gcode" \
@@ -105,7 +105,7 @@ for config in pipeline/tests/pipeline_configs/stylize_*.yaml; do
     step_name=$(basename "$config" .yaml)
     echo "   Running: $step_name"
     
-    "$PYTHON" main.py \
+    "$PYTHON" pipeline/main.py \
         --config "$config" \
         --input "$TEST_IMAGE" \
         --output "$OUTPUT_DIR/${step_name}.gcode" \

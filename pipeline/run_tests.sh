@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# run_tests.sh — Run pipeline tests inside the project's .venv
+# pipeline/run_tests.sh — Run pipeline tests inside the project's .venv
 #
 # This script uses the Python interpreter in `.venv/bin/python` (created by
-# setup_pipeline) to run the canonical test orchestrator
+# pipeline/setup_pipeline.sh) to run the canonical test orchestrator
 # `pipeline/tests/run_all_tests.py`. Any arguments are forwarded unchanged.
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VENV_PY="$ROOT/.venv/bin/python"
 RUNNER="$ROOT/pipeline/tests/run_all_tests.py"
 
@@ -24,7 +24,7 @@ Error: project virtual environment not found or missing Python at:
   $VENV_PY
 
 Create the venv via the project's setup script (for example):
-  ./setup_pipeline.sh
+  ./pipeline/setup_pipeline.sh
 
 Or run the test runner with your active Python environment:
   python $RUNNER --skip-stylizers

@@ -36,7 +36,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _VENV_DIR = _REPO_ROOT / ".venv"
 _VENV_PYTHON = _VENV_DIR / "bin" / "python"
-_SETUP_SCRIPT = _REPO_ROOT / "setup_pipeline.sh"
+_SETUP_SCRIPT = _REPO_ROOT / "pipeline" / "setup_pipeline.sh"
 
 # If not running in venv, try to auto-setup and re-execute with venv Python
 if not hasattr(sys, 'real_prefix') and not (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
@@ -47,10 +47,10 @@ if not hasattr(sys, 'real_prefix') and not (hasattr(sys, 'base_prefix') and sys.
     elif _SETUP_SCRIPT.exists():
         # Setup venv first, then re-execute
         print(f"Virtual environment not found at {_VENV_DIR}")
-        print(f"Running setup_pipeline.sh to create it...")
+        print(f"Running pipeline/setup_pipeline.sh to create it...")
         result = subprocess.run(["bash", str(_SETUP_SCRIPT)], cwd=_REPO_ROOT)
         if result.returncode != 0:
-            print("❌ setup_pipeline.sh failed. Please run it manually: ./setup_pipeline.sh", file=sys.stderr)
+            print("❌ setup_pipeline.sh failed. Please run it manually: ./pipeline/setup_pipeline.sh", file=sys.stderr)
             sys.exit(1)
         # Re-execute with venv Python
         sys.exit(subprocess.run([str(_VENV_PYTHON), __file__] + sys.argv[1:], cwd=_REPO_ROOT).returncode)
