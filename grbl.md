@@ -76,10 +76,8 @@ Adjust `$100` / `$101` if you change the pulley tooth count or enable microstepp
 
 The solenoid is controlled via the GRBL spindle output (see [electronics.md](electronics.md) for wiring details):
 
-| G-code | Action |
-|--------|--------|
-| `M3 S1000` | Solenoid ON → pen down |
-| `M5` | Solenoid OFF → pen up (spring return) |
+- `M3 S1000` — Solenoid ON → pen UP (lift)
+- `M5`       — Solenoid OFF → pen DOWN (spring return)
 
 ## GRBL integration tests
 
@@ -218,16 +216,16 @@ G90
 > ⚠️ Do not energise the solenoid for more than ~2 s continuously.
 
 ```gcode
-M3 S1000
-G4 P1
 M5
+G4 P1
+M3 S1000
 ```
 
 **Expected:**
 
-1. `M3 S1000` — solenoid fires immediately, pen moves **down** (audible click).
-2. `G4 P1` — 1-second dwell; pen stays down.
-3. `M5` — solenoid de-energises, pen returns **up** via spring.
+1. `M5` — solenoid de-energised, pen moves **down** (spring return retracted).
+2. `G4 P1` — 1-second dwell.
+3. `M3 S1000` — solenoid energised, pen moves **up** (lift).
 
 > If the solenoid does not fire: run `$$` and verify `$30=1000` (max spindle speed) and `$31=0` (min spindle speed).
 
@@ -235,43 +233,20 @@ M5
 
 See [testing.md](testing.md) for the complete Phase 2 procedure including failure hints and a result log table.
 
-### Helper script: Set recommended EEPROM settings
+### Helper: TC5 — Apply recommended EEPROM settings (host tool)
 
-To make first-time setup easier, this repository includes an interactive helper
-script that writes the recommended GRBL `$` settings into EEPROM. The script
-is located at `firmware/tools/set_grbl_eeprom.py`.
+To make first-time setup easier, this repository now includes a commissioning
+test (TC5) that runs on the commissioning PC and applies recommended GRBL
+`$` settings. The test program and defaults live under:
 
-Requirements:
-
-- Python 3
-- pyserial (install with `pip install pyserial`)
-
-Usage (example):
-
-```bash
-python3 firmware/tools/set_grbl_eeprom.py --port /dev/tty.usbmodemXXXX
+```
+firmware/test/tc5_set_grbl_eeprom/
+    ├── tc5_set_grbl_eeprom.cpp        # Host-side tool (build with g++)
+    └── grbl_eeprom_defaults.txt      # Planned $ settings (editable)
 ```
 
-To run non-interactively (apply defaults without confirmation):
-
-```bash
-python3 firmware/tools/set_grbl_eeprom.py --port /dev/tty.usbmodemXXXX --yes
-```
-
-What the script does:
-
-- Connects to the GRBL serial port (default 115200 baud)
-- Prints current `$$` settings
-- Shows the planned settings and asks for confirmation (unless `--yes`)
-- Applies each `$` setting one-by-one and re-prints `$$` for verification
-
-Safety notes:
-
-- Always verify endstop wiring and homing behavior before enabling soft/hard
-    limits. The helper will set `$20/$21` to 0 (disabled) and `$22` to 1
-    (homing enabled) but you should not enable limits until homing is tested.
-- The script writes directly to EEPROM — use `--yes` only when you are sure
-    about the target port and settings.
+Build and run instructions are in `firmware/test/tc5_set_grbl_eeprom/README.md`.
+Use this host tool instead of the previous Python helper when commissioning.
 
 ## Converting SVG/vector graphics to G-code
 
@@ -281,7 +256,7 @@ Recommended tools:
 - **[vpype](https://github.com/abey79/vpype)** + **[vpype-gcode](https://github.com/plottertools/vpype-gcode)** plug-in
 - **[svg2gcode](https://github.com/sameer/svg2gcode)** — simple CLI converter
 
-Pen-up/pen-down: configure the tool to emit `M3 S1000` (pen down) and `M5` (pen up) at path boundaries, or insert them manually.
+Pen-up/pen-down: configure the tool to emit `M3 S1000` (pen UP) and `M5` (pen DOWN) at path boundaries, or insert them manually.
 
 ## Sending G-code to the plotter
 

@@ -594,7 +594,7 @@ Direct coordinate transformation without vpype.
 | `keep_aspect` | bool | True | Maintain aspect ratio |
 | `feedrate_draw` | int | 1500 | Drawing speed (mm/min) |
 | `feedrate_travel` | int | 3000 | Travel speed (mm/min) |
-| `pen_down_cmd` | str | "M3 S1000" | GRBL pen-down command |
+| `pen_down_cmd` | str | "M5" | GRBL pen-down command (repo default: M5)
 | `pen_up_cmd` | str | "M5" | GRBL pen-up command |
 | `pen_delay_ms` | int | 100 | Wait after pen-down (ms) |
 
@@ -967,7 +967,7 @@ Direct coordinate transformation without vpype.
 | `keep_aspect` | bool | True | Maintain aspect ratio |
 | `feedrate_draw` | int | 1500 | Drawing speed (mm/min) |
 | `feedrate_travel` | int | 3000 | Travel speed (mm/min) |
-| `pen_down_cmd` | str | "M3 S1000" | GRBL pen-down command |
+| `pen_down_cmd` | str | "M5" | GRBL pen-down command (repo default: M5)
 | `pen_up_cmd` | str | "M5" | GRBL pen-up command |
 | `pen_delay_ms` | int | 100 | Wait after pen-down (ms) |
 

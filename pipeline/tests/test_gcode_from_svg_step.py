@@ -270,7 +270,7 @@ class TestGCodeFromSvgCoordinates:
         assert all(y >= 0 for y in y_values), f"Negative Y values: {y_values}"
 
     def test_pen_down_command_present(self):
-        """M3 S1000 (pen down) must be in GCode lines."""
+        """M3 S1000 (pen UP) must be in GCode lines."""
         step = GCodeFromSvgStep(config={"quiet": True})
         ctx = _make_ctx()
         result = step.process(ctx)
@@ -278,7 +278,7 @@ class TestGCodeFromSvgCoordinates:
         assert "M3" in joined
 
     def test_pen_up_command_present(self):
-        """M5 (pen up) must be in GCode lines."""
+        """M5 (pen DOWN) must be in GCode lines."""
         step = GCodeFromSvgStep(config={"quiet": True})
         ctx = _make_ctx()
         result = step.process(ctx)

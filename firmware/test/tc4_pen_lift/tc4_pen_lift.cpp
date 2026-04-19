@@ -119,12 +119,12 @@ void setup()
         Serial.print(cycle);
         Serial.print(F(" / "));
         Serial.print(CYCLES);
-        Serial.println(F(" -- Solenoid ON (pen DOWN)"));
+        Serial.println(F(" -- Solenoid ON (pen UP)"));
 
         digitalWrite(PIN_SOLENOID, HIGH);
         delay(SOLENOID_ON_MS);
 
-        Serial.println(F("[TC4] Solenoid OFF (pen UP / spring return)"));
+        Serial.println(F("[TC4] Solenoid OFF (pen DOWN / spring return)"));
         digitalWrite(PIN_SOLENOID, LOW);
 
         if (cycle < CYCLES)
@@ -143,10 +143,10 @@ void setup()
 
     bool actuated = askYesNo(
         "Did the solenoid actuate clearly on every cycle "
-        "(click sound / visible pen movement down and up)?");
+        "(click sound / visible pen movement UP)?");
 
     bool returnOk = askYesNo(
-        "Did the pen return fully to the UP position after each cycle "
+        "Did the pen return fully to the DOWN position after each cycle "
         "(spring return working)?");
 
     // ── Result ──────────────────────────────────────────────────────────────
@@ -155,7 +155,7 @@ void setup()
     Serial.println(F("============================================"));
     Serial.print(F("  Solenoid actuated on all cycles : "));
     Serial.println(actuated ? F("PASS") : F("FAIL"));
-    Serial.print(F("  Pen returns UP after each cycle : "));
+    Serial.print(F("  Pen returns DOWN after each cycle : "));
     Serial.println(returnOk ? F("PASS") : F("FAIL"));
 
     bool allPass = actuated && returnOk;
