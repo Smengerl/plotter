@@ -40,6 +40,7 @@ firmware/
 ```
 
 Flash command pattern:
+
 ```bash
 cd firmware
 pio run -e <env_name> -t upload
@@ -53,6 +54,7 @@ pio device monitor
 **Goal:** Verify that the X stepper (carriage) moves and that the direction mapping is correct.
 
 **Flash:**
+
 ```bash
 pio run -e tc1_x_axis -t upload
 ```
@@ -83,6 +85,7 @@ pio run -e tc1_x_axis -t upload
 **Goal:** Verify both X-axis optical endstops are wired to the correct pins and fire at the correct ends.
 
 **Flash:**
+
 ```bash
 pio run -e tc2_x_endstops -t upload
 ```
@@ -118,6 +121,7 @@ This matches `DEFAULT_INVERT_LIMIT_PINS 1` in `config.h`.
 **Goal:** Verify that the Y stepper (paper feed) moves and that paper is fed in the correct direction.
 
 **Flash:**
+
 ```bash
 pio run -e tc3_y_axis -t upload
 ```
@@ -148,6 +152,7 @@ pio run -e tc3_y_axis -t upload
 **Goal:** Verify the solenoid fires on command and the pen returns via spring on release.
 
 **Flash:**
+
 ```bash
 pio run -e tc4_pen_lift -t upload
 ```
@@ -190,6 +195,7 @@ pio device monitor            # 115200 baud
 ```
 
 After reset you should see:
+
 ```
 Grbl 1.1h ['$' for help]
 [MSG:Caution: Unlocked]
@@ -207,11 +213,13 @@ Connect at **115200 baud**. Use the MDI (Manual Data Input) console to send comm
 **Goal:** GRBL starts cleanly and the homing cycle completes without errors.
 
 **Procedure:**
+
 ```gcode
 $H
 ```
 
 **Expected sequence:**
+
 1. Carriage accelerates toward X_MIN.
 2. Slows down and touches X_MIN.
 3. Backs off by `$27` (5 mm pull-off).
@@ -230,11 +238,14 @@ $H
 **Goal:** Confirm both endstops read as open when the carriage is clear of all switches, and that each can be detected individually.
 
 **Step 1 — Status check with carriage in the middle:**
+
 ```gcode
 $X
 ?
 ```
+
 The `Pn:` field must be **absent** (no limit flags):
+
 ```
 <Idle|MPos:0.000,0.000,0.000|FS:0,0>
 ```
@@ -265,20 +276,24 @@ $X                  ; clear alarm lock (if present)
 G91                 ; relative positioning mode
 G1 X5 F500          ; move X +5 mm (carriage should move RIGHT)
 ```
+
 > Confirm: carriage moved right ~5 mm.
 
 ```gcode
 G1 X-10 F500        ; move X -10 mm (carriage should move LEFT, past start)
 G90                 ; back to absolute positioning
 ```
+
 > Confirm: carriage moved left ~10 mm.
 
 **Step — Drive to X_MIN with hard limits:**
+
 ```gcode
 $21=1
 G91
 G1 X-200 F800
 ```
+
 > Expected: GRBL stops when X_MIN triggers and raises `ALARM:1`.  
 > The carriage must **not** crash into the mechanical stop.
 
@@ -309,12 +324,14 @@ $X                  ; clear alarm
 G91                 ; relative mode
 G1 Y30 F500         ; feed paper IN 30 mm
 ```
+
 > Confirm: paper is pulled into the plotter.
 
 ```gcode
 G1 Y-30 F500        ; feed paper OUT 30 mm
 G90
 ```
+
 > Confirm: paper is ejected.
 
 **Failure hints:**
@@ -334,26 +351,28 @@ G90
 > ⚠️ Same solenoid safety rules apply: do not energise continuously for more than ~2 s.
 
 ```gcode
-M3 S1000            ; solenoid ON  → pen DOWN
+M5                  ; solenoid OFF → pen DOWN (spring return)
 G4 P1               ; dwell 1 second
-M5                  ; solenoid OFF → pen UP (spring return)
+M3 S1000            ; solenoid ON  → pen UP (lift)
 ```
-> Confirm: solenoid clicks and pen moves down on `M3`, pen returns up after `G4 P1` + `M5`.
+
+> Confirm: solenoid clicks and pen moves DOWN on `M5`, pen returns UP after `G4 P1` + `M3`.
 
 Repeat three more times with cool-down pauses:
+
 ```gcode
 G4 P3
-M3 S1000
-G4 P1
 M5
+G4 P1
+M3 S1000
 G4 P3
-M3 S1000
-G4 P1
 M5
+G4 P1
+M3 S1000
 G4 P3
-M3 S1000
-G4 P1
 M5
+G4 P1
+M3 S1000
 ```
 
 **Failure hints:**
