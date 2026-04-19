@@ -203,27 +203,20 @@ If `hf_token_path` is not set and the model is gated, a clear error message with
 pip install diffusers transformers safetensors torch accelerate
 ```
 
-**Run with default style**:
-
-```bash
-python pipeline/examples/run_controlnet_example.py
-```
-
-**Run with custom prompt**:
-
-```bash
-python pipeline/examples/run_controlnet_example.py \
-    --prompt "watercolor painting, soft colors, impressionist style"
-```
-
-**Run via main.py CLI**:
+**Run**:
 
 ```bash
 python pipeline/main.py \
-    --config pipeline/configs/demo_controlnet_style.yaml \
+    --config pipeline/examples/controlnet_pen_sketch.yaml \
     --input photo.jpg \
     --output result.gcode \
     --verbose
+```
+
+Or use the example script (runs with the test image by default):
+
+```bash
+./pipeline/examples/run_examples.sh
 ```
 
 ### ControlNet Types
@@ -275,7 +268,7 @@ python pipeline/main.py \
 
 ### Configuration (ControlNet)
 
-Edit `pipeline/configs/demo_controlnet_style.yaml`:
+Edit `pipeline/examples/controlnet_pen_sketch.yaml`:
 
 ```yaml
 - step: stylise_controlnet
@@ -290,22 +283,19 @@ Edit `pipeline/configs/demo_controlnet_style.yaml`:
 
 ### Python API (ControlNet)
 
+To run the ControlNet pipeline programmatically, use `PipelineRunner` directly:
+
 ```python
-from pipeline.examples.run_controlnet_example import run_controlnet_example
-from pathlib import Path
+from pipeline.core.runner import PipelineRunner
+from pipeline.core.base import ImageContext
+from PIL import Image
+import yaml
 
-# Simple run
-run_controlnet_example(
-    input_image="photo.jpg",
-    output_dir="output/"
-)
+with open("pipeline/examples/controlnet_pen_sketch.yaml") as f:
+    config = yaml.safe_load(f)
 
-# Custom prompt
-run_controlnet_example(
-    input_image=Path("photo.jpg"),
-    output_dir=Path("results/"),
-    prompt="oil painting, Van Gogh style, starry night"
-)
+img = Image.open("photo.jpg")
+ctx = PipelineRunner(config["steps"]).run(ImageContext(img))
 ```
 
 ### Performance (ControlNet)
@@ -354,33 +344,20 @@ Use lightweight Stable Diffusion 2.1 for quick style transfer with adjustable st
 pip install diffusers transformers safetensors torch accelerate
 ```
 
-**Run with default style**:
-
-```bash
-python pipeline/examples/run_img2img_example.py
-```
-
-**Adjust strength (modification intensity)**:
-
-```bash
-# Subtle style change (preserves more original content)
-python pipeline/examples/run_img2img_example.py --strength 0.4
-
-# Moderate style transfer (default: 0.75)
-python pipeline/examples/run_img2img_example.py --strength 0.7
-
-# Aggressive transformation
-python pipeline/examples/run_img2img_example.py --strength 0.9
-```
-
-**Run via main.py CLI**:
+**Run**:
 
 ```bash
 python pipeline/main.py \
-    --config pipeline/configs/demo_img2img_style.yaml \
+    --config pipeline/examples/img2img_oil_painting.yaml \
     --input photo.jpg \
     --output result.gcode \
     --verbose
+```
+
+Or use the example script (runs with the test image by default):
+
+```bash
+./pipeline/examples/run_examples.sh
 ```
 
 ### Strength Parameter Guide
@@ -432,7 +409,7 @@ python pipeline/main.py \
 
 ### Configuration (Image-to-Image)
 
-Edit `pipeline/configs/demo_img2img_style.yaml`:
+Edit `pipeline/examples/img2img_oil_painting.yaml`:
 
 ```yaml
 - step: stylise_img2img
@@ -447,23 +424,19 @@ Edit `pipeline/configs/demo_img2img_style.yaml`:
 
 ### Python API (Image-to-Image)
 
+To run the img2img pipeline programmatically, use `PipelineRunner` directly:
+
 ```python
-from pipeline.examples.run_img2img_example import run_img2img_example
-from pathlib import Path
+from pipeline.core.runner import PipelineRunner
+from pipeline.core.base import ImageContext
+from PIL import Image
+import yaml
 
-# Simple run
-run_img2img_example(
-    input_image="photo.jpg",
-    output_dir="output/"
-)
+with open("pipeline/examples/img2img_oil_painting.yaml") as f:
+    config = yaml.safe_load(f)
 
-# Custom prompt and strength
-run_img2img_example(
-    input_image=Path("photo.jpg"),
-    output_dir=Path("results/"),
-    prompt="watercolor painting, soft impressionist style",
-    strength=0.65
-)
+img = Image.open("photo.jpg")
+ctx = PipelineRunner(config["steps"]).run(ImageContext(img))
 ```
 
 ### Performance (Image-to-Image)
