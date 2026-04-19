@@ -10,7 +10,7 @@ Two backends (tried in this order):
 
 Data transport via ImageContext
 --------------------------------
-Reads   ctx.metadata["source_path"]  - Path to input image file
+Reads   ctx.image                    - PIL RGB image set by LoadImageStep
 Writes  ctx.intermediates["binary"]  - uint8 array (H, W), 255=line
 """
 
@@ -18,14 +18,14 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import cv2
 import numpy as np
 import numpy.typing as npt
 
-from pipeline.core.base import ImageContext, PipelineStep
-from pipeline.steps.base.stylizer_base import BaseStylizer, resolve_device
+from pipeline.core.base import ImageContext
+from pipeline.steps.base.stylizer_base import StylizerStep, resolve_device
 
 if TYPE_CHECKING:
     import torch.nn as nn  # type: ignore[import]
@@ -111,41 +111,55 @@ _HF_ONNX_REPO = "rocca/informative-drawings-line-art-onnx"
 _HF_TORCH_SPACE = "carolineec/informativedrawings"
 
 
-class _InformativeDrawingsStylizer(BaseStylizer):
-    """
-    Informative Drawings stylizer (Chan et al. CVPR 2022).
+# ---------------------------------------------------------------------------
+# PipelineStep
+# ---------------------------------------------------------------------------
 
-    Low model output values = dark lines → automatically inverted,
-    so that line = 255.
+class StyliseInformativeStep(StylizerStep):
+    """
+    Stylization step using Informative Drawings (Chan et al. CVPR 2022).
+
+    Requires ``LoadImageStep`` to run first so that ``ctx.image`` is set.
+
+    All inference logic lives directly in this class: ONNX backend is tried
+    first, PyTorch is used as fallback.  Both backends are lazy-loaded on
+    the first ``process()`` call.
+
+    Requires: pip install onnxruntime pillow numpy
+    (or: pip install torch torchvision pillow)
+
+    config keys      Default  Corresponds to CLI flag
+    -----------------------------------------------
+    style_res        1024     --style-res  (handled by LoadImageStep)
+    model_path       None     --model-path
+    device           "auto"   --device
+    threshold        128      binarization threshold (0–255)
+    inform_style     1        --inform-style
     """
 
     name = "informative"
 
-    def __init__(
-        self,
-        model_path: Path | str | None = None,
-        device: str | None = None,
-        threshold: int = 128,
-        style: int = 1,
-    ) -> None:
-        self.model_path = Path(model_path) if model_path is not None else None
-        self.device: str = resolve_device(device)
-        self.threshold = threshold
-        self.style = style
-        self._session: Any = None
-        self._torch_model: Any = None
+    def __init__(self, config: dict | None = None) -> None:
+        super().__init__(config)
+        c = self.config
+        model_path_raw = c.get("model_path")
+        self._model_path: Path | None = (
+            Path(model_path_raw) if model_path_raw is not None else None
+        )
+        self._device: str = resolve_device(c.get("device", "auto"))
+        self._threshold: int = int(c.get("threshold", 128))
+        self._style: int = int(c.get("inform_style", 1))
+        self._session: Any = None       # ONNX InferenceSession
+        self._torch_model: Any = None   # PyTorch Generator
         self._backend: str | None = None
 
-    def _load_model(self) -> None:
-        if self._session is not None or self._torch_model is not None:
-            return
-        if self._try_load_onnx():
-            return
-        self._load_torch()
+    # ------------------------------------------------------------------
+    # Model path resolution
+    # ------------------------------------------------------------------
 
     def _onnx_model_path(self) -> Path:
-        if self.model_path is not None:
-            p = self.model_path
+        if self._model_path is not None:
+            p = self._model_path
             return p / "model.onnx" if p.is_dir() else p
         try:
             from huggingface_hub import hf_hub_download  # type: ignore[import]
@@ -157,6 +171,38 @@ class _InformativeDrawingsStylizer(BaseStylizer):
             )
         logger.debug("[informative] Loading model.onnx from HF: %s …", _HF_ONNX_REPO)
         return Path(hf_hub_download(repo_id=_HF_ONNX_REPO, filename="model.onnx"))
+
+    def _torch_model_path(self) -> Path:
+        if self._model_path is not None:
+            p = self._model_path
+            if p.is_dir():
+                fname = "model2.pth" if self._style == 2 else "model.pth"
+                return p / fname
+            return p
+        try:
+            from huggingface_hub import hf_hub_download  # type: ignore[import]
+        except ImportError:
+            raise ImportError(
+                "huggingface_hub is not installed. "
+                "Install it with: pip install huggingface_hub"
+            )
+        fname = "model2.pth" if self._style == 2 else "model.pth"
+        logger.debug("[informative] Loading %s from HF Space: %s …", fname, _HF_TORCH_SPACE)
+        return Path(
+            hf_hub_download(repo_id=_HF_TORCH_SPACE, filename=fname, repo_type="space")
+        )
+
+    # ------------------------------------------------------------------
+    # Lazy backend loading
+    # ------------------------------------------------------------------
+
+    def _load_model(self) -> None:
+        """Load the ONNX or PyTorch backend on first call."""
+        if self._session is not None or self._torch_model is not None:
+            return
+        if self._try_load_onnx():
+            return
+        self._load_torch()
 
     def _try_load_onnx(self) -> bool:
         try:
@@ -179,26 +225,6 @@ class _InformativeDrawingsStylizer(BaseStylizer):
         logger.debug("[informative] ONNX backend active.")
         return True
 
-    def _torch_model_path(self) -> Path:
-        if self.model_path is not None:
-            p = self.model_path
-            if p.is_dir():
-                fname = "model2.pth" if self.style == 2 else "model.pth"
-                return p / fname
-            return p
-        try:
-            from huggingface_hub import hf_hub_download  # type: ignore[import]
-        except ImportError:
-            raise ImportError(
-                "huggingface_hub is not installed. "
-                "Install it with: pip install huggingface_hub"
-            )
-        fname = "model2.pth" if self.style == 2 else "model.pth"
-        logger.debug("[informative] Loading %s from HF Space: %s …", fname, _HF_TORCH_SPACE)
-        return Path(
-            hf_hub_download(repo_id=_HF_TORCH_SPACE, filename=fname, repo_type="space")
-        )
-
     def _load_torch(self) -> None:
         try:
             import torch  # type: ignore[import]
@@ -210,14 +236,22 @@ class _InformativeDrawingsStylizer(BaseStylizer):
         Generator = _make_generator(norm_layer)
 
         torch_path = self._torch_model_path()
-        logger.debug("[informative] Loading PyTorch: %s  device=%s …", torch_path, self.device)
+        logger.debug(
+            "[informative] Loading PyTorch: %s  device=%s …", torch_path, self._device
+        )
         model = Generator(3, 1, 3)
-        model.load_state_dict(torch.load(str(torch_path), map_location=torch.device(self.device)))
+        model.load_state_dict(
+            torch.load(str(torch_path), map_location=torch.device(self._device))
+        )
         model.eval()
-        model.to(self.device)
+        model.to(self._device)
         self._torch_model = model
         self._backend = "torch"
-        logger.debug("[informative] PyTorch backend active (device=%s).", self.device)
+        logger.debug("[informative] PyTorch backend active (device=%s).", self._device)
+
+    # ------------------------------------------------------------------
+    # Inference helpers
+    # ------------------------------------------------------------------
 
     def _run_onnx(self, rgb: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]:
         x = rgb.astype(np.float32) / 255.0
@@ -229,62 +263,30 @@ class _InformativeDrawingsStylizer(BaseStylizer):
     def _run_torch(self, rgb: npt.NDArray[np.uint8]) -> npt.NDArray[np.float32]:
         import torch  # type: ignore[import]
         x = torch.from_numpy(rgb.astype(np.float32) / 255.0)
-        x = x.permute(2, 0, 1).unsqueeze(0).to(self.device)
+        x = x.permute(2, 0, 1).unsqueeze(0).to(self._device)
         with torch.no_grad():
             out = self._torch_model(x)
         return out[0, 0].cpu().numpy()  # type: ignore[no-any-return]
 
-    def apply(self, gray: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
+    # ------------------------------------------------------------------
+    # StylizerStep contract
+    # ------------------------------------------------------------------
+
+    def _stylise(self, ctx: ImageContext) -> "npt.NDArray[np.uint8]":
         self._load_model()
+        gray = ctx.image_as_gray
         rgb: npt.NDArray[np.uint8] = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB).astype(np.uint8)
         if self._backend == "onnx":
             output = self._run_onnx(rgb)
         else:
             output = self._run_torch(rgb)
-        # Output in [0,1]: low = dark line → invert, line=255
+        # Output in [0,1]: low value = dark line → invert so line=255
         inverted = ((1.0 - output) * 255.0).clip(0, 255).astype(np.uint8)
-        _, binary = cv2.threshold(inverted, self.threshold, 255, cv2.THRESH_BINARY)
+        _, binary = cv2.threshold(inverted, self._threshold, 255, cv2.THRESH_BINARY)
         logger.debug(
             "[informative] Output %dx%d (backend=%s)",
             binary.shape[1], binary.shape[0], self._backend,
         )
-        return binary.astype(np.uint8)
+        return binary
 
 
-class StyliseInformativeStep(PipelineStep):
-    """
-    Stylization step using Informative Drawings (Chan et al. CVPR 2022).
-
-    Requires: pip install onnxruntime pillow numpy
-    (or: pip install torch torchvision pillow)
-
-    config keys      Default  Corresponds to CLI flag
-    -----------------------------------------------
-    style_res        1024     --style-res
-    model_path       None     --model-path
-    device           "auto"   --device
-    inform_style     1        --inform-style
-    """
-
-    def __init__(self, config: dict) -> None:
-        super().__init__(config)
-        self._stylizer: Optional[_InformativeDrawingsStylizer] = None
-
-    def _get_stylizer(self) -> _InformativeDrawingsStylizer:
-        """Creates the stylizer on first call (lazy initialization)."""
-        if self._stylizer is None:
-            c = self.config
-            model_path_raw = c.get("model_path")
-            self._stylizer = _InformativeDrawingsStylizer(
-                model_path=Path(model_path_raw) if model_path_raw is not None else None,
-                device=str(c.get("device", "auto")),
-                style=int(c.get("inform_style", 1)),
-            )
-        return self._stylizer
-
-    def process(self, ctx: ImageContext) -> ImageContext:
-        max_side: int = int(self.config.get("style_res", 1024))
-        binary = self._get_stylizer().stylise(ctx.metadata["source_path"], max_side)
-        logger.debug("StyliseInformativeStep: Binary image %dx%d px", binary.shape[1], binary.shape[0])
-        ctx.intermediates["binary"] = binary
-        return ctx

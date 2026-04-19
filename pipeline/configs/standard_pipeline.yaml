@@ -34,10 +34,9 @@ steps:
       # Diffusion settings
       num_inference_steps: 25 # Higher = better quality, slower
       guidance_scale: 7.5 # How much to follow prompt (1–15)
-      strength: 0.8 # How much to modify image (0–1)
 
       # Model and device
-      model_id: "runwayml/stable-diffusion-v1-5"
+      base_model: "runwayml/stable-diffusion-v1-5"
       device: auto # auto | cpu | cuda | mps
       enable_model_cpu_offload: false # Reduce VRAM at cost of speed
 

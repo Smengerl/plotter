@@ -5,6 +5,10 @@
 #   python pipeline/tests/run_all_stylizers.py --image foto.jpg
 
 steps:
+  - step: load_image
+    # The test runner provides the real image path via metadata['source_path']
+    config: {}
+
   - step: stylise_canny
     config:
       style_res: 1024 # longest side of intermediate image in pixels
@@ -12,23 +16,6 @@ steps:
       canny_high: 150 # upper hysteresis threshold (0–255)
       canny_blur: 3 # Gauss blur kernel size (must be odd)
 
-  - step: vectorise
+  - step: save_image
     config:
-      min_path_px: 10 # minimum path length in pixels (shorter paths are discarded)
-      simplify_eps: 1.5 # Ramer-Douglas-Peucker tolerance in pixels
-
-  - step: gcode_gen
-    config:
-      target_width_mm: 180.0
-      target_height_mm: 250.0
-      origin_x: 5.0
-      origin_y: 5.0
-      keep_aspect: true
-      feedrate_draw: 1500
-      feedrate_travel: 3000
-      pen_down_cmd: "M3 S1000"
-      pen_up_cmd: "M5"
-
-  - step: save_gcode
-    config: {}
-      pen_delay_ms: 100
+      output_path: "output/canny_image.png"

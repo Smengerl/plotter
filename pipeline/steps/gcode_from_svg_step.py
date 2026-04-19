@@ -185,8 +185,9 @@ class GCodeFromSvgStep(PipelineStep):
     Input
     -----
     ctx.intermediates["paths"]        PathList from VectorizeStep
-    ctx.intermediates["binary"]       uint8-array - provides image size for SVG viewport
-    ctx.intermediates["image_shape"]  (H, W) fallback if "binary" missing
+    ctx.intermediates["binary"]       uint8-array - provides image size (optional)
+    ctx.intermediates["image_shape"]  (H, W) fallback if "binary" missing (optional)
+    ctx.image                         PIL image - final fallback for image size
 
     Output
     ------
@@ -205,16 +206,27 @@ class GCodeFromSvgStep(PipelineStep):
 
     name = "gcode_from_svg"
 
+    def requires(self) -> list[str]:
+        return ["intermediates.paths"]
+
     def process(self, ctx: ImageContext) -> ImageContext:
         c = self.config
         paths: list[npt.NDArray[np.float32]] = ctx.intermediates["paths"]
 
         # --- Determine image size ---
+        # Priority: intermediates["binary"] > intermediates["image_shape"] > ctx.image
         binary = ctx.intermediates.get("binary")
         if binary is not None:
             img_h, img_w = binary.shape[:2]
-        else:
+        elif "image_shape" in ctx.intermediates:
             img_h, img_w = ctx.intermediates["image_shape"]
+        elif ctx.has_image:
+            img_w, img_h = ctx.image.size
+        else:
+            raise ValueError(
+                "GCodeFromSvgStep: cannot determine image size. "
+                "Ensure LoadImageStep runs before this step."
+            )
 
         # --- Resolve TOML profile ---
         toml_path_cfg: str | None = c.get("toml_path", None)

@@ -15,7 +15,7 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 - [Bill of Materials](#bill-of-materials)
 - [Assembly](#assembly)
 - [Electronics](#electronics) — see [electronics.md](electronics.md) for full details
-- [Software](#software) — see [grbl.md](grbl.md) for full details
+- [Software](#software) — see [firmware/README.md](firmware/README.md) for full details
 - [Testing](#testing) — see [testing.md](testing.md) for full details
 - [License and Acknowledgements](#license-and-acknowledgements)
 
@@ -115,9 +115,9 @@ Assembly steps:
 ## Software
 
 The plotter runs [GRBL](https://github.com/gnea/grbl) v1.1 on the Arduino Uno.
-All firmware sources live in `firmware/`; GRBL is included as a Git submodule under `grbl/`.
+All firmware sources live in `firmware/`; GRBL is included as a Git submodule under `firmware/grbl/`.
 
-For build instructions, flashing, GRBL parameter setup and G-code tooling see **[grbl.md](grbl.md)**.
+For build instructions, flashing, GRBL parameter setup and G-code tooling see **[firmware/README.md](firmware/README.md)**.
 
 Quick start:
 

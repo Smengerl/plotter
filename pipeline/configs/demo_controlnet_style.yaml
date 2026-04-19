@@ -14,6 +14,10 @@
 # - Use enable_model_cpu_offload: true to reduce VRAM (slower)
 
 steps:
+  - step: load_image
+    config:
+      input_path: "pipeline/tests/testimage.png"
+
   # Step 1: Apply artistic style using ControlNet + SD 1.5
   #
   # This step converts the input image to an artistic style
@@ -37,20 +41,24 @@ steps:
       # Diffusion settings
       num_inference_steps: 25 # Higher = better quality, slower
       guidance_scale: 7.5 # How much to follow prompt (1–15)
-      strength: 0.8 # How much to modify image (0–1)
 
       # Model and device
-      model_id: "runwayml/stable-diffusion-v1-5"
+      base_model: "runwayml/stable-diffusion-v1-5"
       device: auto # auto | cpu | cuda | mps
       enable_model_cpu_offload: false # Reduce VRAM at cost of speed
 
-  # Step 2: Convert to vector paths
+  # Step 2: Save image
+  - step: save_image
+    config:
+      output_path: "output/stylised_image.png"
+
+  # Step 3: Convert to vector paths
   - step: vectorise
     config:
       min_path_px: 10 # Minimum path length (shorter = more detail)
       simplify_eps: 1.5 # Path simplification tolerance
 
-  # Step 3: Generate GCode
+  # Step 4: Generate GCode
   - step: gcode_gen
     config:
       target_width_mm: 180.0
@@ -64,15 +72,7 @@ steps:
       pen_up_cmd: "M5"
       pen_delay_ms: 100
 
-  # Step 4: Save GCode to file
+  # Step 5: Save GCode to file
   - step: save_gcode
-    config: {}
-
-  # Step 5 (Optional): Send directly to GRBL plotter
-  - step: send_gcode
-    enabled: false
     config:
-      port: /dev/tty.usbmodem1101
-      baud: 115200
-      dry_run: false
-      response_timeout_s: 30.0
+      output_path: "output/stylised_image.gcode"

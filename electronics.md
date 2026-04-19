@@ -1,9 +1,10 @@
 # Electronics Guide
 
 This document covers the controller setup, wiring, pin mapping, and component details for the G-code Pen Plotter.
-For firmware and GRBL configuration see [grbl.md](grbl.md).
+For firmware and GRBL configuration see [firmware/README.md](firmware/README.md).
 
 ## Table of contents
+
 - [Controller and shield](#controller-and-shield)
 - [Stepper drivers](#stepper-drivers)
 - [Power supply](#power-supply)
@@ -15,23 +16,21 @@ For firmware and GRBL configuration see [grbl.md](grbl.md).
 - [Endstops](#endstops)
 - [Solenoid pen lift](#solenoid-pen-lift)
 
-
 ## Controller and shield
 
 - **Arduino Uno** (ATmega328P) running GRBL v1.1
 - **Arduino CNC Shield v3** stacked on top of the Uno
 
 Only **2 of the 4 possible axes** on the CNC Shield are used:
+
 - **X axis** -- carriage movement via timing belt, with optical endstop
 - **Y axis** -- paper feed
-
 
 ## Stepper drivers
 
 - **A4988** (or DRV8825 as drop-in replacement) for X and Y axes
 - Attach heat sinks before first use
 - Set the current limit via the trimmer pot **before** connecting motors under load -- set to ~70 % of your motor's rated current per phase
-
 
 ## Power supply
 
@@ -53,7 +52,6 @@ The Arduino Uno contains a power-path selector between the VIN from Stepper shie
 - **USB only (no 12 V via barrel jack/stepper shield)** — the Arduino runs from USB 5 V; the stepper drivers and solenoid are unpowered. Use this mode when flashing firmware without the motors connected.
 - **Both 12 V and USB simultaneously** — this is the normal setup (UGS command sending from PC while the machine runs). The on-board Schottky diode prevents current from flowing back from the Arduino's 5 V rail into the host PC's USB port. No special precautions are needed.
 
-
 ## 5 V / GND distribution board
 
 Several consumers need a regulated 5 V supply and a common GND:
@@ -67,7 +65,6 @@ Several consumers need a regulated 5 V supply and a common GND:
 The CNC Shield exposes only a limited number of 5 V and GND pins on its headers, which is not enough for all consumers at once.
 The recommended solution is a small **stripboard / perfboard distribution board**.
 > Keep the total current draw of 5 V consumers well below 500 mA — the Arduino's on-board regulator (when powered from 12 V via the shield) can supply roughly 300–400 mA at 5 V before thermal throttling. Optical endstops typically draw < 20 mA each, so two endstops + a MOSFET pull-down are well within budget.
-
 
 ## Pin mapping (CNC Shield v3 -> Arduino Uno)
 
@@ -89,7 +86,6 @@ The recommended solution is a small **stripboard / perfboard distribution board*
 
 Verify pin assignments against `firmware/src/config.h`.
 
-
 ## Microstepping jumpers
 
 **Leave all MS jumpers unpopulated** (MS1, MS2, MS3 all open) for **full-step operation**.
@@ -102,7 +98,6 @@ This matches `DEFAULT_X/Y_STEPS_PER_MM = 5` in `firmware/src/config.h`.
 | - | x | - | 1/4 |
 | x | x | - | 1/8 |
 | x | x | x | 1/16 |
-
 
 ## Wiring steps
 
@@ -120,7 +115,6 @@ This matches `DEFAULT_X/Y_STEPS_PER_MM = 5` in `firmware/src/config.h`.
 12. Screw the Arduino/Shield assembly onto the PCB holder, slide it onto the rods, and attach the housing.
 13. Make sure the USB port and the CNC Shield power terminals remain accessible.
 
-
 ## Endstops
 
 The design uses **two optical endstops** -- one for the X axis (carriage home) and one for the Y axis (paper-feed home).
@@ -129,7 +123,6 @@ The design uses **two optical endstops** -- one for the X axis (carriage home) a
 - Optical endstops need the +5 V supply pin; mechanical microswitches only need GND and Signal.
 - GRBL is configured with `DEFAULT_INVERT_LIMIT_PINS 1` in `firmware/src/config.h` because optical endstops are HIGH when open and LOW when triggered.
 - Internal pull-ups are enabled by GRBL; no external resistors needed for the signal line.
-
 
 ## Solenoid pen lift
 
@@ -148,14 +141,16 @@ MOSFET source    -- GND
 - Add a 10 kOhm pull-down resistor between gate and source to ensure the MOSFET stays off at power-up.
 - Test the solenoid switching with a bench supply and current-limited setup before connecting to the full system.
 
-G-code pen control (see [grbl.md](grbl.md) for full GRBL reference):
+G-code pen control (see [firmware/README.md](firmware/README.md) for full GRBL reference):
 
-| G-code | Action |
-|--------|--------|
-| `M3 S1000` | Solenoid ON -> pen down |
-| `M5` | Solenoid OFF -> pen up (spring return) |
+Note: the repository default assumes an inverted solenoid mount where the solenoid being ENERGIZED = pen UP. The wiring and default G-code templates in `pipeline/configs/grbl_a4_pen.toml` follow this convention.
 
+| G-code | Action (repo default) |
+|--------|----------------------|
+| `M3 S1000` | Solenoid ON → energized (repo default: pen UP) |
+| `M5` | Solenoid OFF → de-energized (repo default: pen DOWN via spring) |
 
+If your hardware uses the opposite mapping (energized = pen DOWN), either swap M3/M5 in the G-code templates or invert the solenoid wiring (safer to change the templates).
 
 ## Hardware verification before flashing GRBL
 
@@ -180,4 +175,3 @@ Open the serial monitor at 115 200 baud and follow the on-screen prompts.
 See [testing.md](testing.md) for full test documentation including expected results and failure hints.
 
 Only proceed to flashing GRBL once all four tests pass.
-

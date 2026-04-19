@@ -146,6 +146,30 @@ class ImageContext:
 
 Use Stable Diffusion 1.5 with ControlNet for precise artistic style transfer while maintaining structure control.
 
+### HuggingFace Authentication
+
+Some models on HuggingFace are **gated** (require license acceptance and authentication). If model download fails with a 404 or authentication error, you need to:
+
+1. **Create a free HuggingFace account**: <https://huggingface.co>
+2. **Generate a read token**: <https://huggingface.co/settings/tokens>
+3. **Accept the model license** on the model page (e.g. <https://huggingface.co/runwayml/stable-diffusion-v1-5>)
+4. **Save the token to a file**:
+
+   ```bash
+   echo 'hf_xxxxxxxxxxxxxxxxxxxx' > .hf_token
+   # .hf_token is already in .gitignore — never commit this file!
+   ```
+
+5. **Pass the token path in your pipeline config**:
+
+   ```yaml
+   - step: stylise_controlnet
+     config:
+       hf_token_path: ".hf_token"
+   ```
+
+If `hf_token_path` is not set and the model is gated, a clear error message with instructions will be shown.
+
 ### Quick Start
 
 **Prerequisites**:

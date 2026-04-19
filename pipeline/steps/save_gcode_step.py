@@ -3,6 +3,10 @@ pipeline/steps/save_gcode_step.py - Save GCode to file
 
 PipelineStep that writes the GCode lines from ctx.intermediates["gcode_lines"]
 to a file.
+
+Output path resolution (in order of priority):
+  1. ctx.metadata["output_path"]  — runtime value, set before runner.run()
+  2. config["output_path"]        — static value from pipeline config
 """
 
 from __future__ import annotations
@@ -17,17 +21,23 @@ logger = logging.getLogger(__name__)
 
 
 class SaveGCodeStep(PipelineStep):
-    """Save GCode lines to a file."""
+    """Save GCode lines to a file.
 
-    def __init__(self, config: dict[str, Any] | None = None) -> None:
-        """Initialize SaveGCodeStep.
+    Output path is resolved in this order:
+    1. ``ctx.metadata["output_path"]`` — set at runtime before ``runner.run()``
+    2. ``config["output_path"]``       — static value in the pipeline config
 
-        Args:
-            config: Dictionary with optional keys:
-                - output_path: Path to write GCode file (str or Path)
-                  If not provided, uses ctx.output_path
-        """
-        super().__init__(config or {})
+    This convention keeps runtime values in ``metadata`` (dynamic) and
+    static defaults in ``config``, consistent with the rest of the pipeline.
+
+    config keys    Default  Meaning
+    -----------------------------------------------
+    output_path    None     Static fallback path (str or Path).
+                            Overridden by metadata["output_path"] if set.
+    """
+
+    def requires(self) -> list[str]:
+        return ["intermediates.gcode_lines"]
 
     def process(self, ctx: ImageContext) -> ImageContext:
         """Write GCode lines to file.
@@ -38,23 +48,20 @@ class SaveGCodeStep(PipelineStep):
         Returns:
             Modified ImageContext
         """
-        # Get output path from metadata or config
-        output_path = self.config.get("output_path")
+        # Priority: runtime metadata → static config
+        output_path = ctx.metadata.get("output_path") or self.config.get("output_path")
         if not output_path:
-            output_path = ctx.metadata.get("output_path")
-        if not output_path:
-            raise ValueError("SaveGCodeStep: output_path not provided in config or metadata")
+            raise ValueError(
+                "SaveGCodeStep: output_path not set.  "
+                "Provide it via ctx.metadata['output_path'] (runtime) "
+                "or config['output_path'] (static pipeline config)."
+            )
 
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Get GCode lines
-        gcode_lines = ctx.intermediates.get("gcode_lines", [])
-        if not gcode_lines:
-            logger.warning("SaveGCodeStep: No GCode lines found in context")
-            return ctx
+        gcode_lines: list[str] = ctx.intermediates["gcode_lines"]
 
-        # Write file
         content = "\n".join(gcode_lines)
         output_path.write_text(content)
 

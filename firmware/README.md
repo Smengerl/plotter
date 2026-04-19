@@ -1,10 +1,56 @@
+````markdown
+# GRBL Firmware
 
-# GRBL firmware moved
+This document describes the GRBL setup for the G-code Pen Plotter.  
+GRBL v1.1 runs on the Arduino Uno via the Arduino CNC Shield v3.  
+All firmware sources live in the `firmware/` directory. GRBL itself is included as a Git submodule under `grbl/`.
 
-The detailed GRBL firmware documentation has been moved to the `firmware` folder.
-Please consult `firmware/README.md` for build, flash and configuration instructions.
+## Table of contents
+- [Repository layout](#repository-layout)
+- [Prerequisites](#prerequisites)
+- [First-time setup](#first-time-setup)
+- [Build and flash](#build-and-flash)
+- [Serial monitor / GRBL console](#serial-monitor--grbl-console)
+- [Key GRBL settings](#key-grbl-settings-first-run-checklist)
+- [GRBL integration tests](#grbl-integration-tests)
+- [Converting SVG to G-code](#converting-svgvector-graphics-to-g-code)
+- [Sending G-code to the plotter](#sending-g-code-to-the-plotter)
 
-Path: `firmware/README.md`
+
+## Repository layout
+
+```
+firmware/
+├── platformio.ini        ← PlatformIO project (build & flash config)
+└── src/
+    ├── config.h          ← Plotter-specific GRBL settings (overrides grbl/grbl/config.h)
+    ├── main.cpp          ← Arduino-framework entry point (calls grbl_main)
+    └── grbl_main_shim.c  ← Bridges GRBL's main() to grbl_main() to avoid linker conflict
+firmware/grbl/            ← Git submodule: gnea/grbl (do not edit)
+```
+
+
+## Prerequisites
+
+| Tool | Purpose |
+|------|---------|
+| [PlatformIO CLI](https://platformio.org/install/cli) or [PlatformIO IDE (VS Code extension)](https://platformio.org/install/ide?install=vscode) | Build and flash |
+| USB cable (USB-A ↔ USB-B) | Connect Arduino Uno to PC |
+
+No additional toolchain setup is needed — PlatformIO downloads the AVR toolchain automatically on first build.
+
+
+## First-time setup
+
+```bash
+# 1. Clone the repository with the GRBL submodule
+git clone --recurse-submodules https://github.com/Smengerl/plotter.git
+cd plotter
+
+# If you already cloned without --recurse-submodules:
+git submodule update --init --recursive
+```
+
 
 ## Build and flash
 
@@ -23,6 +69,7 @@ pio run -t upload --upload-port /dev/ttyUSB0          # Linux
 pio run -t upload --upload-port COM3                   # Windows
 ```
 
+
 ## Serial monitor / GRBL console
 
 ```bash
@@ -31,12 +78,12 @@ pio device monitor   # 115200 baud, 8N1
 ```
 
 After reset you should see the GRBL welcome banner:
-
 ```
 Grbl 1.1h ['$' for help]
 ```
 
 Type `$` to list all available commands, or `$$` to print current parameter values.
+
 
 ## Key GRBL settings (first-run checklist)
 
@@ -72,14 +119,22 @@ steps/mm = (200 steps/rev × 1 full step) / (20 teeth × 2 mm/tooth) = 5
 No MS jumpers are installed on the CNC Shield — the A4988 operates in full-step mode.  
 Adjust `$100` / `$101` if you change the pulley tooth count or enable microstepping.
 
-### Pen lift G-code
+#### Pen lift G-code
 
-The solenoid is controlled via the GRBL spindle output (see [electronics.md](electronics.md) for wiring details):
+The solenoid is controlled via the GRBL spindle output (see [electronics.md](../electronics.md) for wiring details).
 
-| G-code | Action |
-|--------|--------|
-| `M3 S1000` | Solenoid ON → pen down |
-| `M5` | Solenoid OFF → pen up (spring return) |
+Note: this repository's G-code profile (`pipeline/configs/grbl_a4_pen.toml`) is configured for an "inverted" solenoid mounting where the solenoid being ENERGIZED = pen UP (lift). That means:
+
+- `M3 S1000` → energize solenoid → pen UP (repo default)
+- `M5`        → de-energize solenoid → pen DOWN (spring return)
+
+If your hardware is wired the other way (energized = pen DOWN), swap the M3/M5 commands in the G-code profile or rewire the solenoid/MOSFET accordingly.
+
+| G-code | Action (repository default) |
+|--------|---------------------------|
+| `M3 S1000` | Solenoid ON → solenoid energized (repo default: pen UP) |
+| `M5` | Solenoid OFF → solenoid de-energized (repo default: pen DOWN via spring) |
+
 
 ## GRBL integration tests
 
@@ -87,7 +142,7 @@ After flashing GRBL, run the following tests **in order** to verify the complete
 Each test is sent via the MDI console of a G-code sender (e.g. [UGS](https://universalgcodesender.com/)) at **115200 baud**.
 
 > **Prerequisite:** all Phase 1 standalone tests (TC1–TC4) must have passed first.  
-> See [testing.md](testing.md) for the full test documentation.
+> See [testing.md](../testing.md) for the full test documentation.
 
 ---
 
@@ -100,7 +155,6 @@ $H
 ```
 
 **Expected:**
-
 1. Carriage accelerates toward the X_MIN endstop.
 2. Touches X_MIN, backs off by 5 mm (pull-off `$27`).
 3. GRBL responds with `ok` and sets machine position X=0, Y=0.
@@ -118,25 +172,20 @@ $H
 **Goal:** Confirm both endstops read as open (not triggered) when the carriage is clear of all switches, and that each one is detectable individually.
 
 **Step 1 — Status report with carriage in the middle:**
-
 ```gcode
 $X
 ?
 ```
-
 The `Pn:` field must be **absent** (or show no flags):
-
 ```
 <Idle|MPos:0.000,0.000,0.000|FS:0,0>
 ```
 
 **Step 2 — Trigger X_MIN by hand:**  
 Block the X_MIN optical sensor with a finger, then send:
-
 ```gcode
 ?
 ```
-
 Expected: status line contains `Pn:X`.  Unblock the sensor and confirm `Pn:X` disappears.
 
 **Step 3 — Trigger X_MAX by hand:**  
@@ -150,29 +199,25 @@ Block the X_MAX optical sensor and confirm `Pn:X` appears again, then disappears
 
 ---
 
-### TC7-G — X-axis movement to endstop
+### TC7-G — X-axis movement
 
 **Goal:** GRBL drives the carriage in both directions and stops correctly at the X_MIN endstop.
 
 **Step 1 — Move away from home:**
-
 ```gcode
 $X
 G91
 G1 X50 F800
 G90
 ```
-
 > Confirm: carriage moved ~50 mm away from X_MIN.
 
 **Step 2 — Drive toward X_MIN with hard limits enabled:**
-
 ```gcode
 $21=1
 G91
 G1 X-200 F800
 ```
-
 > Expected: GRBL stops as soon as X_MIN triggers and raises `ALARM:1` (hard limit).  
 > The carriage must **not** crash into the mechanical stop.
 
@@ -181,7 +226,6 @@ $21=0
 $X
 G90
 ```
-
 > Re-disable hard limits and clear the alarm for the next test.
 
 ---
@@ -197,14 +241,12 @@ $X
 G91
 G1 Y30 F500
 ```
-
 > Confirm: paper is pulled **into** the plotter ~30 mm.
 
 ```gcode
 G1 Y-30 F500
 G90
 ```
-
 > Confirm: paper is ejected ~30 mm.
 
 **If direction is wrong:** send `$3=2` (invert Y) or `$3=3` (invert X and Y), then retry.
@@ -224,7 +266,6 @@ M5
 ```
 
 **Expected:**
-
 1. `M3 S1000` — solenoid fires immediately, pen moves **down** (audible click).
 2. `G4 P1` — 1-second dwell; pen stays down.
 3. `M5` — solenoid de-energises, pen returns **up** via spring.
@@ -233,7 +274,7 @@ M5
 
 ---
 
-See [testing.md](testing.md) for the complete Phase 2 procedure including failure hints and a result log table.
+See [testing.md](../testing.md) for the complete Phase 2 procedure including failure hints and a result log table.
 
 ### Helper script: Set recommended EEPROM settings
 
@@ -258,6 +299,31 @@ To run non-interactively (apply defaults without confirmation):
 python3 firmware/tools/set_grbl_eeprom.py --port /dev/tty.usbmodemXXXX --yes
 ```
 
+Note about how the script determines the values
+------------------------------------------------
+
+The helper script attempts to read the firmware's compile-time defaults directly from
+`firmware/src/config.h` using the system C preprocessor (gcc/clang/cpp) to reliably
+extract `#define DEFAULT_*` macros. This makes the script test and apply the exact
+settings that the firmware was built with — there is no separate hard-coded source of
+truth in the helper.
+
+If a system C preprocessor is not available on the host, the script falls back to a
+best-effort regex-based parse of `config.h`. The preprocessor method is preferred because
+it correctly expands included headers and macro expressions.
+
+New flag: `--dry-run`
+---------------------
+
+Use `--dry-run` to preview the planned `$` settings without writing them to the device:
+
+```bash
+python3 firmware/tools/set_grbl_eeprom.py --port /dev/tty.usbmodemXXXX --dry-run
+```
+
+This is useful for verifying the values that will be written, and to avoid extra EEPROM
+writes while you confirm wiring and homing behavior.
+
 What the script does:
 
 - Connects to the GRBL serial port (default 115200 baud)
@@ -268,10 +334,11 @@ What the script does:
 Safety notes:
 
 - Always verify endstop wiring and homing behavior before enabling soft/hard
-    limits. The helper will set `$20/$21` to 0 (disabled) and `$22` to 1
-    (homing enabled) but you should not enable limits until homing is tested.
+  limits. The helper will set `$20/$21` to 0 (disabled) and `$22` to 1
+  (homing enabled) but you should not enable limits until homing is tested.
 - The script writes directly to EEPROM — use `--yes` only when you are sure
-    about the target port and settings.
+  about the target port and settings.
+
 
 ## Converting SVG/vector graphics to G-code
 
@@ -283,8 +350,11 @@ Recommended tools:
 
 Pen-up/pen-down: configure the tool to emit `M3 S1000` (pen down) and `M5` (pen up) at path boundaries, or insert them manually.
 
+
 ## Sending G-code to the plotter
 
 - **[UGS (Universal G-code Sender)](https://universalgcodesender.com/)** — GUI, works on all platforms
 - **[bCNC](https://github.com/vlachoudis/bCNC)** — Python-based, feature-rich
 - **[CNCjs](https://cnc.js.org/)** — browser-based, runs as a Node.js server
+
+````

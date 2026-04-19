@@ -101,13 +101,21 @@ def run_controlnet_example(
         config = yaml.safe_load(f)
 
     # Override prompt if provided
-    if prompt:
-        config["steps"][0]["config"]["prompt"] = prompt
+    controlnet_step = next(
+        (s for s in config["steps"] if s.get("step") == "stylise_controlnet"), None
+    )
+    if prompt and controlnet_step:
+        controlnet_step["config"]["prompt"] = prompt
         logger.info("Custom prompt: %s", prompt)
 
-    # Update output path in config
+    # Inject runtime output path into the save_gcode step config so that
+    # SaveImageStep never sees a .gcode path in metadata.
     gcode_output = output_dir / "controlnet_style.gcode"
-    # The save_gcode step will use the context's metadata["output_path"]
+    save_gcode_step = next(
+        (s for s in config["steps"] if s.get("step") == "save_gcode"), None
+    )
+    if save_gcode_step is not None:
+        save_gcode_step.setdefault("config", {})["output_path"] = str(gcode_output)
 
     # Load image and create context
     from PIL import Image
@@ -119,7 +127,6 @@ def run_controlnet_example(
         image=image,
         metadata={
             "source_path": input_image,
-            "output_path": gcode_output,
             "source_size": (image.height, image.width),
         },
     )
@@ -128,7 +135,8 @@ def run_controlnet_example(
     logger.info("=== ControlNet Pipeline Started ===")
     logger.info("Input: %s", input_image)
     logger.info("Output: %s", gcode_output)
-    logger.info("Prompt: %s", config["steps"][0]["config"]["prompt"])
+    if controlnet_step:
+        logger.info("Prompt: %s", controlnet_step["config"].get("prompt", "<none>"))
 
     try:
         runner = PipelineRunner(config["steps"])

@@ -2,7 +2,7 @@ print/stl/.DS_Store
 print/.DS_Store
 .DS_Store
 print/full_export.f3z
-grbl/
+firmware/grbl/
 
 # PlatformIO build artefacts
 firmware/.pio/
@@ -20,3 +20,4 @@ __pycache__/
 
 
 .hf_token
+output/

@@ -35,9 +35,16 @@ class VectorizeStep(PipelineStep):
     """
     Native vectorization step.
 
-    Extracts connected contours from the binary image
-    (``ctx.intermediates["binary"]``) and writes the resulting
+    Extracts connected contours from an image and writes the resulting
     path list to ``ctx.intermediates["paths"]``.
+
+    Input image resolution (in order of priority):
+    1. ``ctx.intermediates["binary"]`` — uint8 (H, W) array written by a
+       preceding stylizer (255 = line, 0 = background).
+    2. ``ctx.image``                   — PIL image; converted to a binary
+       array automatically (grayscale threshold 128).  This allows
+       ``VectorizeStep`` to be used directly after ``LoadImageStep``
+       without any stylizer in between.
 
     Algorithm
     ---------
@@ -50,10 +57,33 @@ class VectorizeStep(PipelineStep):
     ------------------------------------------------
     min_path_px       10       --min-path-px
     simplify_eps      1.5      --simplify-eps
+    binary_threshold  128      Grayscale threshold when binarizing ctx.image
+                               (only used when no intermediates["binary"] present)
     """
 
+    def requires(self) -> list[str]:
+        return ["image"]
+
     def process(self, ctx: ImageContext) -> ImageContext:
-        binary: npt.NDArray[np.uint8] = ctx.intermediates["binary"]
+        # --- Resolve binary input ---
+        binary: npt.NDArray[np.uint8] | None = ctx.intermediates.get("binary")
+        if binary is None:
+            # No stylizer in the pipeline — binarize ctx.image directly.
+            if not ctx.has_image:
+                raise ValueError(
+                    "VectorizeStep: ctx.image is None and no intermediates['binary'] set. "
+                    "Add LoadImageStep (or a stylizer) before VectorizeStep."
+                )
+            threshold: int = int(self.config.get("binary_threshold", 128))
+            gray = np.array(ctx.image.convert("L"))
+            _, binary = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
+            binary = binary.astype(np.uint8)
+            logger.debug(
+                "VectorizeStep: no intermediates['binary'] — binarized ctx.image "
+                "(threshold=%d, shape=%dx%d)",
+                threshold, binary.shape[1], binary.shape[0],
+            )
+
         min_path_px: int = int(self.config.get("min_path_px", 10))
         simplify_eps: float = float(self.config.get("simplify_eps", 1.5))
 

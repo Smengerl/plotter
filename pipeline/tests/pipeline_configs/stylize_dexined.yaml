@@ -5,29 +5,16 @@
 # Model is automatically downloaded from Hugging Face on first run.
 
 steps:
+  - step: load_image
+    # The test runner provides the real image path via metadata['source_path']
+    config: {}
+
   - step: stylise_dexined
     config:
       style_res: 1024 # longest side of intermediate image in pixels
       model_path: null # null = auto-download from Hugging Face
       device: auto # auto | cpu | cuda | mps
 
-  - step: vectorise
+  - step: save_image
     config:
-      min_path_px: 10
-      simplify_eps: 1.5
-
-  - step: gcode_gen
-    config:
-      target_width_mm: 180.0
-      target_height_mm: 250.0
-      origin_x: 5.0
-      origin_y: 5.0
-      keep_aspect: true
-      feedrate_draw: 1500
-      feedrate_travel: 3000
-      pen_down_cmd: "M3 S1000"
-      pen_up_cmd: "M5"
-      pen_delay_ms: 100
-
-  - step: save_gcode
-    config: {}
+      output_path: "output/dexined_image.png"

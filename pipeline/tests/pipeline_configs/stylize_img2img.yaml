@@ -4,6 +4,10 @@
 # (lightweight model, no ControlNet)
 
 steps:
+  - step: load_image
+    # The test runner provides the real image path via metadata['source_path']
+    config: {}
+
   # Step 1: Apply img2img style transfer
   - step: stylise_img2img
     config:
@@ -12,31 +16,11 @@ steps:
       strength: 0.7 # How much to modify (0.0–1.0)
       num_inference_steps: 20
       guidance_scale: 7.5
-      model_id: "stabilityai/stable-diffusion-2-1-base"
+      model_id: "stable-diffusion-v1-5/stable-diffusion-v1-5"
       hf_token_path: ".hf_token"
       enable_model_cpu_offload: false
       device: auto
 
-  # Step 2: Vectorization - Convert to paths
-  - step: vectorise
+  - step: save_image
     config:
-      min_path_px: 10
-      simplify_eps: 1.5
-
-  # Step 3: GCode generation
-  - step: gcode_gen
-    config:
-      target_width_mm: 180.0
-      target_height_mm: 250.0
-      origin_x: 5.0
-      origin_y: 5.0
-      keep_aspect: true
-      feedrate_draw: 1500
-      feedrate_travel: 3000
-      pen_down_cmd: "M3 S1000"
-      pen_up_cmd: "M5"
-      pen_delay_ms: 100
-
-  # Step 4: Save to file
-  - step: save_gcode
-    config: {}
+      output_path: "output/img2img_image.png"

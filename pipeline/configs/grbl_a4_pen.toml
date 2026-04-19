@@ -19,6 +19,28 @@
 default_profile = "grbl_a4_pen"
 
 [gwrite.grbl_a4_pen]
+# Profile notes:
+# - This profile targets the GRBL pen plotter in A4 (210×297 mm) using mm units.
+# - IMPORTANT: This profile assumes an inverted solenoid wiring where the
+#   solenoid is ENERGIZED = pen UP (lift). That means:
+#     * M3 S1000 => energize solenoid => pen up
+#     * M5        => de-energize solenoid => pen down
+#   If your hardware is non-inverted, swap M3/M5 in the templates below.
+# - Dwell time after pen switch is controlled by the `G4 P...` in `segment_first`;
+#   currently set to 0.5 s to give the solenoid time to move. Increase if needed.
+# - Travel feedrate (fast moves) is set to 3000 mm/min (G1 F3000) in the header.
+#   Drawing feedrate (when pen is down) is set in `segment_first` to 1500 mm/min.
+# - Offsets `offset_x`/`offset_y` define a safety margin from the paper edge.
+# Template keys used by the GCodeFromSvgStep:
+#  - document_start: header emitted at start of file (initialization, units, homing
+#                    safe moves, initial pen state)
+#  - segment_first: emitted before the first point of every path (move to start,
+#                   lower pen, set drawing feedrate)
+#  - segment: emitted for intermediate points
+#  - segment_last: emitted for the last point (identical to segment here)
+#  - line_end: emitted after each path (raise pen)
+#  - document_end: footer emitted at the end of the file
+# Adjust these templates carefully; M3/M5 control the solenoid state.
 # Coordinate transformation
 unit          = "mm"
 vertical_flip = true    # SVG: Origin top-left → GCode: Origin bottom-left
@@ -33,14 +55,14 @@ document_start = """; GRBL Pen Plotter — A4 Format
 G21       ; Units mm
 G90       ; Absolute coordinates
 G1 F3000  ; Standard travel speed
-M5        ; Pen up (initialization)
+M3 S1000  ; Pen up (initialization) — inverted solenoid: energized = pen up
 G1 X5.000 Y5.000 F3000
 """
 
 # Per path: Move (pen up), lower pen, set feedrate
 segment_first = """G1 X{x:.3f} Y{y:.3f} F3000
-M3 S1000
-G4 P0.1
+M5
+G4 P0.5
 G1 F1500
 """
 
@@ -51,11 +73,11 @@ segment = "G1 X{x:.3f} Y{y:.3f}\n"
 segment_last = "G1 X{x:.3f} Y{y:.3f}\n"
 
 # After each path: Pen up
-line_end = "M5\n"
+line_end = "M3 S1000\n"
 
 # Plotter footer: Pen up, advance paper to end of sheet
 document_end = """; Done
-M5
+M3 S1000
 G1 X5.000 Y292.000 F3000
 """
 

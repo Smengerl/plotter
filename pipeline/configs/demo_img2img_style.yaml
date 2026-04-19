@@ -1,19 +1,19 @@
 # pipeline/configs/demo_img2img_style.yaml
 #
-# Demo pipeline: Image-to-Image style transfer using Stable Diffusion 2.1
+# Demo pipeline: Image-to-Image style transfer using Stable Diffusion v1.5
 #
 # This pipeline applies artistic styles to images using img2img without ControlNet.
 # Lighter and faster than ControlNet, but with less control over structure.
 #
 # Key differences from ControlNet:
-# - Uses lighter SD 2.1 model (smaller VRAM requirement)
+# - Uses SD v1.5 model (stable-diffusion-v1-5/stable-diffusion-v1-5)
 # - Faster processing (~1–3 min on GPU)
 # - No ControlNet conditioning (less structural preservation)
 # - Adjustable strength parameter for modification intensity
 #
 # Notes:
 # - Requires: pip install diffusers transformers safetensors torch accelerate
-# - First run downloads ~2GB of models (smaller than ControlNet)
+# - First run downloads ~4GB of models
 # - CPU-only: ~10–30 minutes per image
 # - GPU (CUDA): ~1–3 minutes per image
 # - GPU (M1/M2/M3): ~3–10 minutes per image
@@ -40,18 +40,23 @@ steps:
       guidance_scale: 7.5 # How much to follow prompt (1–15)
 
       # Model and device
-      model_id: "stabilityai/stable-diffusion-2-1-base" # Lightweight model
+      model_id: "stable-diffusion-v1-5/stable-diffusion-v1-5" # Community mirror (SD 2.1 base was removed from HF)
       hf_token_path: ".hf_token" # Path to HuggingFace token (optional, for gated models)
       device: auto # auto | cpu | cuda | mps
       enable_model_cpu_offload: false # Reduce VRAM at cost of speed
 
-  # Step 2: Convert to vector paths
+  # Step 2: Save image
+  - step: save_image
+    config:
+      output_path: "output/stylised_image.png"
+
+  # Step 3: Convert to vector paths
   - step: vectorise
     config:
       min_path_px: 10 # Minimum path length (shorter = more detail)
       simplify_eps: 1.5 # Path simplification tolerance
 
-  # Step 3: Generate GCode
+  # Step 4: Generate GCode
   - step: gcode_gen
     config:
       target_width_mm: 180.0
@@ -65,15 +70,7 @@ steps:
       pen_up_cmd: "M5"
       pen_delay_ms: 100
 
-  # Step 4: Save GCode to file
+  # Step 5: Save GCode to file
   - step: save_gcode
-    config: {}
-
-  # Step 5 (Optional): Send directly to GRBL plotter
-  - step: send_gcode
-    enabled: false
     config:
-      port: /dev/tty.usbmodem1101
-      baud: 115200
-      dry_run: false
-      response_timeout_s: 30.0
+      output_path: "output/stylised_image.gcode"

@@ -1,16 +1,16 @@
+from __future__ import annotations
 """
-pipeline/steps/base/stylizer_base.py - Helper functions and base class for NN stylizers
+pipeline/steps/base/stylizer_base.py - Helper functions and base classes for stylizers
 
 Contains:
-  - ``load_gray()``      - Load and scale image (module function)
-  - ``ensure_odd()``     - Normalize kernel size to odd (module function)
-  - ``resolve_device()`` - Determine best available PyTorch device (module function)
-  - ``BaseStylizer``     - ABC for NN-based stylizers with lazy loading
+    - ``load_gray()``        - Load and scale image from disk (module function)
+    - ``ensure_odd()``       - Normalize kernel size to odd (module function)
+    - ``resolve_device()``   - Determine best available PyTorch device (module function)
+    - ``StylizerStep``       - Abstract base class for ALL stylization steps.
+                                                         Enforces: requires() = ["image"], updates ctx.image,
+                                                         and writes intermediates["binary"] for optional downstream use.
 """
 
-from __future__ import annotations
-
-import inspect
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -19,11 +19,18 @@ from typing import TYPE_CHECKING
 import cv2
 import numpy as np
 
+from pipeline.core.base import ImageContext
+from pipeline.steps.base.pipeline_step import PipelineStep
+
 if TYPE_CHECKING:
     import numpy.typing as npt
 
 logger = logging.getLogger(__name__)
 
+
+# ---------------------------------------------------------------------------
+# Module-level helper functions
+# ---------------------------------------------------------------------------
 
 def load_gray(path: Path | str, max_side: int) -> "npt.NDArray[np.uint8]":
     """Loads an image as grayscale array and scales to max. ``max_side`` px."""
@@ -71,41 +78,91 @@ def resolve_device(requested: str | None) -> str:
     return "cpu"
 
 
-class BaseStylizer(ABC):
+# ---------------------------------------------------------------------------
+# StylizerStep — abstract base for ALL stylization steps
+# ---------------------------------------------------------------------------
+
+class StylizerStep(PipelineStep):
     """
-    Abstract base class for NN-based stylizers.
+    Abstract base class for **all** stylization steps.
 
-    Subclasses must implement ``name`` and ``apply()``.  The method receives
-    a preloaded grayscale array and returns a binary image (uint8, 0/255)
-    where 255 represents a line and 0 represents the background.
+    Enforces the common contract shared by every stylizer in the pipeline:
 
-    The object is created once in the associated PipelineStep and reused
-    across multiple ``process()`` calls (lazy loading).
+    * ``requires()`` always returns ``["image"]`` — each stylizer needs
+      ``ctx.image`` to be set by a preceding ``LoadImageStep`` (or another
+      stylizer, since each stylizer updates ``ctx.image`` on output).
+    * ``process()`` converts the binary result back to a grayscale PIL image
+      and stores it in ``ctx.image``, so stylizers can be freely chained.
+    * ``process()`` also writes the result to ``ctx.intermediates["binary"]``
+      as a ``uint8`` ndarray (H, W) where 255 = line, 0 = background.
+      ``VectorizeStep`` uses this if present, but falls back to ``ctx.image``
+      directly, so a stylizer is not required between ``LoadImageStep`` and
+      ``VectorizeStep``.
+
+    Subclasses must implement :meth:`_stylise` which receives the
+    ``ImageContext`` and returns the binary ndarray.  The base class
+    wraps the call, stores the result, updates ``ctx.image`` and logs
+    shape info.
+
+    Example::
+
+        class MyStep(StylizerStep):
+            def _stylise(self, ctx: ImageContext) -> npt.NDArray[np.uint8]:
+                gray = ctx.gray
+                # ... custom processing ...
+                return binary
     """
 
-    #: Unique name of the method (required field - subclasses must override)
-    name: str
-
-    def __init_subclass__(cls, **kwargs: object) -> None:
-        super().__init_subclass__(**kwargs)
-        # Check only on concrete (non-abstract) classes.
-        # inspect.isabstract() checks via ABCMeta whether abstractmethods are still open -
-        # more robust than manually checking method names.
-        if "name" not in cls.__dict__ and not inspect.isabstract(cls):
-            raise TypeError(f"{cls.__name__} must define the class attribute 'name'")
-
-    def stylise(self, image_path: Path | str, max_side: int) -> "npt.NDArray[np.uint8]":
-        """
-        Loads ``image_path`` as grayscale array, scales to ``max_side``
-        (longest side), and calls :meth:`apply`.
-        """
-        gray = load_gray(image_path, max_side)
-        logger.debug(
-            "[%s] Image loaded: %s → %dx%d px",
-            self.name, image_path, gray.shape[1], gray.shape[0],
-        )
-        return self.apply(gray)
+    def requires(self) -> list[str]:
+        return ["image"]
 
     @abstractmethod
-    def apply(self, gray: "npt.NDArray[np.uint8]") -> "npt.NDArray[np.uint8]":
-        """Converts a grayscale array into a binary image."""
+    def _stylise(self, ctx: ImageContext) -> "npt.NDArray[np.uint8]":
+        """Perform the actual stylization and return the binary ndarray.
+
+        Args:
+            ctx: ImageContext with ``ctx.image`` set (PIL RGB or grayscale).
+        Returns:
+            binary: uint8 ndarray (H, W) where 255 = line, 0 = background.
+        """
+
+    def _pil_to_binary(self, pil: "PIL.Image.Image", threshold: int) -> "npt.NDArray[np.uint8]":
+        """Helper to convert a PIL image to a binary uint8 ndarray.
+
+        This is provided on the step base class for backward-compatibility
+        with older implementations that called ``self._pil_to_binary(...)``
+        from within ``_stylise()`` implementations.
+
+        Args:
+            pil: PIL image (any mode).
+            threshold: Integer threshold in [0,255]; pixels > threshold -> 255.
+
+        Returns:
+            2-D uint8 ndarray where line = 255 and background = 0.
+        """
+        import cv2  # type: ignore[import]
+        import numpy as _np
+
+        gray = _np.array(pil.convert("L"))
+        _, binary = cv2.threshold(gray, int(threshold), 255, cv2.THRESH_BINARY)
+        return binary.astype(_np.uint8)
+
+
+    def process(self, ctx: ImageContext) -> ImageContext:
+        binary = self._stylise(ctx)
+        ctx.set_stylize_result(binary)
+        logger.debug(
+            "%s: binary %dx%d px → ctx.image updated",
+            type(self).__name__,
+            binary.shape[1],
+            binary.shape[0],
+        )
+        return ctx
+
+
+# Backward-compatible aliases for legacy code (must be after StylizerStep definition)
+CVBaseStep = StylizerStep
+CVStylizerStep = StylizerStep
+
+
+

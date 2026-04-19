@@ -13,348 +13,314 @@ Key features:
 Requires:
     pip install diffusers transformers safetensors torch accelerate
 
-Example config:
-    config:
-      prompt: "oil painting, Van Gogh style, vibrant colors"
-      negative_prompt: "blurry, low quality"
-      controlnet_type: "canny"  # or lineart, softedge, scribble, etc.
-      num_inference_steps: 20
-      guidance_scale: 7.5
-      strength: 0.8
-      enable_model_cpu_offload: false
-      device: auto
+Data transport via ImageContext
+--------------------------------
+Reads   ctx.image                              - PIL RGB image set by LoadImageStep
+Writes  ctx.intermediates["binary"]            - uint8 array (H, W), 255=line
+        ctx.intermediates["stylized_diffusion"] - PIL RGB result before binarization
+        ctx.intermediates["controlnet_condition"] - PIL conditioning image
 """
 
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-import numpy as np
-from PIL import Image
-
-from pipeline.core.base import ImageContext, PipelineStep
+from pipeline.steps.base.diffusion_stylizer_base import (
+    DiffusionStylizerStep,
+    _DIFFUSERS_INSTALL_HINT,
+)
+from pipeline.steps.base.nn_stylizer_base import _CONTROLNET_AUX_INSTALL_HINT
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from PIL import Image as PILImage
 
 logger = logging.getLogger(__name__)
 
-# Lazy import flags
-_DIFFUSERS_AVAILABLE = False
-_TORCH_AVAILABLE = False
-
 
 def _check_dependencies() -> tuple[bool, str]:
-    """Check if required libraries are available."""
-    try:
-        import torch  # noqa: F401
-        import diffusers  # noqa: F401
-        global _TORCH_AVAILABLE, _DIFFUSERS_AVAILABLE
-        _TORCH_AVAILABLE = True
-        _DIFFUSERS_AVAILABLE = True
-        return True, ""
-    except ImportError as e:
-        return False, f"Missing dependency: {e}"
+    """Check whether diffusers and torch are importable.
+
+    Returns:
+        Tuple of (ok: bool, error_message: str).
+        If ok is True, error_message is an empty string.
+    """
+    import importlib.util
+    missing = [
+        pkg for pkg in ("diffusers", "torch")
+        if importlib.util.find_spec(pkg) is None
+    ]
+    if missing:
+        return False, f"{', '.join(missing)} not found"
+    return True, ""
 
 
-_INSTALL_HINT = """
-ControlNet + Stable Diffusion 1.5 style transfer requires:
-    pip install diffusers transformers safetensors torch accelerate
+# Map from controlnet_type config value to HuggingFace model repo
+_CONTROLNET_REPO_MAP: dict[str, str] = {
+    "canny":    "lllyasviel/control_v11p_sd15_canny",
+    "lineart":  "lllyasviel/control_v11p_sd15_lineart",
+    "softedge": "lllyasviel/control_v11p_sd15_softedge",
+    "scribble": "lllyasviel/control_v11p_sd15_scribble",
+    "pose":     "lllyasviel/control_v11p_sd15_openpose",
+    "depth":    "lllyasviel/control_v11f1p_sd15_depth",
+    "normal":   "lllyasviel/control_v11p_sd15_normal",
+    "seg":      "lllyasviel/control_v11p_sd15_seg",
+}
 
-For GPU support (recommended):
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-"""
 
-
-class StyliseControlNetStep(PipelineStep):
+class StyliseControlNetStep(DiffusionStylizerStep):
     """
     Style transfer using ControlNet + Stable Diffusion 1.5.
 
     Applies artistic style to an image via text-prompt guided diffusion
-    with ControlNet conditioning. Converts the stylized result back to
-    binary (black/white) for pen plotting.
+    with ControlNet conditioning. Inherits HF token loading, lazy model
+    initialization, and binarization from ``DiffusionStylizerStep``.
 
-    Parameters
-    ----------
-    prompt : str
-        Text prompt describing desired style (e.g., "oil painting, Van Gogh style")
-    negative_prompt : str, optional
-        Text to avoid in generation (e.g., "blurry, low quality")
-    controlnet_type : str
-        ControlNet variant: "canny", "lineart", "softedge", "scribble", "pose", etc.
-        Default: "lineart"
-    num_inference_steps : int
-        Denoising steps (more = higher quality, slower). Default: 20
-    guidance_scale : float
-        Prompt adherence (7.5 = strong, 1.0 = weak). Default: 7.5
-    strength : float
-        How much to modify image (0.0–1.0, 1.0 = maximum). Default: 0.8
-    enable_model_cpu_offload : bool
-        Enable CPU offloading to reduce VRAM (slower). Default: false
-    device : str
-        PyTorch device: "auto", "cpu", "cuda", "mps". Default: "auto"
-    model_id : str
-        Hugging Face model ID for base diffusion model.
-        Default: "runwayml/stable-diffusion-v1-5"
+    Config keys                 Default                                          Meaning
+    -----------------------------------------------------------------------
+    prompt                      "oil painting, masterpiece, detailed"             Style guidance
+    negative_prompt             "blurry, distorted, low quality"                  What to avoid
+    controlnet_type             "lineart"                                         ControlNet variant (used for repo lookup)
+    controlnet_model            "lllyasviel/control_v11p_sd15_lineart"            HF ControlNet repo (overrides controlnet_type lookup)
+    base_model                  "runwayml/stable-diffusion-v1-5"                  HF base SD model ID
+    num_inference_steps         20                                                Quality vs speed
+    guidance_scale              7.5                                               Prompt adherence
+    hf_token_path               None                                              Path to HF token
+    enable_model_cpu_offload    False                                             Reduce VRAM
+    device                      "auto"                                            cuda / mps / cpu
+    binary_threshold            128                                               Binarization thr.
     """
 
     name = "stylise_controlnet"
 
-    def __init__(
-        self,
-        prompt: str = "oil painting, masterpiece, detailed",
-        negative_prompt: str = "blurry, distorted, low quality",
-        controlnet_type: str = "lineart",
-        num_inference_steps: int = 20,
-        guidance_scale: float = 7.5,
-        strength: float = 0.8,
-        enable_model_cpu_offload: bool = False,
-        device: str = "auto",
-        model_id: str = "runwayml/stable-diffusion-v1-5",
-        hf_token_path: str | None = None,
-    ) -> None:
-        super().__init__()
-        self.prompt = prompt
-        self.negative_prompt = negative_prompt
-        self.controlnet_type = controlnet_type
-        self.num_inference_steps = num_inference_steps
-        self.guidance_scale = guidance_scale
-        self.strength = strength
-        self.enable_model_cpu_offload = enable_model_cpu_offload
-        self.device = device
-        self.model_id = model_id
-        self.hf_token_path = hf_token_path
+    _DEFAULT_BASE_MODEL = "runwayml/stable-diffusion-v1-5"
+    _DEFAULT_CONTROLNET_MODEL = "lllyasviel/control_v11p_sd15_lineart"
 
-        # Lazy-loaded objects
+    def __init__(self, config: dict | None = None) -> None:
+        super().__init__(config or {})
+        c = self.config
+        self.prompt: str = c.get("prompt", "oil painting, masterpiece, detailed")
+        self.negative_prompt: str = c.get("negative_prompt", "blurry, distorted, low quality")
+        self.controlnet_type: str = c.get("controlnet_type", "lineart")
+        self.num_inference_steps: int = int(c.get("num_inference_steps", 20))
+        self.guidance_scale: float = float(c.get("guidance_scale", 7.5))
+        self.base_model: str = c.get("base_model", self._DEFAULT_BASE_MODEL)
+        self.controlnet_model: str = c.get(
+            "controlnet_model",
+            _CONTROLNET_REPO_MAP.get(self.controlnet_type, self._DEFAULT_CONTROLNET_MODEL),
+        )
+
+        # Backward-compat: expose as public attributes (tests read them)
+        self.hf_token_path: str | None = self._hf_token_path
+        self.enable_model_cpu_offload: bool = self._enable_cpu_offload
+
         self._pipe = None
         self._controlnet = None
-        self._device = self._resolve_device(device)
-        self._hf_token = None
 
-    def _resolve_device(self, device: str) -> str:
-        """Resolve device string to actual PyTorch device."""
-        if device in ("auto", ""):
-            try:
-                import torch
+    # ------------------------------------------------------------------
+    # Backward-compatible helpers (referenced by existing tests)
+    # ------------------------------------------------------------------
 
-                if torch.cuda.is_available():
-                    return "cuda"
-                elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-                    return "mps"
-                else:
-                    return "cpu"
-            except ImportError:
-                return "cpu"
-        return device
-    def _load_hf_token(self) -> str | None:
-        """Load HuggingFace token from file if configured.
-        
-        Returns:
-            Token string if file exists, None otherwise
+    def _resolve_device(self, device: str | None = None) -> str:
+        """Resolve device string.
+
+        Deprecated: use ``resolve_device()`` from ``stylizer_base`` directly.
+        Kept for backward compatibility with existing tests.
         """
-        if self._hf_token is not None:
-            return self._hf_token
-        
-        if self.hf_token_path is None:
-            return None
-        
-        from pathlib import Path
-        token_path = Path(self.hf_token_path)
-        
-        if not token_path.exists():
-            logger.warning(
-                "[controlnet] HF token file not found: %s. "
-                "Model loading may fail if it's gated.",
-                self.hf_token_path
-            )
-            return None
-        
-        try:
-            self._hf_token = token_path.read_text().strip()
-            logger.debug("[controlnet] Loaded HF token from: %s", self.hf_token_path)
-            return self._hf_token
-        except Exception as e:
-            logger.warning("[controlnet] Failed to read HF token file: %s", e)
-            return None
+        from pipeline.steps.base.stylizer_base import resolve_device
+        return resolve_device(device if device is not None else self.config.get("device", "auto"))
+
+    # ------------------------------------------------------------------
+    # DiffusionStylizerStep contract
+    # ------------------------------------------------------------------
 
     def _load_models(self) -> None:
-        """Lazy-load ControlNet and StableDiffusion pipeline."""
+        """Lazy-load ControlNet model and SD 1.5 pipeline."""
         if self._pipe is not None:
-            return  # Already loaded
+            return
 
         ok, msg = _check_dependencies()
         if not ok:
-            raise ImportError(f"{_INSTALL_HINT}\n\n{msg}")
+            raise ImportError(f"{_DIFFUSERS_INSTALL_HINT}\n\n{msg}")
 
         try:
-            from diffusers import ControlNetModel, StableDiffusionControlNetPipeline
-            import torch
+            from diffusers import ControlNetModel, StableDiffusionControlNetPipeline  # type: ignore[import]
+            import torch  # type: ignore[import]
+        except ImportError as exc:
+            raise ImportError(f"{_DIFFUSERS_INSTALL_HINT}\n\n{exc}") from exc
 
-            logger.info(
-                f"Loading ControlNet ({self.controlnet_type}) + SD 1.5 on {self._device}..."
-            )
-
-            # Load HF token if configured
-            hf_token = self._load_hf_token()
-
-            # Map controlnet_type to Hugging Face repo
-            # Using control_v11p models (newer, more stable)
-            controlnet_repo_map = {
-                "canny": "lllyasviel/control_v11p_sd15_canny",
-                "lineart": "lllyasviel/control_v11p_sd15_lineart",
-                "softedge": "lllyasviel/control_v11p_sd15_softedge",
-                "scribble": "lllyasviel/control_v11p_sd15_scribble",
-                "pose": "lllyasviel/control_v11p_sd15_openpose",
-                "depth": "lllyasviel/control_v11f1p_sd15_depth",
-                "normal": "lllyasviel/control_v11p_sd15_normal",
-                "seg": "lllyasviel/control_v11p_sd15_seg",
-            }
-
-            controlnet_repo = controlnet_repo_map.get(
-                self.controlnet_type, controlnet_repo_map["lineart"]
-            )
-
-            # Load ControlNet with error handling
-            try:
-                self._controlnet = ControlNetModel.from_pretrained(
-                    controlnet_repo, torch_dtype=torch.float16, use_auth_token=hf_token
-                )
-            except Exception as e:
-                error_msg = str(e).lower()
-                if "404" in error_msg or "not found" in error_msg:
-                    raise RuntimeError(
-                        f"❌ ControlNet model not found: {controlnet_repo}\n\n"
-                        f"Solutions:\n"
-                        f"1. Check the model ID exists on HuggingFace\n"
-                        f"2. If gated, get token: https://huggingface.co/settings/tokens\n"
-                        f"3. Save: echo 'hf_xxx...' > .hf_token\n"
-                        f"4. Add to config: hf_token_path: '.hf_token'"
-                    ) from e
-                raise
-
-            # Load base pipeline with error handling
-            try:
-                self._pipe = StableDiffusionControlNetPipeline.from_pretrained(
-                    self.model_id,
-                    controlnet=self._controlnet,
-                    torch_dtype=torch.float16,
-                    use_auth_token=hf_token,
-                )
-            except Exception as e:
-                error_msg = str(e).lower()
-                if "404" in error_msg or "not found" in error_msg:
-                    raise RuntimeError(
-                        f"❌ Base model not found: {self.model_id}\n\n"
-                        f"Solutions:\n"
-                        f"1. Check the model ID exists on HuggingFace\n"
-                        f"2. If gated, get token: https://huggingface.co/settings/tokens\n"
-                        f"3. Save: echo 'hf_xxx...' > .hf_token\n"
-                        f"4. Add to config: hf_token_path: '.hf_token'"
-                    ) from e
-                raise
-
-            # Move to device
-            self._pipe = self._pipe.to(self._device)
-
-            # Optional CPU offloading
-            if self.enable_model_cpu_offload:
-                self._pipe.enable_model_cpu_offload()
-                logger.info("Model CPU offloading enabled (reduces VRAM)")
-            else:
-                # Enable memory-efficient attention if available
-                try:
-                    self._pipe.enable_attention_slicing()
-                except Exception:
-                    pass
-
-            logger.info(
-                f"ControlNet pipeline loaded successfully (device: {self._device})"
-            )
-
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to load ControlNet pipeline: {e}\n{_INSTALL_HINT}"
-            ) from e
-
-    def _prepare_controlnet_input(self, image: Image.Image) -> Image.Image:
-        """
-        Prepare image for ControlNet conditioning.
-
-        For lineart: use as-is.
-        For canny: detect edges.
-        For other types: apply appropriate preprocessing.
-        """
-        if self.controlnet_type == "canny":
-            # Apply Canny edge detection
-            import cv2
-
-            img_array = np.array(image.convert("L"))
-            edges = cv2.Canny(img_array, 100, 200)
-            return Image.fromarray(edges)
-        elif self.controlnet_type == "softedge":
-            # Use PIL edge enhance
-            from PIL import ImageFilter
-
-            return image.filter(ImageFilter.EDGE_ENHANCE_MORE)
-        else:
-            # For lineart, scribble, pose, depth, etc. - use as-is
-            # In production, these would need specific preprocessing
-            return image.convert("RGB")
-
-    def process(self, ctx: ImageContext) -> ImageContext:
-        """
-        Apply ControlNet style transfer to the image.
-
-        Steps:
-        1. Load models (lazy)
-        2. Prepare ControlNet input
-        3. Run diffusion pipeline
-        4. Binarize result (for plotting)
-        5. Update context
-        """
-        self._load_models()
-
-        rgb_pil = ctx.current_image.convert("RGB")
         logger.info(
-            f"Applying ControlNet style transfer ({self.controlnet_type}) with prompt: {self.prompt}"
+            "Loading ControlNet (%s) + SD 1.5 on %s …",
+            self.controlnet_model, self._device,
         )
+        hf_token = self._load_hf_token()
+        controlnet_repo = self.controlnet_model
 
-        # Prepare ControlNet conditioning image
-        control_image = self._prepare_controlnet_input(rgb_pil)
-        control_image = control_image.resize((rgb_pil.width, rgb_pil.height))
+        # float16 causes NaN outputs on MPS (Apple Silicon) → use float32 there
+        torch_dtype = torch.float16 if self._device == "cuda" else torch.float32
 
         try:
-            # Run diffusion pipeline
-            output = self._pipe(
-                prompt=self.prompt,
-                negative_prompt=self.negative_prompt,
-                image=rgb_pil,
-                control_image=control_image,
-                num_inference_steps=self.num_inference_steps,
-                guidance_scale=self.guidance_scale,
-                strength=self.strength,
-                height=rgb_pil.height,
-                width=rgb_pil.width,
-            )
-            stylized = output.images[0]
+            from inspect import signature
 
-        except Exception as e:
-            logger.error(f"Style transfer failed: {e}")
+            extra_cn: dict = {}
+            if hf_token is not None:
+                fp = signature(ControlNetModel.from_pretrained)
+                if "use_auth_token" in fp.parameters:
+                    extra_cn["use_auth_token"] = hf_token
+                elif "token" in fp.parameters:
+                    extra_cn["token"] = hf_token
+
+            self._controlnet = ControlNetModel.from_pretrained(
+                controlnet_repo,
+                torch_dtype=torch_dtype,
+                **extra_cn,
+            )
+        except Exception as exc:
+            error_msg = str(exc).lower()
+            if "404" in error_msg or "not found" in error_msg:
+                raise RuntimeError(
+                    f"❌ ControlNet model not found: {controlnet_repo}\n"
+                    "If gated, add hf_token_path to config."
+                ) from exc
             raise
 
-        # Binarize for plotting
-        gray = stylized.convert("L")
-        threshold = 128
-        binary = gray.point(lambda x: 255 if x > threshold else 0, "1")
+        try:
+            from inspect import signature
+
+            extra_pipe: dict = {}
+            if hf_token is not None:
+                fp_pipe = signature(StableDiffusionControlNetPipeline.from_pretrained)
+                if "use_auth_token" in fp_pipe.parameters:
+                    extra_pipe["use_auth_token"] = hf_token
+                elif "token" in fp_pipe.parameters:
+                    extra_pipe["token"] = hf_token
+
+            self._pipe = StableDiffusionControlNetPipeline.from_pretrained(
+                self.base_model,
+                controlnet=self._controlnet,
+                torch_dtype=torch_dtype,
+                safety_checker=None,
+                requires_safety_checker=False,
+                **extra_pipe,
+            )
+        except Exception as exc:
+            error_msg = str(exc).lower()
+            if "404" in error_msg or "not found" in error_msg:
+                raise RuntimeError(
+                    f"❌ Base model not found: {self.base_model}\n"
+                    "If gated, add hf_token_path to config."
+                ) from exc
+            raise
+
+        self._pipe = self._pipe.to(self._device)
+
+        if self._enable_cpu_offload:
+            self._pipe.enable_model_cpu_offload()
+            logger.info("Model CPU offloading enabled (reduces VRAM)")
+        else:
+            try:
+                self._pipe.enable_attention_slicing()
+            except Exception:
+                pass
+
+        logger.info("ControlNet pipeline loaded (device: %s)", self._device)
+
+    def _prepare_control_image(self, image: "PILImage.Image") -> "PILImage.Image":
+        """Prepare the ControlNet conditioning image from the input.
+
+        Uses the appropriate ``controlnet_aux`` detector for the selected
+        ``controlnet_type`` so the conditioning image matches what the
+        ControlNet model was trained on.
+
+        Args:
+            image: Input PIL RGB image.
+
+        Returns:
+            Conditioning PIL image appropriate for the selected controlnet_type.
+        """
+        if self.controlnet_type == "lineart":
+            try:
+                from controlnet_aux import LineartDetector  # type: ignore[import]
+            except ImportError as exc:
+                raise ImportError(_CONTROLNET_AUX_INSTALL_HINT) from exc
+            detector = LineartDetector.from_pretrained("lllyasviel/Annotators")
+            detector.to(self._device)
+            return detector(image, detect_resolution=512, image_resolution=image.width)
+
+        if self.controlnet_type == "softedge":
+            try:
+                from controlnet_aux import HEDdetector  # type: ignore[import]
+            except ImportError as exc:
+                raise ImportError(_CONTROLNET_AUX_INSTALL_HINT) from exc
+            detector = HEDdetector.from_pretrained("lllyasviel/Annotators")
+            detector.to(self._device)
+            return detector(image, detect_resolution=512, image_resolution=image.width)
+
+        if self.controlnet_type == "canny":
+            try:
+                from controlnet_aux import CannyDetector  # type: ignore[import]
+            except ImportError as exc:
+                raise ImportError(_CONTROLNET_AUX_INSTALL_HINT) from exc
+            detector = CannyDetector()
+            return detector(image, low_threshold=100, high_threshold=200)
+
+        if self.controlnet_type == "scribble":
+            try:
+                from controlnet_aux import HEDdetector  # type: ignore[import]
+            except ImportError as exc:
+                raise ImportError(_CONTROLNET_AUX_INSTALL_HINT) from exc
+            detector = HEDdetector.from_pretrained("lllyasviel/Annotators")
+            detector.to(self._device)
+            return detector(image, scribble=True, detect_resolution=512, image_resolution=image.width)
+
+        # pose, depth, normal, seg — pass through as-is (require separate specialist detectors)
+        logger.warning(
+            "No dedicated detector implemented for controlnet_type=%r — "
+            "passing input image as-is. Results may be poor.",
+            self.controlnet_type,
+        )
+        return image.convert("RGB")
+
+    def _run_diffusion(self, image: "PILImage.Image") -> "PILImage.Image":
+        """Run ControlNet + SD 1.5 on the given PIL RGB image."""
+        control_image = self._prepare_control_image(image)
+        control_image = control_image.resize((image.width, image.height))
+
+        # Store conditioning image for debugging
+        # (written into ctx via StylizerStep.process → _stylise → here;
+        #  we smuggle it out via a side channel since _stylise only returns binary)
+        self._last_control_image = control_image
 
         logger.info(
-            f"Style transfer complete: {binary.size[0]}×{binary.size[1]} px (binary)"
+            "Applying ControlNet (%s) — prompt: %s", self.controlnet_type, self.prompt
         )
 
-        # Update context
-        ctx.current_image = binary
-        ctx.add_intermediate("stylized_diffusion", stylized)
-        ctx.add_intermediate("controlnet_condition", control_image)
+        output = self._pipe(
+            prompt=self.prompt,
+            negative_prompt=self.negative_prompt,
+            image=control_image,
+            num_inference_steps=self.num_inference_steps,
+            guidance_scale=self.guidance_scale,
+            height=image.height,
+            width=image.width,
+        )
+        stylized: PILImage.Image = output.images[0]
+        logger.info(
+            "Style transfer complete: %d×%d px", stylized.width, stylized.height
+        )
+        return stylized
 
-        return ctx
+    def _stylise(self, ctx: "object") -> "npt.NDArray[np.uint8]":  # type: ignore[override]
+        """Override to also store the controlnet conditioning image."""
+        from pipeline.core.base import ImageContext
+        assert isinstance(ctx, ImageContext)
+
+        self._last_control_image = None
+        binary = super()._stylise(ctx)
+
+        # Store conditioning image produced during _run_diffusion
+        if self._last_control_image is not None:
+            ctx.intermediates["controlnet_condition"] = self._last_control_image
+        return binary
+
+

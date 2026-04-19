@@ -35,38 +35,45 @@ Output
 from __future__ import annotations
 
 import argparse
-import sys
-import time
-from pathlib import Path
+"""
+pipeline/tests/run_all_pipeline_configs.py - Execute pipeline YAMLs from tests
 
-import cv2
-import yaml
+This script executes every YAML file in ``pipeline/tests/pipeline_configs/``
+using the normal ``PipelineRunner``. Important behaviour note:
 
-# ---------------------------------------------------------------------------
-# Path bootstrap: to make imports work regardless of where the script
-# is launched from (from tests/, from pipeline/ or from project root).
-# ---------------------------------------------------------------------------
-_TESTS_DIR    = Path(__file__).resolve().parent
-_PIPELINE_DIR = _TESTS_DIR.parent
-_PLOTTER_ROOT = _PIPELINE_DIR.parent
-for _p in (_PLOTTER_ROOT, _PIPELINE_DIR):
-    if str(_p) not in sys.path:
-        sys.path.insert(0, str(_p))
+- The script does NOT preload or inject the actual image file into the
+  pipeline context. Instead it provides only ``metadata['source_path']``
+  (the input image path) in the ``ImageContext``. This means pipelines
+  must be self-contained and either include a ``load_image`` step (which
+  will read ``metadata['source_path']``) or explicitly expect a
+  pre-populated ``ctx.image``.
 
-from pipeline.core.base import ImageContext      # noqa: E402
-from pipeline.core.runner import PipelineRunner  # noqa: E402
-from pipeline.steps.vectorize_step import paths_to_svg  # noqa: E402
+Usage
+-----
+    # from the plotter root directory:
+    python pipeline/tests/run_all_pipeline_configs.py
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
+    # specific image:
+    python pipeline/tests/run_all_pipeline_configs.py --image foto.jpg
 
-_CONFIGS_DIR = _TESTS_DIR / "pipeline_configs"
+    # test single config:
+    python pipeline/tests/run_all_pipeline_configs.py --config pipeline/pipeline_configs/canny.yaml
 
-GREEN  = "\033[92m"
-YELLOW = "\033[93m"
-RED    = "\033[91m"
-RESET  = "\033[0m"
+    # specify output directory:
+    python pipeline/tests/run_all_pipeline_configs.py --output-dir /tmp/plotter_out
+
+Output
+------
+    pipeline/tests/output/
+        <config_name>/  testimage.png  testimage.svg  testimage.gcode
+
+Notes
+-----
+ - The runner intentionally does not mutate the YAML files. If a YAML
+   currently contains an ``input_path`` key in the ``load_image`` step, it
+   is informational only — the runner will provide the real file via
+   ``metadata['source_path']`` at runtime.
+"""
 BOLD   = "\033[1m"
 
 
@@ -75,13 +82,13 @@ BOLD   = "\033[1m"
 # ---------------------------------------------------------------------------
 
 def _find_stylizer_configs(configs_dir: Path) -> list[Path]:
-    """Returns all ``stylize_*.yaml`` files sorted."""
-    return sorted(configs_dir.glob("stylize_*.yaml"))
+    """Returns all ``*.yaml`` files sorted."""
+    return sorted(configs_dir.glob("*.yaml"))
 
 
 def _config_name(yaml_path: Path) -> str:
-    """``stylize_canny.yaml`` → ``canny``"""
-    return yaml_path.stem.removeprefix("stylize_")
+    """``canny.yaml`` → ``canny``"""
+    return yaml_path.stem
 
 
 def _print_header(configs: list[Path]) -> None:
@@ -115,17 +122,19 @@ def _run_config(
     gcode_path = run_dir / f"{image_path.stem}.gcode"
 
     try:
-        # Load YAML and inject source_path into the first step
+        # Load YAML but do NOT mutate its configuration. We want pipelines
+        # to run exactly as they are defined under pipeline_configs. The
+        # canonical way for a pipeline to get an input file is via
+        # ``metadata["source_path"]`` and the ``LoadImageStep`` — therefore
+        # we only provide the metadata here and do NOT preload ctx.image.
         cfg = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
         steps_cfg: list[dict] = cfg["steps"]
-        steps_cfg[0].setdefault("config", {})["source_path"] = image_path
 
         runner = PipelineRunner(steps_cfg)
 
-        ctx = ImageContext(
-            image=_Image.open(image_path).convert("RGB"),
-            metadata={"source_path": image_path},
-        )
+        # Provide only metadata; do not set ctx.image so LoadImageStep (if
+        # present) will load the image itself from metadata["source_path"].
+        ctx = ImageContext(metadata={"source_path": image_path})
 
         t0 = time.monotonic()
         ctx = runner.run(ctx)

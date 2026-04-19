@@ -3,7 +3,7 @@ pipeline/steps/stylise_adaptive_step.py - Adaptive threshold stylization as Pipe
 
 Data transport via ImageContext
 --------------------------------
-Reads   ctx.metadata["source_path"]  - Path to input image file
+Reads   ctx.image                    - PIL RGB image set by LoadImageStep
 Writes  ctx.intermediates["binary"]  - uint8 array (H, W), 255=line
 """
 
@@ -14,8 +14,8 @@ from typing import TYPE_CHECKING
 
 import cv2
 
-from pipeline.core.base import ImageContext, PipelineStep
-from pipeline.steps.base.stylizer_base import ensure_odd, load_gray
+from pipeline.core.base import ImageContext
+from pipeline.steps.base.stylizer_base import StylizerStep, ensure_odd
 
 if TYPE_CHECKING:
     import numpy as np
@@ -24,29 +24,31 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class StyliseAdaptiveStep(PipelineStep):
+class StyliseAdaptiveStep(StylizerStep):
     """
     Stylization step using adaptive threshold.
 
+    Requires ``LoadImageStep`` to run first so that ``ctx.image`` is set.
+    Converts ``ctx.image`` to grayscale via ``ctx.gray``.
+
     config keys    Default     Corresponds to CLI flag
     ------------------------------------------------
-    style_res      1024        --style-res
+    style_res      1024        --style-res  (handled by LoadImageStep)
     block_size     11          --block-size
     adapt_c        2.0         --adapt-c
     adapt_method   "gaussian"  --adapt-method
     adapt_blur     0           --adapt-blur
     """
 
-    def process(self, ctx: ImageContext) -> ImageContext:
+    def _stylise(self, ctx: ImageContext) -> "npt.NDArray[np.uint8]":
         c = self.config
         block_size: int = ensure_odd(max(3, int(c.get("block_size", 11))))
         adapt_c: float = float(c.get("adapt_c", 2.0))
         method: str = str(c.get("adapt_method", "gaussian"))
         blur: int = int(c.get("adapt_blur", 0))
-        max_side: int = int(c.get("style_res", 1024))
 
-        gray: npt.NDArray[np.uint8] = load_gray(ctx.metadata["source_path"], max_side)
-        logger.debug("[adaptive] Image loaded: %dx%d px", gray.shape[1], gray.shape[0])
+        gray: npt.NDArray[np.uint8] = ctx.image_as_gray
+        logger.debug("[adaptive] Image: %dx%d px", gray.shape[1], gray.shape[0])
 
         img = gray.copy()
         if blur > 0:
@@ -70,10 +72,8 @@ class StyliseAdaptiveStep(PipelineStep):
         # For the plotter: invert so line=255
         binary = cv2.bitwise_not(binary)
         logger.debug(
-            "StyliseAdaptiveStep: method=%s  block=%d  C=%.1f  blur=%d  → %dx%d px",
-            method, block_size, adapt_c, blur, binary.shape[1], binary.shape[0],
+            "StyliseAdaptiveStep: method=%s  block=%d  C=%.1f  blur=%d",
+            method, block_size, adapt_c, blur,
         )
-
-        ctx.intermediates["binary"] = binary.astype("uint8")
-        return ctx
+        return binary
 

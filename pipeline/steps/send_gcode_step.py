@@ -27,7 +27,7 @@ from pathlib import Path
 
 from pipeline.core.base import ImageContext, PipelineStep
 # filter_gcode logically lives in gcode_gen_step; re-exported for backward compatibility
-from pipeline.steps.gcode_gen_step import filter_gcode as _filter_gcode  # noqa: F401
+from pipeline.steps.archive.gcode_gen_step import filter_gcode as _filter_gcode  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +58,9 @@ class SendGcodeStep(PipelineStep):
     dry_run                     False                      --dry-run
     completion_timeout          300                        (internal, seconds)
     """
+
+    def requires(self) -> list[str]:
+        return ["intermediates.gcode_lines"]
 
     def process(self, ctx: ImageContext) -> ImageContext:
         c = self.config
