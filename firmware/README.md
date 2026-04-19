@@ -1,4 +1,3 @@
-````markdown
 # GRBL Firmware
 
 This document describes the GRBL setup for the G-code Pen Plotter.  
@@ -12,7 +11,7 @@ All firmware sources live in the `firmware/` directory. GRBL itself is included 
 - [Build and flash](#build-and-flash)
 - [Serial monitor / GRBL console](#serial-monitor--grbl-console)
 - [Key GRBL settings](#key-grbl-settings-first-run-checklist)
-- [GRBL integration tests](#grbl-integration-tests)
+- [Hardware & firmware tests](#hardware--firmware-tests)
 - [Converting SVG to G-code](#converting-svgvector-graphics-to-g-code)
 - [Sending G-code to the plotter](#sending-g-code-to-the-plotter)
 
@@ -26,7 +25,7 @@ firmware/
     ├── config.h          ← Plotter-specific GRBL settings (overrides grbl/grbl/config.h)
     ├── main.cpp          ← Arduino-framework entry point (calls grbl_main)
     └── grbl_main_shim.c  ← Bridges GRBL's main() to grbl_main() to avoid linker conflict
-firmware/grbl/            ← Git submodule: gnea/grbl (do not edit)
+└── grbl/                 ← Git submodule: gnea/grbl (do not edit)
 ```
 
 
@@ -131,14 +130,23 @@ Note: this repository's G-code profile (`pipeline/configs/grbl_a4_pen.toml`) is 
 If your hardware is wired the other way (energized = pen DOWN), swap the M3/M5 commands in the G-code profile or rewire the solenoid/MOSFET accordingly.
 
 
-## GRBL integration tests
+## Hardware & firmware tests
 
-After flashing GRBL, run the following tests **in order** to verify the complete system via G-code before the first real plot.  
-Each test is sent via the MDI console of a G-code sender (e.g. [UGS](https://universalgcodesender.com/)) at **115200 baud**.
+The test suite is split into two phases:
 
-Phase 1 — Standalone Arduino tests (TC1–TC4)
+| Phase | Firmware | TCs | Purpose |
+|-------|----------|-----|---------|
+| Phase 1 | Standalone sketch per test | TC1–TC4 | Test individual hardware components without GRBL |
+| Phase 2 | GRBL (production firmware) | TC5-G–TC9-G | Verify the complete system via G-code |
 
-Before running the GRBL integration tests you should run the Phase 1 standalone Arduino sketches. The sketch filenames and PlatformIO env names correspond directly to the TC numbers below (the numbering in the source tree matches the TC number shown here):
+See [testing.md](../testing.md) for the full detailed test procedure with expected outputs and pass/fail criteria.
+
+**Phase 1 — Standalone Arduino sketches (TC1–TC4)**
+
+Run these first — they are faster to flash and easier to debug individual signals.  
+Each sketch is self-contained and prints `PASS` / `FAIL` to the serial monitor.
+
+The sketch filenames and PlatformIO env names correspond directly to the TC numbers:
 
 ```
 firmware/test/
@@ -159,11 +167,10 @@ pio run -e tc4_pen_lift   -t upload   # flash TC4
 pio device monitor
 ```
 
-**Prerequisite:** all Phase 1 standalone tests (TC1–TC4) must have passed first.  
-See [testing.md](../testing.md) for the full test documentation.
+**Phase 2 — GRBL integration tests (TC5-G–TC9-G)**
 
-
-Additionally, a host-side helper to write recommended GRBL `$` settings is provided as a commissioning testcase (TC5) and is intended to be run on the commissioning PC after the Phase 1 standalone sketches and before the Phase 2 G-code integration tests.
+After all Phase 1 tests pass, flash production GRBL firmware (see [Build and flash](#build-and-flash)) and run the tests below in order.  
+Each command is sent via the MDI console of a G-code sender (e.g. [UGS](https://universalgcodesender.com/)) at **115200 baud**.
 
 ---
 
@@ -315,4 +322,3 @@ Pen-up/pen-down: configure the tool to emit `M3 S1000` (pen UP) and `M5` (pen DO
 - **[bCNC](https://github.com/vlachoudis/bCNC)** — Python-based, feature-rich
 - **[CNCjs](https://cnc.js.org/)** — browser-based, runs as a Node.js server
 
-````
