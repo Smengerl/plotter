@@ -56,16 +56,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--input",
         type=Path,
-        required=True,
+        required=False,
+        default=None,
         metavar="IMAGE",
-        help="Path to input image (jpg, png, …)",
+        help="Path to input image (jpg, png, …). Overrides source_path in load_image YAML config.",
     )
     p.add_argument(
         "--output",
         type=Path,
-        required=True,
+        required=False,
+        default=None,
         metavar="FILE",
-        help="Path to output file (e.g. out.gcode)",
+        help="Path to output file (e.g. out.png, out.gcode). Overrides output_path in save_image YAML config.",
     )
     p.add_argument(
         "--dry-run",
@@ -130,12 +132,12 @@ def load_config(config_path: Path) -> list[dict[str, Any]]:
     return data["steps"]
 
 
-def print_plan(steps_config: list[dict[str, Any]], input_path: Path, output_path: Path) -> None:
+def print_plan(steps_config: list[dict[str, Any]], input_path: "Path | None", output_path: "Path | None") -> None:
     """Prints the execution plan in human-readable format to stdout (for --dry-run)."""
     print()
     print("=== Pipeline Plan (--dry-run) ===")
-    print(f"  Input  : {input_path}")
-    print(f"  Output : {output_path}")
+    print(f"  Input  : {input_path or '(from load_image YAML config)'}")
+    print(f"  Output : {output_path or '(from save_image YAML config)'}")
     print(f"  Steps  : {len(steps_config)}")
     print()
 
@@ -164,37 +166,28 @@ def print_plan(steps_config: list[dict[str, Any]], input_path: Path, output_path
 # ImageContext Initialization
 # ---------------------------------------------------------------------------
 
-def build_initial_context(input_path: Path, output_path: Path) -> "Any":
+def build_initial_context(
+    input_path: "Path | None",
+    output_path: "Path | None",
+) -> "Any":
     """
-    Builds the initial ImageContext.
+    Build an empty ImageContext with CLI-provided path overrides in metadata.
 
-    The image is loaded with PIL (RGB).  Path and output target are stored
-    in ``metadata`` so steps can access them.
+    Image loading and saving are handled exclusively by pipeline steps
+    (``load_image`` and ``save_image``).  This function only injects
+    the CLI ``--input`` / ``--output`` paths into metadata so that the
+    steps can pick them up as runtime overrides over any static paths
+    defined in the YAML config.
     """
     from pipeline.core.base import ImageContext
 
-    try:
-        from PIL import Image  # type: ignore[import]
-    except ImportError:
-        logger.error("Pillow is not installed: pip install pillow")
-        sys.exit(1)
+    metadata: dict[str, Any] = {}
+    if input_path is not None:
+        metadata["source_path"] = input_path
+    if output_path is not None:
+        metadata["output_path"] = output_path
 
-    if not input_path.exists():
-        logger.error("Input image not found: %s", input_path)
-        sys.exit(1)
-
-    image = Image.open(input_path).convert("RGB")
-    logger.debug("Image loaded: %s  (%dx%d)", input_path, image.width, image.height)
-
-    ctx = ImageContext(
-        image=image,
-        metadata={
-            "source_path": input_path,
-            "output_path": output_path,
-            "source_size": (image.height, image.width),  # (H, W) as numpy-like
-        },
-    )
-    return ctx
+    return ImageContext(metadata=metadata)
 
 
 # ---------------------------------------------------------------------------
@@ -228,11 +221,12 @@ def main() -> int:
         return 1
 
     logger.info("=== Pipeline started ===")
-    logger.info("Input  : %s", args.input)
-    logger.info("Output : %s", args.output)
+    logger.info("Input  : %s", args.input or "(from load_image YAML config)")
+    logger.info("Output : %s", args.output or "(from save_image YAML config)")
     logger.info("Config : %s", args.config)
 
-    # --- Build context and execute pipeline ---
+    # --- Build context with CLI path overrides and execute pipeline ---
+    # Image loading and saving are handled by load_image / save_image steps.
     ctx = build_initial_context(args.input, args.output)
     runner.run(ctx)
 
@@ -242,4 +236,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

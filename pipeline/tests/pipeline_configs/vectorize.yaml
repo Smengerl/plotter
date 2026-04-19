@@ -19,17 +19,30 @@ steps:
 
   - step: gcode_gen
     config:
-      target_width_mm: 180.0
-      target_height_mm: 250.0
-      origin_x: 5.0
-      origin_y: 5.0
-      keep_aspect: true
-      feedrate_draw: 1500
-      feedrate_travel: 3000
-      pen_down_cmd: "M3 S1000"
-      pen_up_cmd: "M5"
-      pen_delay_ms: 100
+      target_width_mm: 180.0 # Drawing width in mm (X-axis)
+      target_height_mm: 250.0 # Drawing height in mm (Y-axis)
+      origin_x: 5.0 # Left margin in mm
+      origin_y: 5.0 # Bottom margin in mm
+      keep_aspect: true # Maintain aspect ratio
+      feedrate_draw: 1500 # Feedrate drawing (mm/min)
+      feedrate_travel: 3000 # Feedrate travel (mm/min)
+      pen_down_cmd: "M5" # GRBL command pen DOWN (repo default: M5)
+      pen_up_cmd: "M3 S1000" # GRBL command pen UP (repo default: M3 S1000)
+      pen_delay_ms: 100 # Wait time after pen down in ms
 
   - step: save_gcode
     config:
-      output_path: "output/vectorized_image.gcode"
+      output_path: "output/vectorized_image_gcode_gen.gcode"
+
+  - step: gcode_from_svg
+    config:
+      profile: "grbl_a4_pen"
+      toml_path: "/pipeline/configs/grbl_a4_pen.toml" # Optional path to custom GCode profile (overrides built-in)
+      target_width_mm: 180.0 # Drawing width in mm (default: 190.0 = A4 - 2x5mm margins)
+      target_height_mm: 250.0 # Drawing height in mm (default: 277.0 = A4 - 2x10mm margins)
+      keep_aspect: true # Maintain aspect ratio (default: True)
+      linesort: true # Optimize path order by travel distance (default: True)
+
+  - step: save_gcode
+    config:
+      output_path: "output/vectorized_image_gcode_from_svg.gcode"

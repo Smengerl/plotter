@@ -6,14 +6,18 @@ Useful for debugging intermediate results (e.g. after style transfer)
 or as the final step of an image-only pipeline.
 
 Output path resolution (in order of priority):
-  1. ctx.metadata["output_path"]  — runtime value, set before runner.run()
-  2. config["output_path"]        — static value from pipeline config
+  1. ctx.metadata["output_path"]  — runtime override, e.g. set via CLI --output
+  2. config["output_path"]        — static path defined in the pipeline YAML
+
+Whichever source is used is reported at DEBUG level.
+If neither is set, a ValueError is raised with a clear message.
 
 Data transport via ImageContext
 --------------------------------
-Reads   ctx.image                      - PIL image to save
-        ctx.metadata["output_path"]    - runtime output path (optional)
-Writes  nothing  — pure side effect (file on disk)
+Reads   ctx.image                       - PIL image to save
+        ctx.metadata["output_path"]     - Runtime path override (optional)
+        config["output_path"]           - Static YAML path (optional fallback)
+Writes  nothing — pure side effect (file on disk)
 """
 
 from __future__ import annotations
@@ -34,9 +38,16 @@ class SaveImageStep(PipelineStep):
     """
     Save ``ctx.image`` to a file on disk.
 
-    The output path is resolved in this order:
-    1. ``ctx.metadata["output_path"]`` — set at runtime before ``runner.run()``
-    2. ``config["output_path"]``       — static value in the pipeline config
+    **Output path resolution** (first match wins):
+
+    1. ``ctx.metadata["output_path"]`` — runtime override, e.g. injected by
+       ``main.py`` from the CLI ``--output`` argument.
+       Debug output: ``"destination: CLI override → <path>"``
+    2. ``config["output_path"]``       — static path in the pipeline YAML config.
+       Debug output: ``"destination: YAML config → <path>"``
+
+    If neither is set, a ``ValueError`` is raised immediately with a descriptive
+    message explaining both options.
 
     The image format is inferred from the file extension.
     JPEG saves use ``quality`` (default 95); PNG saves use ``compress_level``
@@ -44,8 +55,8 @@ class SaveImageStep(PipelineStep):
 
     Config keys        Default  Meaning
     ----------------------------------------------------------
-    output_path        None     Static fallback output path (str or Path).
-                                Overridden by metadata["output_path"] if set.
+    output_path        None     Static output path (str or Path) from YAML config.
+                                Overridden by ctx.metadata["output_path"] if set.
     quality            95       JPEG quality (1–95). Ignored for other formats.
     compress_level     6        PNG compression level (0=none, 9=max).
                                 Ignored for other formats.
@@ -57,16 +68,22 @@ class SaveImageStep(PipelineStep):
         return ["image"]
 
     def process(self, ctx: ImageContext) -> ImageContext:
-        # --- Resolve output path: runtime metadata > static config ---
-        output_path = ctx.metadata.get("output_path") or self.config.get("output_path")
-        if not output_path:
-            raise ValueError(
-                "SaveImageStep: output_path not set.  "
-                "Provide it via ctx.metadata['output_path'] (runtime) "
-                "or config['output_path'] (static pipeline config)."
-            )
+        # --- Resolve output path: runtime metadata (CLI) > static YAML config ---
+        runtime_path = ctx.metadata.get("output_path")
+        config_path = self.config.get("output_path")
 
-        output_path = Path(output_path)
+        if runtime_path:
+            output_path = Path(runtime_path)
+            logger.debug("SaveImageStep: destination: CLI override → %s", output_path)
+        elif config_path:
+            output_path = Path(config_path)
+            logger.debug("SaveImageStep: destination: YAML config → %s", output_path)
+        else:
+            raise ValueError(
+                "SaveImageStep: output_path not set.\n"
+                "  Option A — CLI override:  pass --output <path> to main.py\n"
+                "  Option B — YAML config:   add 'output_path: <path>' under this step's config"
+            )
         suffix = output_path.suffix.lower()
 
         if suffix not in _SUPPORTED_FORMATS:

@@ -1,6 +1,6 @@
-# pipeline/configs/demo_controlnet_style.yaml
+# pipeline/examples/controlnet_pen_sketch.yaml
 #
-# Demo pipeline: Style transfer using ControlNet + Stable Diffusion 1.5
+# Example pipeline: Pen sketch style via ControlNet + Stable Diffusion 1.5
 #
 # This pipeline converts any image into an artistic sketch-like drawing
 # with a specified style via text prompt. The result is then vectorized
@@ -12,16 +12,16 @@
 # - CPU-only: ~30–60 minutes per image
 # - GPU (CUDA): ~30–120 seconds per image
 # - Use enable_model_cpu_offload: true to reduce VRAM (slower)
+# - 16 GB RAM: enable_model_cpu_offload is enabled below (required)
 
 steps:
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
   - step: load_image
     config:
-      input_path: "pipeline/tests/testimage.png"
+      style_res: 512
 
-  # Step 1: Apply artistic style using ControlNet + SD 1.5
-  #
-  # This step converts the input image to an artistic style
-  # guided by the text prompt and ControlNet conditioning.
+  # Step 2: Apply artistic style using ControlNet + SD 1.5
   - step: stylise_controlnet
     config:
       # Style prompt - adjust to your artistic goal
@@ -45,34 +45,9 @@ steps:
       # Model and device
       base_model: "runwayml/stable-diffusion-v1-5"
       device: auto # auto | cpu | cuda | mps
-      enable_model_cpu_offload: false # Reduce VRAM at cost of speed
+      enable_model_cpu_offload: true # Required on 16 GB RAM; offloads weights to CPU between steps
 
-  # Step 2: Save image
+  # Step 3: Save output image
+  # output_path is provided via CLI --output (no path needed here)
   - step: save_image
-    config:
-      output_path: "output/stylised_image.png"
-
-  # Step 3: Convert to vector paths
-  - step: vectorise
-    config:
-      min_path_px: 10 # Minimum path length (shorter = more detail)
-      simplify_eps: 1.5 # Path simplification tolerance
-
-  # Step 4: Generate GCode
-  - step: gcode_gen
-    config:
-      target_width_mm: 180.0
-      target_height_mm: 250.0
-      origin_x: 5.0
-      origin_y: 5.0
-      keep_aspect: true
-      feedrate_draw: 1500
-      feedrate_travel: 3000
-      pen_down_cmd: "M3 S1000"
-      pen_up_cmd: "M5"
-      pen_delay_ms: 100
-
-  # Step 5: Save GCode to file
-  - step: save_gcode
-    config:
-      output_path: "output/stylised_image.gcode"
+    config: {}

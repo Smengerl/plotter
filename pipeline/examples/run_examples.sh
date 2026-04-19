@@ -1,132 +1,103 @@
 #!/usr/bin/env bash
 # pipeline/examples/run_examples.sh
 #
-# Examples for running the image-to-GCode pipeline with different configurations
+# Run all style-transfer example pipelines using pipeline/main.py.
+#
+# Each pipeline is configured entirely in its YAML file — edit the YAML to
+# change prompts, parameters, or steps. All outputs go to output/.
+#
+# Usage:
+#   ./pipeline/examples/run_examples.sh [INPUT_IMAGE]
 #
 # Prerequisites:
-#   - Python 3.13+ venv activated
-#   - All dependencies installed (pip install -r requirements.txt)
-#   - Test image at: pipeline/tests/testimage.png
+#   source .venv/bin/activate   (or run pipeline/setup_pipeline.sh first)
+#   pip install diffusers transformers safetensors torch accelerate
 
-# Don't exit on ControlNet errors - continue with other examples
+set -euo pipefail
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
-# Python executable from venv
 PYTHON="${REPO_ROOT}/.venv/bin/python"
 
-# Test if venv exists
 if [ ! -f "$PYTHON" ]; then
-    echo "❌ Error: Python venv not found at $PYTHON"
-    echo "   Please run: source .venv/bin/activate"
+    echo "❌ venv not found. Run: ./pipeline/setup_pipeline.sh"
     exit 1
 fi
 
-# Test image location
-TEST_IMAGE="pipeline/tests/testimage.png"
+INPUT="${1:-pipeline/tests/testimage.png}"
 OUTPUT_DIR="output"
-
-# Create output directory
 mkdir -p "$OUTPUT_DIR"
 
 echo "=========================================="
-echo "Plotter Pipeline Examples"
+echo "Plotter Style-Transfer Examples"
+echo "Input: $INPUT"
 echo "=========================================="
 echo ""
 
-# ============================================================================
-# Example 1: Standard Pipeline (Informative Stylizer)
-# ============================================================================
-echo "1️⃣  Standard Pipeline (Informative Stylizer)"
-echo "   Config: pipeline/configs/standard_pipeline.yaml"
-echo "   Stylizer: Neural network-based sketch generation"
-echo ""
-
-"$PYTHON" pipeline/main.py \
-    --config pipeline/configs/standard_pipeline.yaml \
-    --input "$TEST_IMAGE" \
-    --output "$OUTPUT_DIR/standard_pipeline.gcode" \
-    --verbose
-
-echo "   ✅ Output: $OUTPUT_DIR/standard_pipeline.gcode"
-echo ""
-
-# ============================================================================
-# Example 2: ControlNet Style Transfer (Requires GPU + diffusers)
-# ============================================================================
-echo "2️⃣  ControlNet Style Transfer"
-echo "   Script: run_controlnet_example.py"
-echo "   Stylizer: Stable Diffusion 1.5 + ControlNet lineart"
-echo "   ⚠️  Note: First run downloads ~4GB models!"
-echo ""
-
-if "$PYTHON" -c "import torch; import diffusers; print('PyTorch + diffusers available')" 2>/dev/null; then
-    "$PYTHON" pipeline/examples/run_controlnet_example.py \
-        --input "$TEST_IMAGE" \
-        --output "$OUTPUT_DIR" \
-        --prompt "ink drawing, pen sketch, detailed line art" 2>&1 | grep -E "Image loaded|GCode saved|Pipeline" || true
-    echo "   ✅ Output: $OUTPUT_DIR/controlnet_style.gcode"
-else
-    echo "   ⚠️  Skipped: Install diffusers for ControlNet support:"
-    echo "      pip install diffusers transformers safetensors torch accelerate"
+# Check once whether diffusers/torch are available
+if ! "$PYTHON" -c "import torch, diffusers" 2>/dev/null; then
+    echo "❌ PyTorch / diffusers not installed. Run:"
+    echo "   pip install diffusers transformers safetensors torch accelerate"
+    echo ""
+    exit 1
 fi
-echo ""
 
-# ============================================================================
-# Example 3: Dry Run (Validate Pipeline, Don't Execute)
-# ============================================================================
-echo "3️⃣  Dry Run - Validate Pipeline Structure"
-echo "   Tests pipeline configuration without processing"
-echo ""
+run_example() {
+    local num="$1"
+    local label="$2"
+    local config="$3"
+    local output="$4"
 
-"$PYTHON" pipeline/main.py \
-    --config pipeline/configs/standard_pipeline.yaml \
-    --input "$TEST_IMAGE" \
-    --output "$OUTPUT_DIR/dry_run.gcode" \
-    --dry-run 2>&1 | grep -E "Complete|Step|Error" || true
+    echo "${num}  ${label}"
+    echo "   Config: ${config}"
+    echo ""
 
-echo "   ✅ Pipeline validated successfully"
-echo ""
-
-# ============================================================================
-# Example 4: Custom Config (Test Pipeline)
-# ============================================================================
-echo "4️⃣  Test Pipeline (All Stylizers)"
-echo "   Runs all available stylizers on test image"
-echo ""
-
-# Run all test configs
-for config in pipeline/tests/pipeline_configs/stylize_*.yaml; do
-    if [ ! -f "$config" ]; then
-        echo "   ⚠️  No test configs found in pipeline/tests/pipeline_configs/"
-        break
-    fi
-    
-    step_name=$(basename "$config" .yaml)
-    echo "   Running: $step_name"
-    
     "$PYTHON" pipeline/main.py \
         --config "$config" \
-        --input "$TEST_IMAGE" \
-        --output "$OUTPUT_DIR/${step_name}.gcode" \
-        --verbose 2>&1 | tail -2 || echo "   ⚠️  Failed (see error above)"
-done
+        --input  "$INPUT" \
+        --output "$OUTPUT_DIR/${output}" \
+        --verbose
 
-echo ""
-echo "   ✅ All test pipelines completed"
+    echo ""
+    echo "   ✅ $OUTPUT_DIR/${output}"
+    echo ""
+}
+
+# ── ControlNet examples (structure-preserving) ────────────────────────────────
+echo "── ControlNet (structure-preserving) ──────────────────────"
+echo "   ⚠️  First run downloads ~4GB models (ControlNet + SD 1.5)"
 echo ""
 
-# ============================================================================
-# Summary
-# ============================================================================
+run_example "1️⃣ " "Pen Sketch       (lineart conditioning)" \
+    "pipeline/examples/controlnet_pen_sketch.yaml"  "controlnet_pen_sketch.png"
+
+run_example "2️⃣ " "Technical Drawing (canny conditioning)" \
+    "pipeline/examples/controlnet_technical.yaml"   "controlnet_technical.png"
+
+run_example "3️⃣ " "Woodcut Print     (softedge conditioning)" \
+    "pipeline/examples/controlnet_woodcut.yaml"     "controlnet_woodcut.png"
+
+# ── img2img examples (no ControlNet, faster) ──────────────────────────────────
+echo "── img2img (no ControlNet, faster) ────────────────────────"
+echo "   ⚠️  First run downloads ~4GB models (SD 1.5)"
+echo ""
+
+run_example "4️⃣ " "Oil Painting  (strength 0.75)" \
+    "pipeline/examples/img2img_oil_painting.yaml"  "img2img_oil_painting.png"
+
+run_example "5️⃣ " "Watercolor    (strength 0.55, subtle)" \
+    "pipeline/examples/img2img_watercolor.yaml"    "img2img_watercolor.png"
+
+run_example "6️⃣ " "Charcoal      (strength 0.85, aggressive)" \
+    "pipeline/examples/img2img_charcoal.yaml"      "img2img_charcoal.png"
+
+# ── Summary ───────────────────────────────────────────────────────────────────
 echo "=========================================="
-echo "✅ Examples Complete!"
+echo "✅ All examples complete"
 echo "=========================================="
 echo ""
-echo "Generated GCode files:"
-if ls "$OUTPUT_DIR"/*.gcode 1> /dev/null 2>&1; then
-    ls -lh "$OUTPUT_DIR"/*.gcode
-else
-    echo "   (No files generated - check errors above)"
-fi
+echo "Generated images:"
+ls -lh "$OUTPUT_DIR"/*.png 2>/dev/null || echo "   (none found)"
 echo ""
+

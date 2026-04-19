@@ -1,6 +1,6 @@
-# pipeline/configs/demo_img2img_style.yaml
+# pipeline/examples/img2img_oil_painting.yaml
 #
-# Demo pipeline: Image-to-Image style transfer using Stable Diffusion v1.5
+# Example pipeline: Oil painting style via img2img + Stable Diffusion v1.5
 #
 # This pipeline applies artistic styles to images using img2img without ControlNet.
 # Lighter and faster than ControlNet, but with less control over structure.
@@ -17,9 +17,16 @@
 # - CPU-only: ~10–30 minutes per image
 # - GPU (CUDA): ~1–3 minutes per image
 # - GPU (M1/M2/M3): ~3–10 minutes per image
+# - 16 GB RAM: enable_model_cpu_offload is enabled below (required)
 
 steps:
-  # Step 1: Apply artistic style using img2img
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
+  - step: load_image
+    config:
+      style_res: 512
+
+  # Step 2: Apply artistic style using img2img
   #
   # This step modifies the input image to match the specified style,
   # without ControlNet conditioning.
@@ -43,34 +50,9 @@ steps:
       model_id: "stable-diffusion-v1-5/stable-diffusion-v1-5" # Community mirror (SD 2.1 base was removed from HF)
       hf_token_path: ".hf_token" # Path to HuggingFace token (optional, for gated models)
       device: auto # auto | cpu | cuda | mps
-      enable_model_cpu_offload: false # Reduce VRAM at cost of speed
+      enable_model_cpu_offload: true # Required on 16 GB RAM; offloads weights to CPU between steps
 
-  # Step 2: Save image
+  # Step 3: Save output image
+  # output_path is provided via CLI --output (no path needed here)
   - step: save_image
-    config:
-      output_path: "output/stylised_image.png"
-
-  # Step 3: Convert to vector paths
-  - step: vectorise
-    config:
-      min_path_px: 10 # Minimum path length (shorter = more detail)
-      simplify_eps: 1.5 # Path simplification tolerance
-
-  # Step 4: Generate GCode
-  - step: gcode_gen
-    config:
-      target_width_mm: 180.0
-      target_height_mm: 250.0
-      origin_x: 5.0
-      origin_y: 5.0
-      keep_aspect: true
-      feedrate_draw: 1500
-      feedrate_travel: 3000
-      pen_down_cmd: "M3 S1000"
-      pen_up_cmd: "M5"
-      pen_delay_ms: 100
-
-  # Step 5: Save GCode to file
-  - step: save_gcode
-    config:
-      output_path: "output/stylised_image.gcode"
+    config: {}

@@ -27,7 +27,7 @@ from pathlib import Path
 
 from pipeline.core.base import ImageContext, PipelineStep
 # filter_gcode logically lives in gcode_gen_step; re-exported for backward compatibility
-from pipeline.steps.archive.gcode_gen_step import filter_gcode as _filter_gcode  # noqa: F401
+from pipeline.steps.gcode_gen_step import filter_gcode as _filter_gcode  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

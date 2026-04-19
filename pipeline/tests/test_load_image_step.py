@@ -41,7 +41,9 @@ def _ctx_with_source(path: Path) -> ImageContext:
 class TestLoadImageStep:
 
     def test_requires_source_path(self):
-        assert "metadata.source_path" in LoadImageStep().requires()
+        # source_path can come from metadata (runtime) or config (static YAML),
+        # so requires() is empty — the step validates the path itself at runtime.
+        assert LoadImageStep().requires() == []
 
     def test_populates_ctx_image_as_rgb(self, tmp_path):
         img = Image.new("RGB", (64, 48), color=(200, 100, 50))
