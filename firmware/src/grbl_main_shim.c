@@ -11,7 +11,20 @@
   Source: grbl/grbl/main.c (gnea/grbl, licensed GPLv3)
 */
 
-#include "grbl.h"
+/*
+  grbl_main_shim.c  —  Re-exports GRBL's main() as grbl_main()
+  -------------------------------------------------------------
+  The Arduino framework already provides int main(), so we cannot link
+  GRBL's original main.c unchanged.  Instead we exclude grbl/grbl/main.c
+  from the build (see platformio.ini build_src_filter) and provide this
+  shim, which contains exactly the same code but under the name grbl_main().
+
+  Our main.cpp (C++) then calls grbl_main() from setup().
+
+  Source: grbl/grbl/main.c (gnea/grbl, licensed GPLv3)
+*/
+
+#include "../grbl/grbl/grbl.h"
 
 /* System global variables — identical to grbl/grbl/main.c */
 system_t sys;

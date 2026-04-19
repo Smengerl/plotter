@@ -37,7 +37,7 @@
   Probe             A5             (unused)
 
   Microstep jumpers (MS1/MS2/MS3 under each driver on the shield)
-  ────────────────────────────────────────────────────────────────
+  ────────────────────────────────────────────────────────
   All three jumpers installed → 1/16 microstepping (default assumed)
   Match DEFAULT_X/Y_STEPS_PER_MM in config.h if you change this.
 
@@ -64,12 +64,12 @@ extern "C"
 
 // The Arduino framework calls setup() once and then loop() forever.
 // We never return from grbl_main(), so setup() is the whole program.
-void setup()
+extern "C" void setup()
 {
     grbl_main(); // never returns
 }
 
-void loop()
+extern "C" void loop()
 {
     // grbl_main() contains its own infinite loop; this is never reached.
 }
