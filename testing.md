@@ -1,16 +1,22 @@
 # Hardware Test Guide
 
-This document describes the step-by-step test procedure to verify the correct function of the plotter hardware.
+This document describes the step-by-step test procedure to verify the correct function of the plotter hardware and the host-side pipeline software.
 
-Tests are split into two phases:
+Tests are split into four phases:
 
-| Phase | Firmware | TCs | Purpose |
-|-------|----------|-----|---------|
-| [Phase 1](#phase-1--standalone-arduino-tests-no-grbl) | Standalone sketch per test | TC1–TC4 | Test individual components directly, no GRBL involved |
-| [Phase 2](#phase-2--grbl-integration-tests) | GRBL (production firmware) | TC5-G–TC9-G | Verify the full system through GRBL and G-code |
+| Phase | What is tested | TCs | Purpose |
+|-------|----------------|-----|---------|
+| [Phase 1](#phase-1--standalone-arduino-tests-no-grbl) | Standalone Arduino sketch per TC | TC1–TC4 | Test individual hardware components directly, no GRBL involved |
+| [Phase 2](#phase-2--grbl-integration-tests) | GRBL (production firmware) | TC5-G–TC9-G | Verify the full hardware system through GRBL and G-code |
+| [Phase 3](#phase-3--pipeline-software-tests) | Host-side Python pipeline | TC-P1–TC-P3 | Verify the image-processing and G-code generation pipeline |
+| [Phase 4](#phase-4--full-system-end-to-end-plot) | Complete system (host + plotter) | TC-E1–TC-E3 | Run a real pipeline and send the output to the connected plotter |
 
-Run Phase 1 first — it is faster to flash and easier to debug individual signals.  
-Only proceed to Phase 2 once all Phase 1 tests pass.
+Run the phases in order:
+
+- Phase 1 first — fastest to flash, easiest to debug individual hardware signals.
+- Phase 2 only after all Phase 1 tests pass.
+- Phase 3 runs independently on the host PC and does **not** require the plotter to be connected.
+- Phase 4 requires both Phase 2 (hardware verified) and Phase 3 (pipeline verified) to have passed.
 
 ---
 
@@ -386,6 +392,317 @@ M3 S1000
 
 ---
 
+## Phase 3 — Pipeline Software Tests
+
+This phase verifies the host-side Python pipeline that converts images to G-code.  
+It runs entirely on the host PC — **no plotter connection is required**.
+
+### Phase 3 Prerequisites
+
+- Python 3.13 and the project virtualenv set up:
+
+  ```bash
+  ./pipeline/setup_pipeline.sh
+  ```
+
+- All hardware tests (Phase 1 + Phase 2) should have passed before an end-to-end plot is attempted, but Phase 3 can be run independently at any time.
+
+---
+
+### TC-P1 — Unit Tests
+
+**Goal:** All 62 pipeline unit tests pass without errors.
+
+**Run:**
+
+```bash
+.venv/bin/pytest pipeline/tests/ -v
+```
+
+**Expected:**
+
+```text
+62 passed in <N>s
+```
+
+All test cases in `pipeline/tests/test_*.py` must show `PASSED`. No `FAILED` or `ERROR` entries are acceptable.
+
+**Failure hints:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| `ModuleNotFoundError` | Virtualenv not activated or incomplete install | Re-run `./pipeline/setup_pipeline.sh` |
+| `ImportError: cannot import name ...` | Outdated installed package | `pip install -r pipeline/requirements.txt --upgrade` |
+| Individual test `FAILED` | Step logic regression | Check the failing test and the corresponding step in `pipeline/steps/` |
+
+---
+
+### TC-P2 — Pipeline Config Smoke Tests
+
+**Goal:** All pipeline YAML configurations in `pipeline/configs/` execute without Python errors on the test image.
+
+**Run:**
+
+```bash
+.venv/bin/python pipeline/tests/run_all_pipeline_configs.py
+```
+
+**What this does:**
+
+Each YAML file under `pipeline/configs/` (excluding the TOML profile) is loaded and executed against `pipeline/tests/testimage.png`. The runner checks that every step completes without raising an exception.
+
+**Expected:** All configs report `OK`. Example output:
+
+```text
+[OK] standard_pipeline.yaml
+[OK] stylize_canny.yaml
+[OK] stylize_xdog.yaml
+...
+```
+
+> ⚠️ Configs that use neural-network stylizers (`stylize_controlnet.yaml`, `stylize_img2img.yaml`, etc.) will download model weights on the first run (~2–4 GB). Subsequent runs use the cached models.  
+> Skip NN-heavy configs during initial testing with `--skip-stylizers` if needed.
+
+**Failure hints:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| `Step not found in registry` | Step name typo or missing registry entry | Check `pipeline/core/registry.py` |
+| `FileNotFoundError: testimage.png` | Test image missing | Confirm `pipeline/tests/testimage.png` exists |
+| NN model download fails | No internet / HuggingFace token required | Run `./pipeline/setup_hf_token.py` or use `--skip-stylizers` |
+
+---
+
+### TC-P3 — End-to-End G-code Generation
+
+**Goal:** The full pipeline (stylization → vectorization → G-code generation) produces a valid `.gcode` file for a real input image.
+
+**Run:**
+
+```bash
+.venv/bin/python pipeline/main.py \
+    --config pipeline/configs/standard_pipeline.yaml \
+    --input pipeline/tests/testimage.png \
+    --output /tmp/test_output.gcode \
+    --verbose
+```
+
+**Expected:**
+
+1. Pipeline runs without errors.
+2. Output file `/tmp/test_output.gcode` is created and non-empty.
+3. File contains valid G-code: starts with `G21` (millimeter mode) and includes `G00`/`G01` move commands.
+
+**Quick validation:**
+
+```bash
+head -5 /tmp/test_output.gcode   # should show G21, G90, etc.
+grep -c "G0" /tmp/test_output.gcode  # should be > 0
+```
+
+**Failure hints:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| `=== Complete ===` not reached | A step raised an exception | Run with `--verbose` and check the log |
+| Output file empty or missing | GCode generation step not in config | Confirm `gcode_gen` step is present and enabled in the YAML |
+| G-code contains only preamble, no moves | Vectorization produced 0 paths | Increase `style_res` or decrease `min_path_px` in config |
+
+---
+
+## Phase 4 — Full System End-to-End Plot
+
+This phase tests the complete system: host PC pipeline → USB serial → GRBL plotter.  
+A real image is processed by the pipeline and the resulting G-code is streamed live to the connected plotter.
+
+**Prerequisites — all of the following must be true before starting Phase 4:**
+
+- [ ] Phase 1 passed (all hardware components verified)
+- [ ] Phase 2 passed (GRBL firmware running, homing and axes verified)
+- [ ] Phase 3 passed (pipeline software verified on test image)
+- [ ] Plotter connected via USB and recognised by the OS
+- [ ] Paper loaded into the paper bail
+- [ ] Pen inserted into the carriage
+
+### Phase 4 Prerequisites
+
+**Find your serial port:**
+
+```bash
+# macOS
+ls /dev/tty.usbmodem*
+
+# Linux
+ls /dev/ttyUSB* /dev/ttyACM*
+
+# Windows
+# Check Device Manager → Ports (COM & LPT)
+```
+
+Note the port (e.g. `/dev/tty.usbmodem1101`) — you will need it in the YAML config below.
+
+---
+
+### TC-E1 — Dry-Run: Pipeline to Serial (no motion)
+
+**Goal:** Verify the pipeline generates G-code and the serial connection to GRBL is established — without any physical motion.
+
+**Step 1 — Enable `send_gcode` in dry-run mode:**
+
+Edit `pipeline/configs/standard_pipeline.yaml`, set the `send_gcode` step:
+
+```yaml
+- step: send_gcode
+  enabled: true
+  config:
+    port: /dev/tty.usbmodem1101   # ← your port here
+    baud: 115200
+    dry_run: true                  # true = connect and read, but do NOT send
+    response_timeout_s: 30.0
+```
+
+**Step 2 — Run:**
+
+```bash
+.venv/bin/python pipeline/main.py \
+    --config pipeline/configs/standard_pipeline.yaml \
+    --input pipeline/tests/testimage.png \
+    --output /tmp/tc_e1_dryrun.gcode \
+    --verbose
+```
+
+**Expected:**
+
+- Pipeline runs through all steps without error.
+- Log shows serial port opened successfully.
+- Log shows G-code lines read/validated but **not** sent (`dry_run=true`).
+- Output file `/tmp/tc_e1_dryrun.gcode` is created and non-empty.
+- Plotter does **not** move.
+
+**Failure hints:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| `SerialException: could not open port` | Wrong port or driver missing | Check `ls /dev/tty.usbmodem*`; try replug USB |
+| `ALARM:` in log | GRBL not homed | Connect with UGS and run `$H` first |
+| Pipeline fails before `send_gcode` | Earlier step error | Fix TC-P2/TC-P3 failures first |
+
+---
+
+### TC-E2 — Live Plot: Simple Test Image
+
+**Goal:** The plotter draws the full test image (`testimage.png`) without errors or mechanical faults.
+
+**Step 1 — Switch `send_gcode` to live mode:**
+
+```yaml
+- step: send_gcode
+  enabled: true
+  config:
+    port: /dev/tty.usbmodem1101   # ← your port here
+    baud: 115200
+    dry_run: false                 # ← live send
+    response_timeout_s: 30.0
+```
+
+**Step 2 — Home the plotter first:**
+
+Connect with UGS (or any G-code sender) and send:
+
+```gcode
+$H
+```
+
+Confirm homing completes without `ALARM:`. Then close the G-code sender (only one process may hold the serial port at a time).
+
+**Step 3 — Run:**
+
+```bash
+.venv/bin/python pipeline/main.py \
+    --config pipeline/configs/standard_pipeline.yaml \
+    --input pipeline/tests/testimage.png \
+    --output /tmp/tc_e2_live.gcode \
+    --verbose
+```
+
+**Observe during the plot:**
+
+| Checkpoint | Expected |
+|-----------|----------|
+| Pen lift at start | Solenoid clicks, pen moves UP before first travel move |
+| First draw move | Pen lowers, carriage starts drawing |
+| Travel moves | Pen raises between strokes, no dragging marks on paper |
+| Paper feed | Y-axis advances paper smoothly at each new line |
+| Plot completion | Log shows `=== Complete ===`; plotter returns to origin |
+
+**Expected result:** A recognisable line drawing of the test image on the paper, with no skipped lines, no crash alarms, and no solenoid misfires.
+
+**Failure hints:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| `ALARM:1` during plot | Hard limit triggered — carriage overran endstop | Check `$130`/`$131` max travel; re-home with `$H` |
+| `ALARM:3` / `ALARM:4` | Feed hold triggered | Check for mechanical obstruction; inspect belt tension |
+| Pen drags during travel | Pen lift not working | Re-run TC4/TC9-G; check solenoid power and `$30`/`$31` |
+| Paper slips or jams | Roller tension too low | Adjust paper bail spring; check paper is straight |
+| Plot starts at wrong position | Homing not done before run | Always run `$H` before a plot |
+| Serial timeout | GRBL not responding within `response_timeout_s` | Increase timeout; check USB cable; check baud rate |
+
+---
+
+### TC-E3 — Live Plot: Custom Image
+
+**Goal:** Confirm the full workflow with a user-supplied photograph produces a clean plot on paper.
+
+**Step 1 — Prepare a test photograph:**
+
+Use any clear subject photograph (portrait, object, landscape). A high-contrast image with distinct edges works best.
+
+**Step 2 — Run:**
+
+```bash
+.venv/bin/python pipeline/main.py \
+    --config pipeline/configs/standard_pipeline.yaml \
+    --input /path/to/your/photo.jpg \
+    --output /tmp/tc_e3_custom.gcode \
+    --verbose
+```
+
+**Step 3 — Verify the G-code before sending** (optional but recommended for large files):
+
+```bash
+wc -l /tmp/tc_e3_custom.gcode          # line count
+grep -c "M3\|M5" /tmp/tc_e3_custom.gcode  # number of pen lift/lower events
+```
+
+A reasonable plot has 50–2000 pen events. If the count is very high (> 5000), consider increasing `min_path_px` or `simplify_eps` in the config.
+
+**Step 4 — Home and run** (same as TC-E2):
+
+```bash
+# Home first via UGS:  $H
+# Then close UGS and run:
+.venv/bin/python pipeline/main.py \
+    --config pipeline/configs/standard_pipeline.yaml \
+    --input /path/to/your/photo.jpg \
+    --output /tmp/tc_e3_custom.gcode \
+    --verbose
+```
+
+**Expected result:** Recognisable pen drawing of the photograph, clean lines, no mechanical errors.
+
+**Tuning hints:**
+
+| Issue | Config key to adjust | Direction |
+|-------|---------------------|-----------|
+| Too many fine lines / long plot time | `min_path_px` | Increase (e.g. 15–30) |
+| Lines too jagged | `simplify_eps` | Increase (e.g. 2.0–3.0) |
+| Drawing too small on paper | `target_width_mm` / `target_height_mm` | Increase toward A4 limits |
+| Drawing clipped or outside paper | `origin_x` / `origin_y` | Increase margins |
+| Pen marks too faint | `feedrate_draw` | Decrease (slower = more ink) |
+
+---
+
 ## Test result log
 
 Use this table to record results during commissioning:
@@ -397,3 +714,15 @@ Use this table to record results during commissioning:
 | TC3 / TC8-G | Y-Axis Movement | ☐ PASS / ☐ FAIL | ☐ PASS / ☐ FAIL | |
 | TC4 / TC9-G | Pen Lift | ☐ PASS / ☐ FAIL | ☐ PASS / ☐ FAIL | |
 | — / TC5-G | Initialisation & Homing | — | ☐ PASS / ☐ FAIL | |
+
+| ID | Test | Result | Notes |
+|----|------|:------:|-------|
+| TC-P1 | Unit Tests (62 tests) | ☐ PASS / ☐ FAIL | |
+| TC-P2 | Pipeline Config Smoke Tests | ☐ PASS / ☐ FAIL | |
+| TC-P3 | End-to-End G-code Generation | ☐ PASS / ☐ FAIL | |
+
+| ID | Test | Result | Notes |
+|----|------|:------:|-------|
+| TC-E1 | Dry-Run: Pipeline to Serial | ☐ PASS / ☐ FAIL | |
+| TC-E2 | Live Plot: Test Image | ☐ PASS / ☐ FAIL | |
+| TC-E3 | Live Plot: Custom Image | ☐ PASS / ☐ FAIL | |
