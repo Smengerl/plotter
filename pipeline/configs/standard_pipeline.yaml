@@ -56,8 +56,8 @@ steps:
       keep_aspect: true # Maintain aspect ratio
       feedrate_draw: 1500 # Feedrate drawing (mm/min)
       feedrate_travel: 3000 # Feedrate travel (mm/min)
-  pen_down_cmd: "M5"    # GRBL command pen DOWN (repo default: M5)
-  pen_up_cmd: "M3 S1000" # GRBL command pen UP (repo default: M3 S1000)
+      pen_down_cmd: "M5" # GRBL command pen DOWN (repo default: M5)
+      pen_up_cmd: "M3 S1000" # GRBL command pen UP (repo default: M3 S1000)
       pen_delay_ms: 100 # Wait time after pen down in ms
 
   # Step 4: Save GCode to file
