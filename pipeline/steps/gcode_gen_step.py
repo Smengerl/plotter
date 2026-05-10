@@ -67,6 +67,12 @@ class GCodeGenStep(PipelineStep):
 
     def process(self, ctx: ImageContext) -> ImageContext:
         c = self.config
+        logger.info("GCodeGenStep — target=%.0fx%.0f mm, feedrate_draw=%s, feedrate_travel=%s",
+                     float(c.get("target_width_mm", 180.0)),
+                     float(c.get("target_height_mm", 250.0)),
+                     c.get("feedrate_draw", 1500),
+                     c.get("feedrate_travel", 3000))
+
         paths = ctx.intermediates["paths"]
 
         # "binary" provides the image size; alternatively passed directly as "image_shape"

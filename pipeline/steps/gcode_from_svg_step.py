@@ -211,6 +211,12 @@ class GCodeFromSvgStep(PipelineStep):
 
     def process(self, ctx: ImageContext) -> ImageContext:
         c = self.config
+        logger.info("GCodeFromSvgStep — target=%.0fx%.0f mm, profile=%s, linesort=%s",
+                     float(c.get("target_width_mm", 190.0)),
+                     float(c.get("target_height_mm", 277.0)),
+                     c.get("profile", "grbl_a4_pen"),
+                     c.get("linesort", True))
+
         paths: list[npt.NDArray[np.float32]] = ctx.intermediates["paths"]
 
         # --- Determine image size ---

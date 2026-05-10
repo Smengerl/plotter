@@ -198,10 +198,26 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
+    # --- Logging setup ---
+    # Console shows INFO+ by default, DEBUG with --verbose.
+    # Noisy third-party libraries are capped at WARNING regardless.
+    console_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
-        format="%(levelname)s %(name)s: %(message)s",
+        level=logging.DEBUG,
+        format="%(levelname)-7s %(name)s: %(message)s",
+        handlers=[logging.StreamHandler(sys.stderr)],
     )
+    logging.getLogger().handlers[0].setLevel(console_level)
+
+    # Silence noisy third-party loggers
+    for lib in (
+        "diffusers", "transformers", "torch", "torchvision",
+        "PIL", "PIL.PngImagePlugin", "PIL.TiffImagePlugin",
+        "httpx", "httpcore", "urllib3", "filelock",
+        "controlnet_aux", "timm", "huggingface_hub",
+        "matplotlib", "onnxruntime",
+    ):
+        logging.getLogger(lib).setLevel(logging.WARNING)
 
     # --- Load configuration ---
     steps_config = load_config(args.config)

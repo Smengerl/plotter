@@ -74,6 +74,9 @@ class LoadImageStep(PipelineStep):
         return []
 
     def process(self, ctx: ImageContext) -> ImageContext:
+        style_res = self.config.get("style_res", 1024)
+        logger.info("LoadImageStep — style_res=%s", style_res or "full")
+
         # If an image is already present in the context, do not re-load from disk.
         # This can happen when callers (like the stylizer smoke runner) pre-load
         # the image into the context.
@@ -101,6 +104,7 @@ class LoadImageStep(PipelineStep):
             source_path = Path(config_path)
             logger.debug("LoadImageStep: source: YAML config → %s", source_path)
         else:
+            logger.error("LoadImageStep: source_path not set — provide --input or YAML source_path")
             raise ValueError(
                 "LoadImageStep: source_path not set.\n"
                 "  Option A — CLI override:  pass --input <path> to main.py\n"
@@ -110,6 +114,7 @@ class LoadImageStep(PipelineStep):
         max_side: int = int(self.config.get("style_res", 1024) or 0)
 
         if not source_path.exists():
+            logger.error("LoadImageStep: image not found: %s", source_path)
             raise FileNotFoundError(
                 f"LoadImageStep: image not found: {source_path}\n"
                 f"  Resolved via: {'CLI --input' if runtime_path else 'YAML config source_path'}"

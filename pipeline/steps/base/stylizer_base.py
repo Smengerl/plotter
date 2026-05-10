@@ -149,11 +149,16 @@ class StylizerStep(PipelineStep):
 
 
     def process(self, ctx: ImageContext) -> ImageContext:
+        step_name = type(self).__name__
+        # Log key config params at INFO (exclude verbose/internal keys)
+        params = {k: v for k, v in self.config.items()
+                  if k not in ("step", "enabled")}
+        logger.info("%s — config: %s", step_name, params if params else "(defaults)")
         binary = self._stylise(ctx)
         ctx.set_stylize_result(binary)
         logger.debug(
             "%s: binary %dx%d px → ctx.image updated",
-            type(self).__name__,
+            step_name,
             binary.shape[1],
             binary.shape[0],
         )

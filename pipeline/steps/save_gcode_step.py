@@ -40,14 +40,9 @@ class SaveGCodeStep(PipelineStep):
         return ["intermediates.gcode_lines"]
 
     def process(self, ctx: ImageContext) -> ImageContext:
-        """Write GCode lines to file.
+        """Write GCode lines to file."""
+        logger.info("SaveGCodeStep — writing GCode to file")
 
-        Args:
-            ctx: ImageContext with gcode_lines in intermediates
-
-        Returns:
-            Modified ImageContext
-        """
         # Priority: runtime metadata → static config
         output_path = ctx.metadata.get("output_path") or self.config.get("output_path")
         if not output_path:

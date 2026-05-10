@@ -68,6 +68,10 @@ class SaveImageStep(PipelineStep):
         return ["image"]
 
     def process(self, ctx: ImageContext) -> ImageContext:
+        logger.info("SaveImageStep — format=%s, overwrite=%s",
+                     self.config.get("format", "auto"),
+                     self.config.get("overwrite", True))
+
         # --- Resolve output path: runtime metadata (CLI) > static YAML config ---
         runtime_path = ctx.metadata.get("output_path")
         config_path = self.config.get("output_path")
@@ -79,6 +83,7 @@ class SaveImageStep(PipelineStep):
             output_path = Path(config_path)
             logger.debug("SaveImageStep: destination: YAML config → %s", output_path)
         else:
+            logger.error("SaveImageStep: output_path not set — provide --output or YAML output_path")
             raise ValueError(
                 "SaveImageStep: output_path not set.\n"
                 "  Option A — CLI override:  pass --output <path> to main.py\n"

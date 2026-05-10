@@ -65,6 +65,11 @@ class VectorizeStep(PipelineStep):
         return ["image"]
 
     def process(self, ctx: ImageContext) -> ImageContext:
+        min_path_px = self.config.get("min_path_px", 10)
+        simplify_eps = self.config.get("simplify_eps", 1.5)
+        logger.info("VectorizeStep — min_path_px=%s, simplify_eps=%s",
+                     min_path_px, simplify_eps)
+
         # --- Resolve binary input ---
         binary: npt.NDArray[np.uint8] | None = ctx.intermediates.get("binary")
         if binary is None:

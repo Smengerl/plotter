@@ -68,6 +68,7 @@ class SendGcodeStep(PipelineStep):
         baud: int = int(c.get("baud", 115200))
         dry_run: bool = bool(c.get("dry_run", False))
         completion_timeout: int = int(c.get("completion_timeout", 300))
+        logger.info("SendGCodeStep — port=%s, baud=%d, dry_run=%s", port, baud, dry_run)
 
         gcode_lines: list[str] = ctx.intermediates["gcode_lines"]
         logger.info("GCode lines to send: %d", len(gcode_lines))
