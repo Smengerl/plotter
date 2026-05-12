@@ -28,7 +28,7 @@ fi
 
 cd "$ROOT_DIR"
 
-INPUT="${1:-pipeline/tests/testimage.png}"
+INPUT="${1:-input/testimage.png}"
 OUTPUT_DIR="output"
 mkdir -p "$OUTPUT_DIR"
 
@@ -57,7 +57,7 @@ run_example() {
     echo ""
 
     "$PLOTTER_RUN" \
-        --config "$config" \
+        --config ../configs/"$config" \
         --input  "$INPUT" \
         --output "$OUTPUT_DIR/${output}" \
         --verbose
