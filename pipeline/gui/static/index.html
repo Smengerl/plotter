@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plotter Pipeline Manager</title>
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+
+<body>
+    <div id="app">
+        <header id="header"></header>
+        <main id="main"></main>
+    </div>
+
+    <!-- Log panel — always in DOM, shown/hidden via class -->
+    <div id="log-panel" class="log-panel log-panel--hidden">
+        <div class="log-panel__header" id="log-header"></div>
+        <div class="log-panel__body" id="log-body"></div>
+    </div>
+
+    <!-- Lightbox overlay -->
+    <div id="lightbox" class="lightbox lightbox--hidden">
+        <img src="" alt="Output preview">
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>
