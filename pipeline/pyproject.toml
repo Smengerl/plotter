@@ -62,7 +62,10 @@ all = [
 
 # ── Entry points ──────────────────────────────────────────────────────────────
 [project.scripts]
-plotter-gui = "pipeline.gui.server:main"
+pipeline-run    = "pipeline.core.main:main"
+pipeline-server = "pipeline.gui.server:main"
+get-hf-token    = "pipeline.core.setup_hf_token:main"
+pipeline-test   = "pytest:main"
 
 # ── Package discovery ─────────────────────────────────────────────────────────
 [tool.setuptools.packages.find]

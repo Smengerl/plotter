@@ -12,7 +12,7 @@ before proceeding to the next step.
 ## Step 1 — Project Scaffold & Server Entry Point
 
 **What**: Create the file structure, `server.py` (FastAPI app factory + Uvicorn entry point),
-`config.py` (ServerConfig), and `run_server.sh`.  
+and `config.py` (ServerConfig).  
 No business logic yet — just wiring and a working `/` → `index.html` route.
 
 **Prompt**:
@@ -22,7 +22,7 @@ Create the following files for the Plotter Pipeline Manager GUI:
 
 1. `pipeline/gui/server.py`
    - FastAPI app factory function `create_app(cfg: ServerConfig) -> FastAPI`
-   - CLI entry point via `if __name__ == "__main__"` using argparse
+   - CLI entry point via `if __name__ == "__main__"` using argparse (also registered as `pipeline-server` entry point in pyproject.toml)
    - CLI arguments (all optional, see specifications § 5.5):
        --input-dir   (default: input/)
        --tools-dir   (default: pipeline/configs/)
@@ -40,10 +40,7 @@ Create the following files for the Plotter Pipeline Manager GUI:
    - `ServerConfig` dataclass with fields matching all CLI arguments
    - All fields have defaults matching the CLI defaults
 
-3. `pipeline/scripts/run_server.sh`
-   - Bash script (set -euo pipefail)
-   - Resolves its own directory via SCRIPT_DIR
-   - Calls `.venv/bin/python pipeline/gui/server.py "$@"`
+3. ~~`pipeline/scripts/run_server.sh`~~ — replaced by the `pipeline-server` entry point
 
 4. `pipeline/gui/static/index.html`  — minimal placeholder only:
    `<h1>Plotter Pipeline Manager</h1>`
@@ -56,7 +53,7 @@ Create the following files for the Plotter Pipeline Manager GUI:
 
 After creating the files, verify:
 - [ ] `python pipeline/gui/server.py --help` lists all 6 CLI arguments with correct defaults
-- [ ] `bash pipeline/scripts/run_server.sh --help` produces the same output (venv python is used)
+- [ ] `.venv/bin/pipeline-server --help` produces the same output
 - [ ] `python pipeline/gui/server.py` starts without error; `GET /` returns 200
 - [ ] All 6 router stub files exist under `pipeline/gui/routers/`
 - [ ] No import of `pipeline/gui/` from any core module (check with grep)
@@ -669,7 +666,7 @@ server.py startup sequence:
   7. Start Uvicorn
 
 Smoke test checklist (run manually with a real YAML pipeline config):
-  - [ ] Server starts without error: `bash pipeline/scripts/run_server.sh`
+  - [ ] Server starts without error: `.venv/bin/pipeline-server`
   - [ ] GET /api/pipelines returns at least one pipeline with correct name/description
   - [ ] GET /api/input_images returns all images in input/
   - [ ] GET /api/output_images returns all artifacts in output/
@@ -781,7 +778,7 @@ Check the following areas in order:
 
 § 5.5 Configuration
   - [ ] All 6 CLI arguments with correct defaults
-  - [ ] run_server.sh passes $@ through
+  - [ ] `pipeline-server` entry point registered in `pyproject.toml` and callable via `.venv/bin/pipeline-server`
   - [ ] Pipeline discovery: scans tools-dir for *.yaml / *.yml
 
 § 5.6 Error Handling

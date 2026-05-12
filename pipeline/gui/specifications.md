@@ -302,17 +302,15 @@ The GUI server (`server.py`) starts Uvicorn internally and accepts optional CLI 
 
 Pipeline discovery: at startup (and on each `/api/pipelines` request) the server scans `--tools-dir` for all `*.yaml` / `*.yml` files and exposes them as available pipelines. No hardcoded pipeline list exists.
 
-A convenience shell script `pipeline/scripts/run_server.sh` starts the server inside the project's `.venv` without requiring any arguments:
+The `pipeline-server` entry point starts the server from within the project's `.venv` without any extra arguments:
 
 ```sh
-#!/usr/bin/env bash
-# run_server.sh — start the WebGUI server using the project virtualenv
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-"$SCRIPT_DIR/../.venv/bin/python" "$SCRIPT_DIR/gui/server.py" "$@"
-```
+# Start with defaults
+.venv/bin/pipeline-server
 
-Passing `"$@"` through allows optional overrides (e.g. `./run_server.sh --port 9000`) while keeping zero-argument usage as the default.
+# Optional overrides
+.venv/bin/pipeline-server --port 9000 --log-level debug
+```
 
 ### 5.6 Error Handling
 
@@ -352,7 +350,7 @@ Passing `"$@"` through allows optional overrides (e.g. `./run_server.sh --port 9
 
 ```text
 pipeline/
-  run_server.sh           ← convenience script: starts server inside .venv, passes $@ through
+  gui/server.py           ← entry point (also callable via `pipeline-server` entry point)
   gui/
     specifications.md       ← this document
     server.py               ← FastAPI app factory + Uvicorn entry point; parses CLI args

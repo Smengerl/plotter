@@ -145,14 +145,16 @@ def _parse_args() -> ServerConfig:
     )
 
 
-if __name__ == "__main__":
-    cfg = _parse_args()
-    app = create_app(cfg)
-    uvicorn.run(app, host=cfg.host, port=cfg.port, log_level=cfg.log_level)
-
-
 def main() -> None:
-    """Entry point for the ``plotter-gui`` console script (pyproject.toml)."""
+    """Entry point for the ``pipeline-server`` CLI command.
+
+    Starts the FastAPI web server for the pipeline GUI.
+    Installed by pip as ``.venv/bin/pipeline-server`` via ``[project.scripts]``.
+    """
     cfg = _parse_args()
     app = create_app(cfg)
     uvicorn.run(app, host=cfg.host, port=cfg.port, log_level=cfg.log_level)
+
+
+if __name__ == "__main__":
+    main()

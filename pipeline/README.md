@@ -9,11 +9,12 @@ outputs GCode for GRBL.
 ## Table of Contents
 
 1. [Quickstart](#quickstart)
-2. [Scripts](#scripts)
-3. [Config File Format](#config-file-format)
-4. [Available Steps](#available-steps)
-5. [Adding Custom Steps](#adding-custom-steps)
-6. [Overriding Paths via CLI](#overriding-paths-via-cli)
+2. [Installation](#installation)
+3. [Entry Points](#entry-points)
+4. [Config File Format](#config-file-format)
+5. [Available Steps](#available-steps)
+6. [Adding Custom Steps](#adding-custom-steps)
+7. [Overriding Paths via CLI](#overriding-paths-via-cli)
 
 ---
 
@@ -22,55 +23,107 @@ outputs GCode for GRBL.
 **Requirements:** Python 3.11, 3.12, or 3.13 — install with `brew install python@3.13` on macOS.
 
 ```bash
-# 1. Set up virtual environment and install dependencies
-./pipeline/scripts/setup_pipeline.sh
+# 1. Create virtual environment and install all dependencies
+python3 -m venv .venv
+.venv/bin/pip install --upgrade pip setuptools wheel
+.venv/bin/pip install -e pipeline/          # core + GUI deps
 
 # 2. Run the pipeline
-./pipeline/scripts/run.sh \
+.venv/bin/pipeline-run \
     --config pipeline/configs/standard_pipeline.yaml \
     --input  input/photo.jpg \
     --output output/result.gcode
 ```
 
-That's it. The scripts automatically activate the `.venv` — no manual
-`source .venv/bin/activate` required.
+The entry point commands carry the `.venv` interpreter in their shebang —
+no manual `source .venv/bin/activate` required.
 
 For models behind the HuggingFace gate (FLUX, SD3, some ControlNet weights):
 
 ```bash
-python pipeline/core/setup_hf_token.py
+.venv/bin/get-hf-token
 ```
 
 ---
 
-## Scripts
+## Installation
 
-All scripts live in `pipeline/scripts/` and can be called from anywhere in
-the repository. They all share the same helper library in
-`pipeline/scripts/helpers/env.sh` which locates the `.venv`, activates it,
-and resolves `$PYTHON`.
+### Requirements
 
-### `setup_pipeline.sh` — First-time setup
+- Python **3.11, 3.12, or 3.13** — vpype 1.15.x does not support 3.14+
+  - macOS: `brew install python@3.13`
+  - Linux: `sudo apt install python3.13 python3.13-venv`
+  - Windows: download from [python.org](https://www.python.org/downloads/)
 
-Creates `.venv` in the project root and installs all dependencies from
-`pipeline/pyproject.toml`.
+### Create the virtual environment
 
 ```bash
-./pipeline/scripts/setup_pipeline.sh                       # default: gui extras
-EXTRAS=gui,diffusers ./pipeline/scripts/setup_pipeline.sh  # include SD backends
-PYTHON=python3.12    ./pipeline/scripts/setup_pipeline.sh  # pin Python version
+python3 -m venv .venv
+.venv/bin/pip install --upgrade pip setuptools wheel
 ```
 
-Re-running the script on an existing `.venv` upgrades pip and reinstalls the
-package in-place (editable install). To start fresh: `rm -rf .venv`.
-
-### `run.sh` — Run the pipeline
-
-The main entry point. Activates the venv (creates it if missing) and runs
-`pipeline/core/main.py` with all arguments passed through.
+### Install the pipeline package
 
 ```bash
-./pipeline/scripts/run.sh --config CONFIG --input IMAGE [OPTIONS]
+# Core + web GUI (recommended default)
+.venv/bin/pip install -e pipeline/
+
+# Include Stable Diffusion backends (ControlNet, Img2Img)
+.venv/bin/pip install -e "pipeline/[diffusers]"
+
+# Everything including dev/test tools
+.venv/bin/pip install -e "pipeline/[diffusers,dev]"
+```
+
+The `-e` flag installs in **editable mode** — changes to source files are
+reflected immediately without reinstalling.
+
+### Upgrade an existing installation
+
+```bash
+.venv/bin/pip install --upgrade pip setuptools wheel
+.venv/bin/pip install -e pipeline/
+```
+
+To start completely fresh:
+
+```bash
+rm -rf .venv
+python3 -m venv .venv
+.venv/bin/pip install --upgrade pip setuptools wheel
+.venv/bin/pip install -e pipeline/
+```
+
+### Windows
+
+Replace `.venv/bin/` with `.venv\Scripts\` in all commands:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\pip install --upgrade pip setuptools wheel
+.venv\Scripts\pip install -e pipeline/
+.venv\Scripts\pipeline-run --config pipeline/configs/standard_pipeline.yaml
+```
+
+### GPU acceleration (CUDA)
+
+After the standard install, replace the CPU torch build:
+
+```bash
+.venv/bin/pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+```
+
+---
+
+## Entry Points
+
+After installation, pip registers four commands in `.venv/bin/`
+(Windows: `.venv\Scripts\`). They require no shell activation.
+
+### `pipeline-run` — Run the pipeline
+
+```bash
+.venv/bin/pipeline-run --config pipeline/configs/standard_pipeline.yaml --input input/photo.jpg
 ```
 
 | Option | Description |
@@ -80,47 +133,32 @@ The main entry point. Activates the venv (creates it if missing) and runs
 | `--output FILE` | Output file path (gcode, png, svg, …) |
 | `--dry-run` | List and validate steps without executing |
 | `-v, --verbose` | Debug-level logging |
-| `-h, --help` | Show help with list of available configs |
 
-Examples:
-
-```bash
-# Standard run
-./pipeline/scripts/run.sh \
-    --config pipeline/configs/standard_pipeline.yaml \
-    --input  input/photo.jpg \
-    --output output/result.gcode
-
-# Validate config without executing
-./pipeline/scripts/run.sh \
-    --config pipeline/configs/standard_pipeline.yaml \
-    --input  input/photo.jpg \
-    --dry-run
-
-# Verbose output for debugging
-./pipeline/scripts/run.sh \
-    --config pipeline/configs/standard_pipeline.yaml \
-    --input  input/photo.jpg \
-    --output output/result.gcode \
-    --verbose
-```
-
-### `run_server.sh` — GUI web server
+### `pipeline-server` — GUI web server
 
 Starts the FastAPI-based Pipeline Manager GUI at `http://localhost:8080`.
+Requires the `gui` extras (installed by default with `setup_pipeline.sh`).
 
 ```bash
-./pipeline/scripts/run_server.sh
-./pipeline/scripts/run_server.sh --port 9000
-./pipeline/scripts/run_server.sh --input-dir input --tools-dir pipeline/configs
+.venv/bin/pipeline-server
+.venv/bin/pipeline-server --port 9000
+.venv/bin/pipeline-server --input-dir input --tools-dir pipeline/configs
 ```
 
-### `run_tests.sh` — Run the test suite
+### `get-hf-token` — Save a HuggingFace token
 
 ```bash
-./pipeline/scripts/run_tests.sh                   # all tests
-./pipeline/scripts/run_tests.sh -k stylize        # filter by name
-./pipeline/scripts/run_tests.sh --skip-stylizers  # skip NN model tests
+.venv/bin/get-hf-token
+```
+
+Interactive prompt to store an API token for gated HuggingFace models.
+
+### `pipeline-test` — Run the test suite
+
+```bash
+.venv/bin/pipeline-test                  # all tests
+.venv/bin/pipeline-test -k stylize       # filter by name
+.venv/bin/pipeline-test -x               # stop on first failure
 ```
 
 ---
@@ -285,7 +323,7 @@ OpenCV adaptive threshold — good for documents and high-contrast images.
 
 These steps download pre-trained models from HuggingFace on first use.
 They require `pip install controlnet-aux torch torchvision` (included in
-the `diffusers` extras: `EXTRAS=gui,diffusers ./pipeline/scripts/setup_pipeline.sh`).
+the `diffusers` extras: `.venv/bin/pip install -e "pipeline/[diffusers]"`).
 
 All NN stylizers share these common config keys:
 
@@ -334,9 +372,9 @@ No additional config keys beyond the common ones above.
 ### Stylizers — Diffusion (HuggingFace token required for some models)
 
 These steps require `diffusers`, `transformers`, `torch`, `accelerate`.
-Install via `EXTRAS=gui,diffusers ./pipeline/scripts/setup_pipeline.sh`.
+Install via `.venv/bin/pip install -e "pipeline/[diffusers]"`.
 
-For gated models (FLUX, SD3): run `python pipeline/core/setup_hf_token.py` first.
+For gated models (FLUX, SD3): run `.venv/bin/get-hf-token` first.
 
 All diffusion stylizers share these common config keys:
 
@@ -542,7 +580,7 @@ def test_my_step_basic():
 Run all tests:
 
 ```bash
-./pipeline/scripts/run_tests.sh
+.venv/bin/pipeline-test
 ```
 
 ---
@@ -584,7 +622,7 @@ steps:
 
 ```bash
 # Override both paths at runtime:
-./pipeline/scripts/run.sh \
+.venv/bin/pipeline-run \
     --config pipeline/configs/my_pipeline.yaml \
     --input  input/my_photo.jpg \
     --output output/my_photo.gcode
@@ -601,7 +639,7 @@ steps:
 ```
 
 ```bash
-./pipeline/scripts/run.sh \
+.venv/bin/pipeline-run \
     --config pipeline/configs/my_pipeline.yaml \
     --input  input/my_photo.jpg \
     --output output/my_photo.gcode

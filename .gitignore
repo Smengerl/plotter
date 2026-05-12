@@ -11,6 +11,8 @@ firmware/.vscode/
 # Generierte Test-Ausgaben (PNG + SVG)
 pipeline/tests/output/
 
+plotter_pipeline.egg-info/
+
 # Python
 __pycache__/
 *.py[cod]

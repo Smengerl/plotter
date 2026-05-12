@@ -50,7 +50,7 @@ For detailed step parameters and architecture, see **`pipeline/README.md`**.
 
 ## Dependencies
 
-**Python Version**: 3.13 (explicitly configured in `pipeline/setup_pipeline.sh`)
+**Python Version**: 3.13 (required by vpype 1.15.x; use `python3.13 -m venv .venv`)
 
 **requirements.txt Structure**:
 ```
