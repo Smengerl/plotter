@@ -20,12 +20,15 @@ outputs GCode for GRBL.
 
 ## Quickstart
 
-**Requirements:** Python 3.11, 3.12, or 3.13 — install with `brew install python@3.13` on macOS.
+**Requirements:** Python 3.13 — install with `brew install python@3.13` on macOS.
+
+> ⚠️ **Python 3.14 is not supported.** `vpype 1.15.x` requires Python `<3.14`.
+> On macOS, `python3` often resolves to 3.14 — always use `python3.13` explicitly.
 
 ```bash
 # 1. Create virtual environment and install all dependencies
-python3 -m venv .venv
-.venv/bin/pip install --upgrade pip setuptools wheel
+python3.13 -m venv .venv
+.venv/bin/pip install --upgrade pip "setuptools<82" wheel
 .venv/bin/pip install -e pipeline/          # core + GUI deps
 
 # 2. Run the pipeline
@@ -50,16 +53,19 @@ For models behind the HuggingFace gate (FLUX, SD3, some ControlNet weights):
 
 ### Requirements
 
-- Python **3.11, 3.12, or 3.13** — vpype 1.15.x does not support 3.14+
+- Python **3.13** — vpype 1.15.x requires Python `>=3.11,<3.14`; Python 3.14 is **not supported**
   - macOS: `brew install python@3.13`
   - Linux: `sudo apt install python3.13 python3.13-venv`
   - Windows: download from [python.org](https://www.python.org/downloads/)
 
+> ⚠️ On macOS, `python3` and `python` often resolve to the latest system Python (currently 3.14).
+> Always use `python3.13` explicitly when creating the venv.
+
 ### Create the virtual environment
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install --upgrade pip setuptools wheel
+python3.13 -m venv .venv
+.venv/bin/pip install --upgrade pip "setuptools<82" wheel
 ```
 
 ### Install the pipeline package
@@ -81,7 +87,7 @@ reflected immediately without reinstalling.
 ### Upgrade an existing installation
 
 ```bash
-.venv/bin/pip install --upgrade pip setuptools wheel
+.venv/bin/pip install --upgrade pip "setuptools<82" wheel
 .venv/bin/pip install -e pipeline/
 ```
 
@@ -89,8 +95,8 @@ To start completely fresh:
 
 ```bash
 rm -rf .venv
-python3 -m venv .venv
-.venv/bin/pip install --upgrade pip setuptools wheel
+python3.13 -m venv .venv
+.venv/bin/pip install --upgrade pip "setuptools<82" wheel
 .venv/bin/pip install -e pipeline/
 ```
 
@@ -100,7 +106,7 @@ Replace `.venv/bin/` with `.venv\Scripts\` in all commands:
 
 ```powershell
 python -m venv .venv
-.venv\Scripts\pip install --upgrade pip setuptools wheel
+.venv\Scripts\pip install --upgrade pip "setuptools<82" wheel
 .venv\Scripts\pip install -e pipeline/
 .venv\Scripts\pipeline-run --config pipeline/configs/standard_pipeline.yaml
 ```

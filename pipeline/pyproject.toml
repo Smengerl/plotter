@@ -29,6 +29,8 @@ dependencies = [
     "timm>=0.9,<2",
     "huggingface-hub>=0.20,<2",
     "onnxruntime>=1.16,<2",
+    # torch 2.x requires setuptools<82
+    "setuptools<82",
 ]
 
 # ── Optional dependency groups ────────────────────────────────────────────────
