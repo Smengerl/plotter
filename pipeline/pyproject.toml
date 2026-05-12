@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "plotter-pipeline"
+version = "0.1.0"
+description = "Image-to-GCode pipeline and web GUI for the Plotter project"
+requires-python = ">=3.11,<3.14"
+readme = "README.md"
+license = { text = "MIT" }
+
+# ── Core dependencies (always required) ──────────────────────────────────────
+dependencies = [
+    "numpy>=1.25,<3",
+    "opencv-python==4.9.0.80",
+    "Pillow>=10.0,<13",
+
+    # Vectorisation & GCode
+    "vpype==1.15.0",
+    "vpype-gcode==0.13.0",
+    "pygrbl_streamer @ git+https://github.com/offerrall/PyGrbl_Streamer.git",
+    "pyserial>=3.5",
+
+    # Neural edge detection
+    "controlnet-aux==0.0.10",
+    "torch",
+    "torchvision",
+    "timm>=0.9,<2",
+    "huggingface-hub>=0.20,<2",
+    "onnxruntime>=1.16,<2",
+]
+
+# ── Optional dependency groups ────────────────────────────────────────────────
+[project.optional-dependencies]
+
+# Stable Diffusion backends (ControlNet, Img2Img)
+diffusers = [
+    "diffusers",
+    "transformers",
+    "safetensors",
+    "accelerate",
+]
+
+# Web GUI server
+gui = [
+    "fastapi>=0.110,<1",
+    "uvicorn[standard]>=0.29,<1",
+    "python-multipart>=0.0.9",
+    "PyYAML>=6.0",
+]
+
+# Development & testing
+dev = [
+    "pytest>=9.0",
+]
+
+# Everything
+all = [
+    "plotter-pipeline[diffusers,gui,dev]",
+]
+
+# ── Entry points ──────────────────────────────────────────────────────────────
+[project.scripts]
+plotter-gui = "pipeline.gui.server:main"
+
+# ── Package discovery ─────────────────────────────────────────────────────────
+[tool.setuptools.packages.find]
+where = [".."]          # search one level up from pipeline/ (i.e. project root)
+include = ["pipeline*"]
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
