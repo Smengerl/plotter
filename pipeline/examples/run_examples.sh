@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # pipeline/examples/run_examples.sh
 #
-# Run all style-transfer example pipelines using pipeline/main.py.
+# Run all style-transfer example pipelines using pipeline/core/main.py.
 #
 # Each pipeline is configured entirely in its YAML file — edit the YAML to
 # change prompts, parameters, or steps. All outputs go to output/.
@@ -10,20 +10,20 @@
 #   ./pipeline/examples/run_examples.sh [INPUT_IMAGE]
 #
 # Prerequisites:
-#   source .venv/bin/activate   (or run pipeline/setup_pipeline.sh first)
-#   pip install diffusers transformers safetensors torch accelerate
+#   Run pipeline/scripts/setup_pipeline.sh first (creates .venv and installs deps).
+#   For SD backends also install: pip install diffusers transformers safetensors torch accelerate
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-cd "$REPO_ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../scripts/helpers/env.sh
+source "$SCRIPT_DIR/../scripts/helpers/env.sh"
 
-PYTHON="${REPO_ROOT}/.venv/bin/python"
+activate_venv
+resolve_venv_python
 
-if [ ! -f "$PYTHON" ]; then
-    echo "❌ venv not found. Run: ./pipeline/setup_pipeline.sh"
-    exit 1
-fi
+cd "$ROOT_DIR"
 
 INPUT="${1:-pipeline/tests/testimage.png}"
 OUTPUT_DIR="output"
@@ -53,7 +53,7 @@ run_example() {
     echo "   Config: ${config}"
     echo ""
 
-    "$PYTHON" pipeline/main.py \
+    "$PYTHON" pipeline/core/main.py \
         --config "$config" \
         --input  "$INPUT" \
         --output "$OUTPUT_DIR/${output}" \

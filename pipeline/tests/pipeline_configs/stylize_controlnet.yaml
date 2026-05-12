@@ -6,12 +6,17 @@
 # This produces photorealistic but stylized results that are then
 # binarized for pen plotting.
 
+name: "ControlNet Style Transfer"
+description: "ControlNet + Stable Diffusion 1.5 style transfer — applies artistic style guided by text prompt and lineart conditioning."
+
 steps:
   - step: load_image
+    label: "Load Image"
     # The test runner provides the real image path via metadata['source_path']
     config: {}
 
   - step: stylise_controlnet
+    label: "Stylize via ControlNet"
     config:
       prompt: "ink drawing, pen sketch, detailed line art, professional illustration"
       negative_prompt: "blurry, watercolor, photorealistic"
@@ -24,5 +29,6 @@ steps:
       hf_token_path: ".hf_token"
 
   - step: save_image
+    label: "Save Image"
     config:
       output_path: "output/controlnet_image.png"

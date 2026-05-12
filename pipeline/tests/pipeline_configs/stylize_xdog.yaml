@@ -3,12 +3,17 @@
 # Test pipeline with XDoG (Extended Difference of Gaussians).
 # Produces sketch-like, artistic lines.
 
+name: "XDoG Edge Detection"
+description: "Extended Difference of Gaussians — produces sketch-like, high-contrast artistic lines."
+
 steps:
   - step: load_image
+    label: "Load Image"
     # The test runner provides the real image path via metadata['source_path']
     config: {}
 
   - step: stylise_xdog
+    label: "Stylize via XDoG"
     config:
       style_res: 1024 # longest side of intermediate image in pixels
       sigma: 0.4 # σ of small Gaussian function
@@ -18,5 +23,6 @@ steps:
       threshold: 20.0 # final binarization threshold (0–255)
 
   - step: save_image
+    label: "Save Image"
     config:
       output_path: "output/xdog_image.png"

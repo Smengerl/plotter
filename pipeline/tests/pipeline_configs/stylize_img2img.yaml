@@ -3,13 +3,18 @@
 # Test pipeline with Image-to-Image style transfer using Stable Diffusion 2.1
 # (lightweight model, no ControlNet)
 
+name: "Img2Img Style Transfer"
+description: "Image-to-Image style transfer via Stable Diffusion — applies artistic style without ControlNet conditioning."
+
 steps:
   - step: load_image
+    label: "Load Image"
     # The test runner provides the real image path via metadata['source_path']
     config: {}
 
   # Step 1: Apply img2img style transfer
   - step: stylise_img2img
+    label: "Stylize via Img2Img"
     config:
       prompt: "oil painting, artistic style, detailed brushstrokes"
       negative_prompt: "blurry, watercolor, photorealistic"
@@ -22,5 +27,6 @@ steps:
       device: auto
 
   - step: save_image
+    label: "Save Image"
     config:
       output_path: "output/img2img_image.png"

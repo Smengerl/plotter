@@ -4,12 +4,17 @@
 # Usage:
 #   python pipeline/tests/run_all_stylizers.py --image foto.jpg
 
+name: "Canny Edge Detection"
+description: "Applies Canny edge detection to produce clean binary edge maps for pen plotting."
+
 steps:
   - step: load_image
+    label: "Load Image"
     # The test runner provides the real image path via metadata['source_path']
     config: {}
 
   - step: stylise_canny
+    label: "Stylize via Canny"
     config:
       style_res: 1024 # longest side of intermediate image in pixels
       canny_low: 50 # lower hysteresis threshold (0–255)
@@ -17,5 +22,6 @@ steps:
       canny_blur: 3 # Gauss blur kernel size (must be odd)
 
   - step: save_image
+    label: "Save Image"
     config:
       output_path: "output/canny_image.png"

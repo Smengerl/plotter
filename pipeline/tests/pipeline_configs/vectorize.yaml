@@ -1,23 +1,30 @@
-# pipeline/tests/pipeline_configs/stylize_adaptive.yaml
+# pipeline/tests/pipeline_configs/vectorize.yaml
 #
 # Test pipeline with adaptive threshold binarization.
 # Robust with uneven illumination.
 
+name: "Vectorize + GCode"
+description: "Full vectorization pipeline — loads an image, saves a preview, vectorizes paths, and generates GCode via both native vpype and TOML-profile methods."
+
 steps:
   - step: load_image
+    label: "Load Image"
     # The test runner provides the real image path via metadata['source_path']
     config: {}
 
   - step: save_image
+    label: "Save Image Preview"
     config:
       output_path: "output/vectorized_image.png"
 
   - step: vectorise
+    label: "Vectorize Paths"
     config:
       min_path_px: 10
       simplify_eps: 1.5
 
   - step: gcode_gen
+    label: "Generate GCode"
     config:
       target_width_mm: 180.0 # Drawing width in mm (X-axis)
       target_height_mm: 250.0 # Drawing height in mm (Y-axis)
@@ -31,10 +38,12 @@ steps:
       pen_delay_ms: 100 # Wait time after pen down in ms
 
   - step: save_gcode
+    label: "Save GCode (native)"
     config:
       output_path: "output/vectorized_image_gcode_gen.gcode"
 
   - step: gcode_from_svg
+    label: "Generate GCode (TOML Profile)"
     config:
       profile: "grbl_a4_pen"
       toml_path: "/pipeline/configs/grbl_a4_pen.toml" # Optional path to custom GCode profile (overrides built-in)
@@ -44,5 +53,6 @@ steps:
       linesort: true # Optimize path order by travel distance (default: True)
 
   - step: save_gcode
+    label: "Save GCode (TOML Profile)"
     config:
       output_path: "output/vectorized_image_gcode_from_svg.gcode"

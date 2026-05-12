@@ -4,12 +4,17 @@
 # No controlnet_aux required — uses own model weights.
 # Model is automatically downloaded from Hugging Face on first run.
 
+name: "Informative Drawings"
+description: "ONNX/PyTorch sketching model — produces artistic, information-preserving sketch-style drawings."
+
 steps:
   - step: load_image
+    label: "Load Image"
     # The test runner provides the real image path via metadata['source_path']
     config: {}
 
   - step: stylise_informative
+    label: "Stylize via Informative Drawings"
     config:
       style_res: 1024 # longest side of intermediate image in pixels
       model_path: null # null = auto-download from Hugging Face
@@ -17,5 +22,6 @@ steps:
       inform_style: 1 # 1 = sharper (model.pth), 2 = softer (model2.pth)
 
   - step: save_image
+    label: "Save Image"
     config:
       output_path: "output/informative_image.png"

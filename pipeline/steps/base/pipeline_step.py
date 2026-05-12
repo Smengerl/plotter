@@ -37,6 +37,12 @@ class PipelineStep(ABC):
         Configuration values for this step. Keys and defaults are
         documented in the respective subclass. Missing keys are
         handled via ``self.config.get(key, default)``.
+    label : str | None
+        Optional human-readable display name for this step.
+        Used by the runner when logging execution progress, e.g.
+        ``"Step 2/4: Vectorizing"``.  When ``None`` the runner falls
+        back to the class name.  Can also be set after instantiation
+        by the runner when reading ``label`` from the YAML config.
 
     Example::
 
@@ -50,6 +56,7 @@ class PipelineStep(ABC):
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config: dict[str, Any] = config or {}
+        self.label: str | None = None
 
     def requires(self) -> list[str]:
         """

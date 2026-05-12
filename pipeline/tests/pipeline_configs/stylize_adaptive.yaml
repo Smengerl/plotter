@@ -3,12 +3,17 @@
 # Test pipeline with adaptive threshold binarization.
 # Robust with uneven illumination.
 
+name: "Adaptive Threshold"
+description: "Adaptive threshold binarization — robust with uneven illumination, no neural network needed."
+
 steps:
   - step: load_image
+    label: "Load Image"
     # The test runner provides the real image path via metadata['source_path']
     config: {}
 
   - step: stylise_adaptive
+    label: "Stylize via Adaptive Threshold"
     config:
       style_res: 1024 # longest side of intermediate image in pixels
       block_size: 11 # local neighborhood in pixels (must be odd, ≥ 3)
@@ -17,5 +22,6 @@ steps:
       adapt_blur: 0 # blur before thresholding (0 = off)
 
   - step: save_image
+    label: "Save Image"
     config:
       output_path: "output/adaptive_image.png"

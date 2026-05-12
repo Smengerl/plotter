@@ -9,32 +9,51 @@ Before executing each step the runner calls ``step.requires()`` and raises
 
 Configuration Format
 --------------------
-A pipeline is described as a list of dicts::
+A pipeline is described as a dict with a ``steps`` list (parsed from YAML by
+``main.py``) or passed directly as a list for programmatic use::
+
+    # YAML top-level keys (loaded by main.py):
+    #   name        - required: human-readable pipeline name (shown on run)
+    #   description - optional: longer description (shown below name)
+    #   steps       - list of step entries
 
     steps_config = [
-        {"step": "load_image",     "config": {}},
+        {"step": "load_image",     "label": "Load Source Image", "config": {}},
         {"step": "stylise_canny",  "config": {"style_res": 1024, "canny_low": 50}},
-        {"step": "vectorise",      "config": {"min_path_px": 10, "simplify_eps": 1.5}},
+        {"step": "vectorise",      "label": "Vectorizing",       "config": {"min_path_px": 10}},
         {"step": "gcode_from_svg", "config": {"target_width_mm": 180.0}},
     ]
 
-    runner = PipelineRunner(steps_config)
+    runner = PipelineRunner(steps_config, name="My Pipeline", description="Optional.")
     ctx_out = runner.run(ctx_in)
 
-Each entry must contain:
+Each step entry must contain:
     ``"step"``   - Step name (must exist in STEP_REGISTRY)
     ``"config"`` - Dict with parameters for this step (can be empty: ``{}``)
+
+Optional step entry keys:
+    ``"label"``   - Human-readable display name shown as "Step X/Y: <label>"
+    ``"enabled"`` - Set to ``false`` to skip this step (default: ``true``)
 """
 
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from pipeline.core.base import ImageContext, MissingContextError, PipelineStep
 from pipeline.core.registry import STEP_REGISTRY
 
 logger = logging.getLogger(__name__)
+
+# Signature for the optional progress callback passed to PipelineRunner.
+# Called after each step (or in dry-run: before each step without execution).
+#   step_index   – 1-based index of the current step
+#   total_steps  – total number of steps in the pipeline
+#   label        – display name of the step (step.label or class name)
+ProgressCallback = Callable[[int, int, str], None]
 
 
 class PipelineRunner:
@@ -45,7 +64,26 @@ class PipelineRunner:
     ----------
     steps_config : list[dict]
         Ordered list of step definitions. Each dict must contain
-        keys ``"step"`` (str) and ``"config"`` (dict).
+        keys ``"step"`` (str) and ``"config"`` (dict). An optional
+        ``"label"`` (str) key provides a human-readable display name
+        for the step shown during execution.
+    name : str
+        Human-readable name of this pipeline. Displayed when the
+        pipeline starts. Defaults to ``"Pipeline"`` for backward
+        compatibility; supply a descriptive name in YAML configs.
+    description : str | None
+        Optional longer description of what the pipeline does.
+        Logged below the name when execution starts.
+    dry_run : bool
+        When ``True``, the plan is printed to stdout but no step is
+        executed and the context is returned unchanged.
+    on_progress : ProgressCallback | None
+        Optional callback invoked after each step (normal mode) or
+        before each step entry is printed (dry-run).  Signature::
+
+            def cb(step_index: int, total_steps: int, label: str) -> None: ...
+
+        Intended for GUI progress bars or external monitoring.
 
     Raises
     ------
@@ -55,16 +93,117 @@ class PipelineRunner:
 
     Example::
 
-        runner = PipelineRunner([
-            {"step": "stylise_xdog", "config": {"sigma": 0.4}},
-            {"step": "vectorise",    "config": {}},
-            {"step": "gcode_gen",    "config": {"target_width_mm": 150.0}},
-        ])
+        runner = PipelineRunner(
+            steps_config=[
+                {"step": "stylise_xdog", "label": "XDoG Edge Detection", "config": {"sigma": 0.4}},
+                {"step": "vectorise",    "config": {}},
+                {"step": "gcode_gen",    "config": {"target_width_mm": 150.0}},
+            ],
+            name="XDoG Plotter Pipeline",
+            description="Stylizes an image with XDoG and converts to GCode.",
+            on_progress=lambda i, n, label: print(f"Progress: {i}/{n} – {label}"),
+        )
         ctx = runner.run(initial_ctx)
     """
 
-    def __init__(self, steps_config: list[dict[str, Any]]) -> None:
+    def __init__(
+        self,
+        steps_config: list[dict[str, Any]],
+        name: str = "Pipeline",
+        description: str | None = None,
+        dry_run: bool = False,
+        on_progress: ProgressCallback | None = None,
+    ) -> None:
+        self.name: str = name
+        self.description: str | None = description
+        self.dry_run: bool = dry_run
+        self.on_progress: ProgressCallback | None = on_progress
         self._steps: list[PipelineStep] = self._build_steps(steps_config)
+
+    # ------------------------------------------------------------------
+    # Factory
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_yaml(
+        cls,
+        config_path: Path,
+        dry_run: bool = False,
+        on_progress: ProgressCallback | None = None,
+    ) -> "PipelineRunner":
+        """
+        Load a YAML config file and build a ready-to-run ``PipelineRunner``.
+
+        This is the preferred entry point for both the CLI and the GUI:
+        all YAML field names are encapsulated here, so callers deal only
+        with a ``Path`` and optional flags.
+
+        Expected YAML format::
+
+            name: "My Pipeline"           # optional — shown on execution
+            description: "Optional text"  # optional — shown below name
+            steps:
+              - step: load_image
+                label: "Load Source Image"  # optional — shown per step
+                config: {}
+              - step: stylise_canny
+                config: {style_res: 1024}
+
+        Parameters
+        ----------
+        config_path : Path
+            Path to the ``.yaml`` pipeline configuration file.
+        dry_run : bool
+            When ``True`` the plan is printed but no step is executed.
+        on_progress : ProgressCallback | None
+            Optional callback invoked after each step; see ``__init__``.
+
+        Returns
+        -------
+        PipelineRunner
+            Fully configured runner, ready for ``runner.run(ctx)``.
+
+        Raises
+        ------
+        FileNotFoundError
+            If ``config_path`` does not exist.
+        ValueError
+            If the file is not valid YAML or is missing the ``steps`` key.
+        ImportError
+            If PyYAML is not installed.
+        KeyError
+            If an unknown step name is referenced in the config.
+        """
+        try:
+            import yaml  # type: ignore[import]
+        except ImportError as exc:
+            raise ImportError("PyYAML is not installed: pip install pyyaml") from exc
+
+        if not config_path.exists():
+            raise FileNotFoundError(f"Pipeline config not found: {config_path}")
+
+        with config_path.open(encoding="utf-8") as f:
+            try:
+                data = yaml.safe_load(f)
+            except yaml.YAMLError as exc:
+                raise ValueError(f"Invalid YAML in {config_path}: {exc}") from exc
+
+        if not isinstance(data, dict) or "steps" not in data:
+            raise ValueError(
+                f"Pipeline config {config_path} must be a dict with a 'steps' key."
+            )
+
+        logger.debug(
+            "Configuration loaded: %s  (%d steps)", config_path, len(data["steps"])
+        )
+
+        return cls(
+            steps_config=data["steps"],
+            name=data.get("name", "Pipeline"),
+            description=data.get("description"),
+            dry_run=dry_run,
+            on_progress=on_progress,
+        )
 
     # ------------------------------------------------------------------
     # Public API
@@ -74,10 +213,9 @@ class PipelineRunner:
         """
         Guide ``ctx`` sequentially through all configured steps.
 
-        Before each step ``step.requires()`` is checked against the current
-        context.  A ``MissingContextError`` is raised immediately when a
-        required key is absent, giving a clear diagnosis instead of a
-        cryptic ``KeyError`` deep inside the step.
+        In dry-run mode the header and each step label are printed to
+        stdout but ``step.process()`` is **not** called and the context
+        is returned unchanged.
 
         Parameters
         ----------
@@ -88,24 +226,41 @@ class PipelineRunner:
         Returns
         -------
         ctx : ImageContext
-            Context after all steps have executed.
+            Context after all steps have executed (or unchanged in dry-run).
 
         Raises
         ------
         MissingContextError
             When a step's ``requires()`` list names a key that is not yet
-            present in the context.
+            present in the context (normal mode only).
         """
-        logger.info("Pipeline started (%d steps)", len(self._steps))
+        total = len(self._steps)
+        dry_run: bool = getattr(self, "dry_run", False)
+        log = print if dry_run else logger.info
+
+        log(f"Pipeline '{getattr(self, 'name', 'Pipeline')}' started ({total} steps)")
+        description: str | None = getattr(self, "description", None)
+        if description:
+            log(f"  {description}")
 
         for i, step in enumerate(self._steps, start=1):
-            step_name = type(step).__name__
-            logger.info("Step %d/%d: %s", i, len(self._steps), step_name)
-            self._check_requires(step, ctx)
-            ctx = step.process(ctx)
-            logger.debug("Step %d/%d completed: %s", i, len(self._steps), step_name)
+            display_name = step.label or type(step).__name__
+            log(f"Step {i}/{total}: {display_name}")
 
-        logger.info("Pipeline completed.")
+            if not dry_run:
+                self._check_requires(step, ctx)
+                ctx = step.process(ctx)
+                logger.debug("Step %d/%d completed: %s", i, total, display_name)
+
+            on_progress = getattr(self, "on_progress", None)
+            if on_progress is not None:
+                on_progress(i, total, display_name)
+
+        if dry_run:
+            print("No steps were executed.")
+        else:
+            logger.info("Pipeline completed.")
+
         return ctx
 
     # ------------------------------------------------------------------
@@ -139,6 +294,7 @@ class PipelineRunner:
                 )
 
             steps.append(cls(config))
+            steps[-1].label = entry.get("label") or None
             logger.debug("Step registered: %s -> %s", name, cls.__name__)
 
         return steps
@@ -182,5 +338,5 @@ class PipelineRunner:
 
     def __repr__(self) -> str:
         names = [type(s).__name__ for s in self._steps]
-        return f"PipelineRunner(steps={names!r})"
+        return f"PipelineRunner(name={getattr(self, 'name', 'Pipeline')!r}, steps={names!r})"
 

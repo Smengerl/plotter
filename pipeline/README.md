@@ -1,807 +1,630 @@
-# Pipeline Architecture & Usage Guide
+# Plotter Pipeline
 
-The pipeline runs on the **host PC** and converts an input image into G-code that is sent to the plotter.
-It is a modular, sequential processing chain built in Python 3.13.
+Image-to-GCode pipeline for the pen plotter. Takes any photo or image as
+input, applies an optional stylization step, vectorizes the result, and
+outputs GCode for GRBL.
+
+---
 
 ## Table of Contents
 
-- [Quick Setup](#quick-setup)
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Pipeline Execution Flow](#pipeline-execution-flow)
-  - [1. Stylization](#1-stylization-edge-detection--style-transfer)
-  - [2. Vectorization](#2-vectorization)
-  - [3. GCode Generation](#3-gcode-generation)
-  - [4. Send to GRBL Hardware](#4-optional-send-to-grbl-hardware)
-- [ControlNet Style Transfer](#controlnet-style-transfer)
-- [Image-to-Image Style Transfer](#image-to-image-style-transfer)
-- [Configuration Files](#configuration-files)
-  - [Running the Pipeline](#running-the-pipeline)
-- [Writing Custom Steps](#writing-custom-steps)
-- [Device Detection](#device-detection)
-- [Performance Tips](#performance-tips)
-- [Troubleshooting](#troubleshooting)
-- [References](#references)
+1. [Quickstart](#quickstart)
+2. [Scripts](#scripts)
+3. [Config File Format](#config-file-format)
+4. [Available Steps](#available-steps)
+5. [Adding Custom Steps](#adding-custom-steps)
+6. [Overriding Paths via CLI](#overriding-paths-via-cli)
 
 ---
 
-## Quick Setup
+## Quickstart
 
-### Installation
-
-The pipeline is set up with a single script:
+**Requirements:** Python 3.11, 3.12, or 3.13 — install with `brew install python@3.13` on macOS.
 
 ```bash
-./pipeline/setup_pipeline.sh
+# 1. Set up virtual environment and install dependencies
+./pipeline/scripts/setup_pipeline.sh
+
+# 2. Run the pipeline
+./pipeline/scripts/run.sh \
+    --config pipeline/configs/standard_pipeline.yaml \
+    --input  input/photo.jpg \
+    --output output/result.gcode
 ```
 
-This installs all core dependencies including:
+That's it. The scripts automatically activate the `.venv` — no manual
+`source .venv/bin/activate` required.
 
-- Image processing (OpenCV, Pillow, numpy)
-- Vectorization (vpype, vpype-gcode)
-- Edge detection (controlnet-aux, torch, timm)
-- Style transfer (diffusers, transformers, safetensors)
-- Hardware communication (pyserial, PyGrbl_Streamer)
-- Testing (pytest)
-
-**Manual setup** (if not using setup_pipeline.sh):
+For models behind the HuggingFace gate (FLUX, SD3, some ControlNet weights):
 
 ```bash
-python3.13 -m venv .venv
-source .venv/bin/activate
-pip install -r pipeline/requirements.txt
-```
-
-**For GPU acceleration** (optional):
-
-Replace `torch` with your platform-specific build:
-
-```bash
-# CUDA 11.8
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-# macOS (M1/M2/M3) — Auto-detects Metal Performance Shaders
-# No action needed, torch will use MPS automatically
+python pipeline/core/setup_hf_token.py
 ```
 
 ---
 
-## Overview
+## Scripts
 
-The plotter pipeline is a modular, sequential image-to-GCode processing system. Each step receives an `ImageContext`, transforms it, and passes it to the next step.
+All scripts live in `pipeline/scripts/` and can be called from anywhere in
+the repository. They all share the same helper library in
+`pipeline/scripts/helpers/env.sh` which locates the `.venv`, activates it,
+and resolves `$PYTHON`.
 
-```text
-Input Image (PIL)
-    ↓
-Stylization (edge detection)
-    ↓
-Vectorization (raster → vector paths)
-    ↓
-GCode Generation (vpype native)
-    ↓
-Optional: Send to GRBL Hardware
-    ↓
-Output: GCode file or physical lines
-```
+### `setup_pipeline.sh` — First-time setup
 
-## Architecture
-
-### Core Components
-
-- **`pipeline/core/base.py`** — `ImageContext` (data transport), `PipelineStep` (base class)
-- **`pipeline/core/registry.py`** — Step registry mapping names to classes
-- **`pipeline/core/runner.py`** — Sequential execution engine
-
-### Data Transport: ImageContext
-
-All steps communicate via `ImageContext`:
-
-```python
-class ImageContext:
-    image: PIL.Image        # Current working image (RGB)
-    metadata: dict[str, Any]  # Input/output paths, dimensions
-    intermediates: dict[str, Any]  # Step outputs shared with downstream steps
-    config: dict[str, Any]  # Global pipeline config
-```
-
-**Key intermediates**:
-
-- `binary` — uint8 array (H, W), 255=line, 0=background
-- `paths` — List of (N, 2) float32 arrays, pixel coordinates
-- `gcode_lines` — List of GCode command strings
-- `image_shape` — (H, W) fallback if binary unavailable
-
-## Pipeline Execution Flow
-
-### 1. Stylization (Edge Detection & Style Transfer)
-
-**Purpose**: Convert raster image to binary edge map (lines on white background) or apply artistic style transfer.
-
-**Available Steps**:
-
-| Step Name | Backend | Required Packages | Quality |
-| --- | --- | --- | --- |
-| `stylise_canny` | OpenCV | numpy, opencv-python | Fast, simple |
-| `stylise_xdog` | Custom | numpy | Artistic, edge-preserving |
-| `stylise_adaptive` | OpenCV | numpy, opencv-python | Adaptive threshold |
-| `stylise_hed` | Neural Network | controlnet-aux, torch | High quality |
-| `stylise_dexined` | Neural Network | controlnet-aux, torch | Lineart focused |
-| `stylise_lineart` | Neural Network | controlnet-aux, torch | ControlNet-v1.1 |
-| `stylise_informative` | Neural Network (ONNX/PyTorch) | torch, timm, huggingface-hub | Sketch-like |
-| `stylise_controlnet` | Stable Diffusion 1.5 + ControlNet | diffusers, torch, transformers | Precise style + structure |
-| `stylise_img2img` | Stable Diffusion 2.1 | diffusers, torch, transformers | Lightweight style transfer |
-
-**Config Keys** (common across all stylizers):
-
-| Key | Type | Default | Description |
-| --- | --- | --- | --- |
-| `style_res` | int | 1024 | Longest side of intermediate image (pixels) |
-| `model_path` | str/Path | None | Custom model directory (None = auto-download) |
-| `device` | str | "auto" | PyTorch device: "auto", "cuda", "mps", "cpu" |
-
-**NN-specific**:
-
-- `lineart_coarse` (bool, default False) — Use coarse lineart detection
-- `lineart_detect_res` (int, default 512) — Detection resolution
-- `lineart_image_res` (int, default 512) — Output resolution
-- `inform_style` (int, default 1) — Informative drawings: 1=sharp, 2=soft
-- **ControlNet** (`stylise_controlnet`):
-  - `prompt` (str) — Style prompt (e.g., "oil painting, Van Gogh style")
-  - `negative_prompt` (str) — What to avoid in generation
-  - `controlnet_type` (str, default "lineart") — ControlNet variant (canny, lineart, softedge, scribble, pose, depth, normal, seg)
-  - `num_inference_steps` (int, default 20) — Diffusion denoising steps
-  - `guidance_scale` (float, default 7.5) — Prompt adherence strength
-  - `strength` (float, default 0.8) — How much to modify image (0.0–1.0)
-  - `enable_model_cpu_offload` (bool, default False) — Reduce VRAM (slower)
-- **Image-to-Image** (`stylise_img2img`):
-  - `prompt` (str) — Style prompt
-  - `negative_prompt` (str) — What to avoid
-  - `strength` (float, default 0.7) — Modification intensity (0.0–1.0): lower = preserve more original
-  - `num_inference_steps` (int, default 20) — Quality vs speed
-  - `guidance_scale` (float, default 7.5) — Prompt adherence
-  - `enable_model_cpu_offload` (bool, default False) — Reduce VRAM
-
-**Output**:
-
-- `ctx.intermediates["binary"]` — uint8 array (H, W)
-
----
-
-## ControlNet Style Transfer
-
-Use Stable Diffusion 1.5 with ControlNet for precise artistic style transfer while maintaining structure control.
-
-### HuggingFace Authentication
-
-Some models on HuggingFace are **gated** (require license acceptance and authentication). If model download fails with a 404 or authentication error, you need to:
-
-1. **Create a free HuggingFace account**: <https://huggingface.co>
-2. **Generate a read token**: <https://huggingface.co/settings/tokens>
-3. **Accept the model license** on the model page (e.g. <https://huggingface.co/runwayml/stable-diffusion-v1-5>)
-4. **Save the token to a file**:
-
-   ```bash
-   echo 'hf_xxxxxxxxxxxxxxxxxxxx' > .hf_token
-   # .hf_token is already in .gitignore — never commit this file!
-   ```
-
-5. **Pass the token path in your pipeline config**:
-
-   ```yaml
-   - step: stylise_controlnet
-     config:
-       hf_token_path: ".hf_token"
-   ```
-
-If `hf_token_path` is not set and the model is gated, a clear error message with instructions will be shown.
-
-### Quick Start (ControlNet)
-
-**Prerequisites**:
+Creates `.venv` in the project root and installs all dependencies from
+`pipeline/pyproject.toml`.
 
 ```bash
-pip install diffusers transformers safetensors torch accelerate
+./pipeline/scripts/setup_pipeline.sh                       # default: gui extras
+EXTRAS=gui,diffusers ./pipeline/scripts/setup_pipeline.sh  # include SD backends
+PYTHON=python3.12    ./pipeline/scripts/setup_pipeline.sh  # pin Python version
 ```
 
-**Run**:
+Re-running the script on an existing `.venv` upgrades pip and reinstalls the
+package in-place (editable install). To start fresh: `rm -rf .venv`.
+
+### `run.sh` — Run the pipeline
+
+The main entry point. Activates the venv (creates it if missing) and runs
+`pipeline/core/main.py` with all arguments passed through.
 
 ```bash
-python pipeline/main.py \
-    --config pipeline/examples/controlnet_pen_sketch.yaml \
-    --input photo.jpg \
-    --output result.gcode \
+./pipeline/scripts/run.sh --config CONFIG --input IMAGE [OPTIONS]
+```
+
+| Option | Description |
+| --- | --- |
+| `--config YAML` | Pipeline config file — **required** |
+| `--input IMAGE` | Input image path (jpg, png, …) |
+| `--output FILE` | Output file path (gcode, png, svg, …) |
+| `--dry-run` | List and validate steps without executing |
+| `-v, --verbose` | Debug-level logging |
+| `-h, --help` | Show help with list of available configs |
+
+Examples:
+
+```bash
+# Standard run
+./pipeline/scripts/run.sh \
+    --config pipeline/configs/standard_pipeline.yaml \
+    --input  input/photo.jpg \
+    --output output/result.gcode
+
+# Validate config without executing
+./pipeline/scripts/run.sh \
+    --config pipeline/configs/standard_pipeline.yaml \
+    --input  input/photo.jpg \
+    --dry-run
+
+# Verbose output for debugging
+./pipeline/scripts/run.sh \
+    --config pipeline/configs/standard_pipeline.yaml \
+    --input  input/photo.jpg \
+    --output output/result.gcode \
     --verbose
 ```
 
-Or use the example script (runs with the test image by default):
+### `run_server.sh` — GUI web server
+
+Starts the FastAPI-based Pipeline Manager GUI at `http://localhost:8080`.
 
 ```bash
-./pipeline/examples/run_examples.sh
+./pipeline/scripts/run_server.sh
+./pipeline/scripts/run_server.sh --port 9000
+./pipeline/scripts/run_server.sh --input-dir input --tools-dir pipeline/configs
 ```
 
-### ControlNet Types
-
-| Type | Best For | Notes |
-| --- | --- | --- |
-| `lineart` | Clean pen sketches | Default, best for plotting |
-| `canny` | Edge-based technical | Sharp edges, lineart style |
-| `softedge` | Soft flowing lines | Less aggressive than canny |
-| `scribble` | Hand-drawn look | Sketchy appearance |
-| `pose` | Preserving poses | Keep human/body structure |
-| `depth` | 3D structure | Preserve depth information |
-| `normal` | Surface normals | Geometric form |
-| `seg` | Semantic segmentation | Object regions |
-
-### Style Prompt Examples (ControlNet)
-
-**Technical / Technical Drawings**:
-
-```
-"technical drawing, blueprints, architectural lines, engineering diagram"
-"circuit diagram, technical schematic, detailed line drawing"
-```
-
-**Artistic Styles**:
-
-```
-"oil painting, rich colors, classical Renaissance style"
-"watercolor painting, soft colors, impressionist"
-"charcoal drawing, dark mood, dramatic shadows"
-"pen sketch, ink drawing, detailed illustration"
-```
-
-**Abstract / Stylized**:
-
-```
-"abstract art, geometric shapes, minimalist"
-"popart style, bold colors, high contrast"
-"anime style, manga illustration, cel shading"
-```
-
-**Photo Effects**:
-
-```
-"black and white sketch, high contrast edges"
-"stained glass art, colorful segments"
-"vintage engraving, Victorian illustration"
-```
-
-### Configuration (ControlNet)
-
-Edit `pipeline/examples/controlnet_pen_sketch.yaml`:
-
-```yaml
-- step: stylise_controlnet
-  config:
-    prompt: "your custom prompt here"
-    negative_prompt: "things to avoid"
-    controlnet_type: lineart  # or canny, softedge, etc.
-    num_inference_steps: 25   # Higher = better quality, slower
-    guidance_scale: 7.5       # How much to follow prompt
-    enable_model_cpu_offload: false  # Set true if out of VRAM
-```
-
-### Python API (ControlNet)
-
-To run the ControlNet pipeline programmatically, use `PipelineRunner` directly:
-
-```python
-from pipeline.core.runner import PipelineRunner
-from pipeline.core.base import ImageContext
-from PIL import Image
-import yaml
-
-with open("pipeline/examples/controlnet_pen_sketch.yaml") as f:
-    config = yaml.safe_load(f)
-
-img = Image.open("photo.jpg")
-ctx = PipelineRunner(config["steps"]).run(ImageContext(img))
-```
-
-### Performance (ControlNet)
-
-| Hardware | Time per Image | Quality |
-| --- | --- | --- |
-| CPU only | 30–60 min | Good |
-| GPU (CUDA) | 30–120 sec | Excellent |
-| GPU (M1/M2) | 1–3 min | Very good |
-| With `cpu_offload: true` | 2–5 min | Good |
-
-### Troubleshooting (ControlNet)
-
-**Out of Memory (VRAM)**:
-
-```yaml
-enable_model_cpu_offload: true  # Slower but uses less VRAM
-num_inference_steps: 15  # Faster, lower quality
-```
-
-**Models Won't Download**:
+### `run_tests.sh` — Run the test suite
 
 ```bash
-huggingface-cli login
-# Enter your HF token from https://huggingface.co/settings/tokens
-```
-
-**No GPU Detected**:
-
-```bash
-python -c "import torch; print(torch.cuda.is_available())"  # CUDA
-python -c "import torch; print(torch.backends.mps.is_available())"  # macOS
+./pipeline/scripts/run_tests.sh                   # all tests
+./pipeline/scripts/run_tests.sh -k stylize        # filter by name
+./pipeline/scripts/run_tests.sh --skip-stylizers  # skip NN model tests
 ```
 
 ---
 
-## Image-to-Image Style Transfer
+## Config File Format
 
-Use lightweight Stable Diffusion 2.1 for quick style transfer with adjustable strength parameter. Uses ~2GB less VRAM than ControlNet.
+Pipelines are defined as YAML files (`.yaml`) or TOML files (`.toml`) in
+`pipeline/configs/`. Both formats are supported.
 
-### Quick Start (Image-to-Image)
+### YAML pipeline config
 
-**Prerequisites**:
-
-```bash
-pip install diffusers transformers safetensors torch accelerate
-```
-
-**Run**:
-
-```bash
-python pipeline/main.py \
-    --config pipeline/examples/img2img_oil_painting.yaml \
-    --input photo.jpg \
-    --output result.gcode \
-    --verbose
-```
-
-Or use the example script (runs with the test image by default):
-
-```bash
-./pipeline/examples/run_examples.sh
-```
-
-### Strength Parameter Guide
-
-| Strength | Effect | Use Case |
-| --- | --- | --- |
-| 0.1–0.3 | Very subtle | Slight enhancement, preservation of original |
-| 0.3–0.5 | Light modification | Gentle style application |
-| 0.5–0.7 | Moderate change | Balanced style transfer (default: 0.75) |
-| 0.7–0.85 | Strong modification | Pronounced artistic effect |
-| 0.85–0.99 | Very aggressive | Strong transformation, may lose structure |
-
-### Style Prompt Examples (Image-to-Image)
-
-**Painting Styles**:
-
-```
-"oil painting, rich colors, classical style"
-"watercolor painting, soft colors, impressionist"
-"acrylic painting, bold brushstrokes, modern"
-"pastel drawing, soft tones, delicate"
-```
-
-**Drawing Styles**:
-
-```
-"charcoal drawing, dark mood, dramatic shadows"
-"pencil sketch, detailed line drawing, realistic"
-"ink drawing, pen sketch, detailed illustration"
-"graphite drawing, fine details, monochrome"
-```
-
-**Artistic Effects**:
-
-```
-"abstract art, geometric shapes, minimalist"
-"stained glass art, colorful segments, glowing"
-"vintage engraving, Victorian illustration"
-"anime style, cel shading, comic book"
-```
-
-**Photographic Effects**:
-
-```
-"black and white sketch, high contrast edges"
-"pen and ink, technical drawing, lineart"
-"etching style, fine hatching, classical"
-```
-
-### Configuration (Image-to-Image)
-
-Edit `pipeline/examples/img2img_oil_painting.yaml`:
+A YAML config has a `steps` list. Each entry specifies the step name and its
+parameters:
 
 ```yaml
-- step: stylise_img2img
-  config:
-    prompt: "your custom prompt here"
-    negative_prompt: "things to avoid"
-    strength: 0.75  # Adjust this for modification intensity (0.0–1.0)
-    num_inference_steps: 25  # Higher = better quality, slower
-    guidance_scale: 7.5  # How much to follow prompt
-    enable_model_cpu_offload: false  # Set true if out of VRAM
-```
+# pipeline/configs/my_pipeline.yaml
 
-### Python API (Image-to-Image)
-
-To run the img2img pipeline programmatically, use `PipelineRunner` directly:
-
-```python
-from pipeline.core.runner import PipelineRunner
-from pipeline.core.base import ImageContext
-from PIL import Image
-import yaml
-
-with open("pipeline/examples/img2img_oil_painting.yaml") as f:
-    config = yaml.safe_load(f)
-
-img = Image.open("photo.jpg")
-ctx = PipelineRunner(config["steps"]).run(ImageContext(img))
-```
-
-### Performance (Image-to-Image)
-
-| Hardware | Time per Image | Quality |
-| --- | --- | --- |
-| CPU only | 10–30 min | Good |
-| GPU (CUDA) | 1–3 min | Excellent |
-| GPU (M1/M2) | 3–10 min | Very good |
-| With `cpu_offload: true` | 5–15 min | Good |
-
-### Comparison: ControlNet vs Image-to-Image
-
-| Feature | ControlNet | Image-to-Image |
-| --- | --- | --- |
-| Model size | ~4GB | ~2GB |
-| VRAM required | 6–8GB | 4–6GB |
-| Speed (GPU) | 30–120 sec | 1–3 min |
-| Speed (CPU) | 30–60 min | 10–30 min |
-| Structure preservation | Excellent | Good |
-| Style control | Very precise | Good |
-| ControlNet types | 8 options | N/A |
-| Best for | Technical + Style | Quick style transfer |
-
-**Use Image-to-Image if**:
-
-- You want faster processing
-- You have lower VRAM budget
-- You want simple style transfer
-- Quick experimentation is priority
-
-**Use ControlNet if**:
-
-- You need precise structure control
-- You want multiple conditioning types
-- You have sufficient VRAM
-- Professional results are priority
-
-### Troubleshooting (Image-to-Image)
-
-**Out of Memory (VRAM)**:
-
-```yaml
-enable_model_cpu_offload: true  # Slower but uses less VRAM
-num_inference_steps: 15  # Faster
-```
-
-**Models Won't Download**:
-
-```bash
-huggingface-cli login
-# Enter your HF token from https://huggingface.co/settings/tokens
-```
-
-**No GPU Detected**:
-
-```bash
-python -c "import torch; print(torch.cuda.is_available())"  # CUDA
-python -c "import torch; print(torch.backends.mps.is_available())"  # macOS
-```
-
----
-
-### 2. Vectorization
-
-**Purpose**: Extract connected components from binary image → vector paths.
-
-**Step Name**: `vectorise`
-
-**Config Keys**:
-
-| Key | Type | Default | Description |
-| ----- | ------ | --------- | ------------- |
-| `min_path_px` | float | 10 | Minimum path length (pixels) |
-| `simplify_eps` | float | 1.5 | Curve simplification tolerance (pixels) |
-| `invert_logic` | bool | False | Invert black/white (True = black lines) |
-
-**Algorithm**:
-
-1. Find all connected components in binary image (8-connectivity)
-2. Trace contours using OpenCV `findContours`
-3. Simplify curves using Douglas-Peucker (epsilon=`simplify_eps`)
-4. Filter short paths (< `min_path_px` pixels)
-5. Output: List of paths, each a (N, 2) float32 array
-
-**Output**:
-
-- `ctx.intermediates["paths"]` — List of numpy arrays (pixel coordinates)
-
----
-
-### 3. GCode Generation
-
-**Purpose**: Transform vector paths to plotter coordinates → GCode commands.
-
-Two implementations available:
-
-#### 3a. Native GCode (Recommended): `gcode_gen`
-
-Uses `vpype` + `vpype-gcode` with TOML profile system.
-
-**Config Keys**:
-
-| Key | Type | Default | Description |
-| ----- | ------ | --------- | ------------- |
-| `profile` | str | "grbl_a4_pen" | TOML profile name (from gwrite section) |
-| `toml_path` | str/Path | None | Path to TOML profile file (None = internal default) |
-| `target_width_mm` | float | 190.0 | Drawing width (mm) = A4 - 2×5mm margins |
-| `target_height_mm` | float | 277.0 | Drawing height (mm) = A4 - 2×10mm margins |
-| `keep_aspect` | bool | True | Maintain aspect ratio when scaling |
-| `linesort` | bool | True | Optimize path order (nearest-neighbor heuristic) |
-
-**Pipeline**:
-
-1. Scale paths from pixel → vpype document (CSS pixels)
-2. Apply image transformation (flip, rotate if needed)
-3. Run `vpype_cli.execute()` with TOML profile
-4. Extract GCode from vpype pipeline
-
-**TOML Profile Format** (`pipeline/configs/grbl_a4_pen.toml`):
-
-```toml
-[gwrite]
-default_profile = "grbl_a4_pen"
-
-[gwrite.grbl_a4_pen]
-unit = "mm"
-offset_x = 0
-offset_y = 0
-document_start = "G21\nG90\n"
-document_end = "M5\n"
-segment_first = "{x:.3f} {y:.3f}\n"
-segment = "G00 X{x:.3f} Y{y:.3f}\n"
-line_end = "M3 S1000\nG01 X{x:.3f} Y{y:.3f}\n"
-```
-
-**Output**:
-
-- `ctx.intermediates["gcode_lines"]` — List of GCode command strings
-
-#### 3b. Legacy GCode (Deprecated): `gcode_gen`
-
-Direct coordinate transformation without vpype.
-
-**Config Keys**:
-
-| Key | Type | Default | Description |
-| ----- | ------ | --------- | ------------- |
-| `target_width_mm` | float | 190.0 | Drawing width (mm) |
-| `target_height_mm` | float | 277.0 | Drawing height (mm) |
-| `origin_x` | float | 5.0 | Left margin (mm) |
-| `origin_y` | float | 5.0 | Bottom margin (mm) |
-| `keep_aspect` | bool | True | Maintain aspect ratio |
-| `feedrate_draw` | int | 1500 | Drawing speed (mm/min) |
-| `feedrate_travel` | int | 3000 | Travel speed (mm/min) |
-| `pen_down_cmd` | str | "M5" | GRBL pen-down command (repo default: M5) |
-| `pen_up_cmd` | str | "M5" | GRBL pen-up command |
-| `pen_delay_ms` | int | 100 | Wait after pen-down (ms) |
-
-**Coordinate Transformation**:
-
-```
-Pixel Space (image):       (0, 0)────────── x (W)
-                            │
-                            │ y (H)
-                            v
-
-Plotter Space (mm):        (ox, oy)─────── x
-                            │
-                            │ y
-                            v
-```
-
-Y-axis is flipped (image: top-left origin, plotter: bottom-left origin).
-
----
-
-### 4. Optional: Send to GRBL Hardware
-
-**Purpose**: Stream GCode to GRBL-compatible plotter via serial connection.
-
-**Step Name**: `send_gcode`
-
-**Config Keys**:
-
-| Key | Type | Default | Description |
-| ----- | ------ | --------- | ------------- |
-| `port` | str | "/dev/ttyUSB0" | Serial port (e.g., "/dev/ttyUSB0", "COM3") |
-| `baudrate` | int | 115200 | Serial communication speed |
-| `dry_run` | bool | True | Test mode (read commands, don't send) |
-
-**Transport**:
-
-- Uses `PyGrbl_Streamer` for GRBL communication
-- Streams line-by-line with flow control
-- Monitors for alarms/errors
-- Logs progress to logger
-
-**Output**:
-
-- No intermediate (sends to hardware)
-
----
-
-## Configuration Files
-
-### Example Pipeline: Canny Edge Detection
-
-**File**: `pipeline/configs/standard_pipeline.yaml`
-
-```yaml
 steps:
-  # 1. Stylization
-  - step: stylise
+  - step: load_image
     config:
-      source_path: /path/to/image.jpg
-      style_res: 1024
+      source_path: input/photo.jpg   # static path (overridable via --input)
+      style_res: 1024                # max side length after scaling (0 = full)
 
-  # 2. Vectorization
+  - step: stylise_canny
+    config:
+      canny_low: 50
+      canny_high: 150
+
   - step: vectorise
     config:
       min_path_px: 10
       simplify_eps: 1.5
 
-  # 3. GCode (native vpype)
-  - step: gcode_gen
+  - step: gcode_from_svg
     config:
-      profile: grbl_a4_pen
+      profile: grbl_a4_pen           # profile name from TOML file
       target_width_mm: 190.0
       target_height_mm: 277.0
-      keep_aspect: true
-      linesort: true
 
-  # 4. Send to GRBL (optional)
-  - step: send_gcode
-    enabled: false  # Set to true to actually send
+  - step: save_gcode
     config:
-      port: /dev/ttyUSB0
-      baudrate: 115200
-      dry_run: false
+      output_path: output/result.gcode   # static path (overridable via --output)
+
+  - step: send_gcode
+    enabled: false                       # disabled steps are skipped
+    config:
+      port: /dev/tty.usbmodem1101
+      baud: 115200
 ```
 
-### Running the Pipeline
+#### Step entry keys
 
-```bash
-# Using main.py
-python pipeline/main.py \
-  --config pipeline/configs/standard_pipeline.yaml \
-  --input photo.jpg \
-  --output photo.gcode \
-  --verbose
+| Key | Required | Description |
+| --- | --- | --- |
+| `step` | ✅ | Step name — must match a key in `STEP_REGISTRY` |
+| `config` | ✅ | Parameters for this step (can be `{}`) |
+| `label` | — | Custom display name shown in log output |
+| `enabled` | — | Set `false` to skip this step (default: `true`) |
 
-# Dry-run (list steps, don't execute)
-python pipeline/main.py \
-  --config pipeline/configs/standard_pipeline.yaml \
-  --input photo.jpg \
-  --output photo.gcode \
-  --dry-run
+### TOML GCode profile
 
-# Using PipelineRunner directly
-import yaml
-from pipeline.core.runner import PipelineRunner
+`.toml` files define GCode output templates (vpype-gcode-compatible format).
+They are referenced by `gcode_from_svg` steps via the `toml_path` /
+`profile` config keys. The default profile is
+`pipeline/configs/grbl_a4_pen.toml`.
 
-with open("pipeline/configs/standard_pipeline.yaml") as f:
-    cfg = yaml.safe_load(f)
-runner = PipelineRunner(cfg["steps"])
-ctx = runner.run(ctx)  # where ctx = ImageContext
+Key TOML sections:
+
+```toml
+[gwrite]
+default_profile = "my_profile"
+
+[gwrite.my_profile]
+unit          = "mm"
+vertical_flip = true       # SVG origin top-left → GCode origin bottom-left
+offset_x      = 5.0        # left margin in mm
+offset_y      = 5.0        # bottom margin in mm
+
+document_start = """..."""  # GCode header (initialization, homing, pen up)
+segment_first  = """..."""  # emitted before first point of each path
+segment        = "G1 X{x:.3f} Y{y:.3f}\n"
+segment_last   = "G1 X{x:.3f} Y{y:.3f}\n"
+line_end       = "...\n"    # emitted after each path (pen up)
+document_end   = """..."""  # GCode footer
 ```
+
+Available template variables: `{x}`, `{y}` (coordinates in mm).
 
 ---
 
-## Writing Custom Steps
+## Available Steps
 
-All steps inherit from `PipelineStep`:
+### Image I/O
+
+#### `load_image`
+
+Loads the source image from disk into `ctx.image` (PIL, RGB).
+Must be the first step in any image pipeline.
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `source_path` | — | Static input path. Overridden by `--input` at runtime. |
+| `style_res` | `1024` | Max side length in pixels after scaling. `0` = full resolution. |
+
+#### `save_image`
+
+Writes `ctx.image` to disk. Useful for saving intermediate results or as
+the final step of an image-only pipeline.
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `output_path` | — | Static output path. Overridden by `--output` at runtime. |
+| `quality` | `95` | JPEG quality (1–95). Ignored for other formats. |
+| `compress_level` | `6` | PNG compression level (0–9). Ignored for other formats. |
+| `overwrite` | `true` | Set `false` to raise an error if the file already exists. |
+
+---
+
+### Stylizers — OpenCV (no GPU required)
+
+These steps convert `ctx.image` to a binary edge map (`ctx.intermediates["binary"]`).
+They require only numpy and opencv — no GPU, no model download.
+
+#### `stylise_canny`
+
+Classic Canny edge detector.
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `canny_low` | `50` | Lower hysteresis threshold |
+| `canny_high` | `150` | Upper hysteresis threshold |
+| `canny_blur` | `3` | Gaussian blur kernel size (odd number) |
+
+#### `stylise_xdog`
+
+eXtended Difference-of-Gaussians (XDoG) — produces clean, sketch-like
+line drawings. Good general-purpose stylizer without neural networks.
+(Winnemöller et al. 2012)
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `sigma` | `0.4` | Inner Gaussian σ |
+| `k_sigma` | `1.6` | Outer Gaussian factor (k × σ) |
+| `epsilon` | `0.0` | Threshold; `0` = adaptive (90th percentile) |
+| `phi` | `10.0` | Sharpness of the soft threshold |
+| `threshold` | `20.0` | Final binarization threshold (0–255); `0` = skip |
+
+#### `stylise_adaptive`
+
+OpenCV adaptive threshold — good for documents and high-contrast images.
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `block_size` | `11` | Neighborhood size (odd number ≥ 3) |
+| `adapt_c` | `2.0` | Constant subtracted from the mean |
+| `adapt_method` | `"gaussian"` | `"gaussian"` or `"mean"` |
+| `adapt_blur` | `0` | Optional pre-blur kernel size (0 = disabled) |
+
+---
+
+### Stylizers — Neural Network (GPU recommended)
+
+These steps download pre-trained models from HuggingFace on first use.
+They require `pip install controlnet-aux torch torchvision` (included in
+the `diffusers` extras: `EXTRAS=gui,diffusers ./pipeline/scripts/setup_pipeline.sh`).
+
+All NN stylizers share these common config keys:
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `device` | `"auto"` | `"auto"` (cuda › mps › cpu), `"cpu"`, `"cuda"`, `"mps"` |
+| `threshold` | `128` | Binarization threshold applied to the model output (0–255) |
+| `model_path` | `None` | Local model path; if `None` the HF repo is used |
+
+#### `stylise_hed`
+
+Holistically-nested Edge Detection (HED). Produces smooth, continuous
+edge maps. Well-suited for portraits and organic shapes.
+
+No additional config keys beyond the common ones above.
+
+#### `stylise_dexined`
+
+DexiNed-based edge detection (coarse lineart mode). Produces thick,
+expressive contours.
+
+No additional config keys beyond the common ones above.
+
+#### `stylise_lineart`
+
+ControlNet-v1.1 Lineart Preprocessor. Produces clean, fine-grain line
+drawings — the recommended choice for most photos.
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `lineart_coarse` | `false` | Coarse mode (thicker, bolder lines) |
+| `lineart_detect_res` | `512` | Internal detection resolution |
+| `lineart_image_res` | `512` | Output image resolution |
+
+#### `stylise_informative`
+
+Informative Drawings (Chan et al. CVPR 2022). Converts photos to clean,
+artistic sketches that preserve semantic structure.
+
+Tries ONNX first (`pip install onnxruntime`), falls back to PyTorch.
+
+No additional config keys beyond the common ones above.
+
+---
+
+### Stylizers — Diffusion (HuggingFace token required for some models)
+
+These steps require `diffusers`, `transformers`, `torch`, `accelerate`.
+Install via `EXTRAS=gui,diffusers ./pipeline/scripts/setup_pipeline.sh`.
+
+For gated models (FLUX, SD3): run `python pipeline/core/setup_hf_token.py` first.
+
+All diffusion stylizers share these common config keys:
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `prompt` | — | Style guidance text |
+| `negative_prompt` | `"blurry, low quality, distorted"` | What to avoid |
+| `num_inference_steps` | `20` | Quality vs. speed trade-off |
+| `guidance_scale` | `7.5` | How strongly the prompt is followed (1–15) |
+| `device` | `"auto"` | `"auto"`, `"cpu"`, `"cuda"`, `"mps"` |
+| `enable_model_cpu_offload` | `false` | Reduce VRAM at cost of speed |
+| `binary_threshold` | `128` | Binarization threshold (0–255) |
+| `hf_token_path` | `None` | Path to HF token file (default: `.hf_token` in project root) |
+
+#### `stylise_controlnet`
+
+Style transfer via ControlNet + Stable Diffusion 1.5. Applies a
+text-guided artistic style while preserving structure from the input image.
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `controlnet_type` | `"lineart"` | Structure guide: `canny`, `lineart`, `softedge`, `scribble`, `pose`, `depth`, `normal`, `seg` |
+| `base_model` | `"runwayml/stable-diffusion-v1-5"` | HF model ID |
+
+#### `stylise_img2img`
+
+Lighter alternative to ControlNet — standard SD 1.5 img2img without
+conditioning. Lower VRAM usage and faster than ControlNet.
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `strength` | `0.7` | Modification intensity (0.0 = no change, 1.0 = full generation) |
+| `model_id` | `"stable-diffusion-v1-5/stable-diffusion-v1-5"` | HF model ID |
+
+---
+
+### Vectorization
+
+#### `vectorise`
+
+Converts the binary edge map from a stylizer into a list of vector paths.
+Can also be used directly after `load_image` without a stylizer (binarizes
+`ctx.image` automatically in that case).
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `min_path_px` | `10` | Minimum contour arc length in pixels — shorter paths are discarded |
+| `simplify_eps` | `1.5` | Ramer-Douglas-Peucker tolerance in pixels (`0` = no simplification) |
+| `binary_threshold` | `128` | Threshold used when binarizing `ctx.image` directly (no prior stylizer) |
+
+---
+
+### GCode Generation
+
+#### `gcode_from_svg`  *(recommended)*
+
+Generates GCode using a TOML profile (vpype-gcode-compatible format).
+The default profile is `pipeline/configs/grbl_a4_pen.toml`.
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `profile` | `"grbl_a4_pen"` | Profile name inside the TOML file |
+| `toml_path` | built-in default | Path to TOML profile file |
+| `target_width_mm` | `190.0` | Drawing width in mm (A4 minus margins) |
+| `target_height_mm` | `277.0` | Drawing height in mm (A4 minus margins) |
+| `keep_aspect` | `true` | Maintain image aspect ratio |
+| `linesort` | `true` | Optimize path order to minimize travel distance |
+
+#### `gcode_gen`  *(legacy)*
+
+Generates GCode with a built-in coordinate transformation — no TOML profile.
+Use `gcode_from_svg` for new pipelines; `gcode_gen` is kept for
+backward compatibility.
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `target_width_mm` | `180.0` | Drawing width in mm |
+| `target_height_mm` | `250.0` | Drawing height in mm |
+| `origin_x` | `5.0` | Left margin in mm |
+| `origin_y` | `5.0` | Bottom margin in mm |
+| `keep_aspect` | `true` | Maintain aspect ratio |
+| `feedrate_draw` | `1500` | Drawing feedrate in mm/min |
+| `feedrate_travel` | `3000` | Travel feedrate in mm/min |
+| `pen_down_cmd` | `"M5"` | GRBL command for pen down |
+| `pen_up_cmd` | `"M3 S1000"` | GRBL command for pen up |
+| `pen_delay_ms` | `100` | Wait after pen down (ms) |
+
+---
+
+### GCode Output
+
+#### `save_gcode`
+
+Writes the GCode lines to a file. Output path resolution:
+
+1. `ctx.metadata["output_path"]` — set via `--output` at runtime
+2. `config["output_path"]` — static path in the YAML config
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `output_path` | — | Static fallback output path |
+
+#### `send_gcode`
+
+Sends GCode directly to a GRBL controller via serial port using
+`pygrbl_streamer`. Typically kept `enabled: false` in the config and
+enabled only for actual plotting.
+
+| Config key | Default | Description |
+| --- | --- | --- |
+| `port` | `"/dev/tty.usbmodem1101"` | Serial port |
+| `baud` | `115200` | Baud rate |
+| `dry_run` | `false` | Log GCode without sending to the port |
+| `completion_timeout` | `300` | Timeout per GCode line in seconds |
+
+---
+
+## Adding Custom Steps
+
+### 1. Create the step class
+
+Create `pipeline/steps/my_step.py` and inherit from `PipelineStep`:
 
 ```python
+# pipeline/steps/my_step.py
+from __future__ import annotations
 from pipeline.core.base import ImageContext, PipelineStep
 
-class MyCustomStep(PipelineStep):
+class MyStep(PipelineStep):
     """
-    Description of what your step does.
-    
-    Config keys:
-        my_param (str): Description
-        another_param (float): Description
+    One-line description.
+
+    Config keys   Default   Description
+    ------------------------------------
+    my_param      42        What this controls.
     """
-    
-    def __init__(self, config: dict) -> None:
-        super().__init__(config)
-        # Validate config, initialize resources
-        
+
+    def requires(self) -> list[str]:
+        # Declare which context keys must be present before this step runs.
+        # Valid values: "image", "intermediates.binary", "intermediates.paths",
+        #               "intermediates.gcode_lines"
+        return ["image"]
+
     def process(self, ctx: ImageContext) -> ImageContext:
-        """Transform context and return modified copy."""
-        # Read from ctx.intermediates
-        # Write to ctx.intermediates
-        # Return ctx
+        my_param = self.config.get("my_param", 42)
+
+        # Read from ctx
+        image = ctx.image  # PIL.Image
+
+        # Write results back
+        import numpy as np
+        ctx.intermediates["binary"] = np.zeros((100, 100), dtype="uint8")
+
         return ctx
 ```
 
-**Steps to register**:
+### 2. Register the step
 
-1. Create `pipeline/steps/my_step.py` with `MyCustomStep` class
-2. Add import to `pipeline/core/registry.py`
-3. Add entry to `STEP_REGISTRY` dict
-4. Create tests in `pipeline/tests/test_my_step.py`
-5. Run `.venv/bin/pytest pipeline/tests/ -v` (all tests must pass)
+Add it to `STEP_REGISTRY` in `pipeline/core/registry.py`:
 
----
+```python
+from pipeline.steps.my_step import MyStep
 
-## Device Detection
-
-Steps with neural networks auto-detect compute devices:
-
-```
-Priority: CUDA > MPS (Metal) > CPU
+STEP_REGISTRY: dict[str, type["PipelineStep"]] = {
+    # ... existing entries ...
+    "my_step": MyStep,
+}
 ```
 
-Override with `device` config key:
+### 3. Use it in a config
 
-- `"auto"` — Auto-detect (default)
-- `"cuda"` — NVIDIA GPU (if available)
-- `"mps"` — Apple Metal GPU (if on macOS)
-- `"cpu"` — CPU fallback
+```yaml
+steps:
+  - step: load_image
+    config:
+      source_path: input/photo.jpg
 
----
+  - step: my_step
+    config:
+      my_param: 99
 
-## Performance Tips
+  - step: vectorise
+    config: {}
+```
 
-1. **Resize input image** — Larger `style_res` = slower. Default 1024px is good balance.
-2. **Simplification** — Increase `simplify_eps` for smoother, fewer paths (faster plotter time).
-3. **Min path length** — Increase `min_path_px` to skip tiny artifacts.
-4. **Linesort** — Enable for large path counts (> 100 paths) to reduce travel distance.
-5. **GPU acceleration** — NN stylizers run ~10x faster on CUDA/MPS vs CPU.
+### 4. Add tests
 
----
+Create `pipeline/tests/test_my_step.py`:
 
-## Troubleshooting
+```python
+from pipeline.core.base import ImageContext
+from pipeline.steps.my_step import MyStep
+from PIL import Image
 
-### "Step not found in registry"
+def test_my_step_basic():
+    step = MyStep(config={"my_param": 99})
+    ctx = ImageContext()
+    ctx.image = Image.new("RGB", (64, 64), color=(128, 128, 128))
+    result = step.process(ctx)
+    assert "binary" in result.intermediates
+```
 
-→ Check step name matches `STEP_REGISTRY` keys in `pipeline/core/registry.py`
+Run all tests:
 
-### "vpype not found"
-
-→ Activate venv: `source .venv/bin/activate` or use `.venv/bin/python`
-
-### "controlnet_aux not installed"
-
-→ Run: `pip install controlnet-aux torch torchvision pillow`
-
-### Tests failing after code changes
-
-→ Run: `.venv/bin/pytest pipeline/tests/ -v`
-→ All 62 tests must pass before committing
-
-### Device detection issues
-
-→ Check: `python -c "import torch; print(torch.cuda.is_available())"`
-→ Or: `python -c "import torch; print(torch.backends.mps.is_available())"`
+```bash
+./pipeline/scripts/run_tests.sh
+```
 
 ---
 
-## References
+## Overriding Paths via CLI
 
-- **vpype** — <https://github.com/abey79/vpype>
-- **vpype-gcode** — <https://github.com/abey79/vpype-gcode>
-- **controlnet-aux** — <https://github.com/huggingface/controlnet_aux>
-- **GRBL** — <https://github.com/gnea/grbl>
+The `load_image` and `save_gcode` / `save_image` steps support a
+**two-level path resolution** that lets the CLI override static paths
+defined in the YAML config at runtime.
+
+### Priority order
+
+| Priority | Source | How to set |
+| --- | --- | --- |
+| 1 (highest) | `ctx.metadata["source_path"]` | `--input IMAGE` on the CLI |
+| 2 | `config["source_path"]` in YAML | Static path in the config file |
+
+The same pattern applies for `output_path`:
+
+| Priority | Source | How to set |
+| --- | --- | --- |
+| 1 (highest) | `ctx.metadata["output_path"]` | `--output FILE` on the CLI |
+| 2 | `config["output_path"]` in YAML | Static path in the config file |
+
+### Examples
+
+**Config has a static path, CLI overrides it:**
+
+```yaml
+# pipeline/configs/my_pipeline.yaml
+steps:
+  - step: load_image
+    config:
+      source_path: input/default.jpg   # used when no --input is given
+  - step: save_gcode
+    config:
+      output_path: output/default.gcode
+```
+
+```bash
+# Override both paths at runtime:
+./pipeline/scripts/run.sh \
+    --config pipeline/configs/my_pipeline.yaml \
+    --input  input/my_photo.jpg \
+    --output output/my_photo.gcode
+```
+
+**Config has no static path, path is required from CLI:**
+
+```yaml
+steps:
+  - step: load_image
+    config: {}   # no source_path → --input is required
+  - step: save_gcode
+    config: {}   # no output_path → --output is required
+```
+
+```bash
+./pipeline/scripts/run.sh \
+    --config pipeline/configs/my_pipeline.yaml \
+    --input  input/my_photo.jpg \
+    --output output/my_photo.gcode
+```
+
+If neither the config nor the CLI provides a path, the step raises a
+`ValueError` with a descriptive message.
+
+### Programmatic override (Python API)
+
+The same mechanism works when using the pipeline directly from Python:
+
+```python
+from pathlib import Path
+from pipeline.core.base import ImageContext
+from pipeline.core.runner import PipelineRunner
+
+runner = PipelineRunner.from_yaml(Path("pipeline/configs/my_pipeline.yaml"))
+
+ctx = ImageContext(metadata={
+    "source_path": Path("input/my_photo.jpg"),
+    "output_path": Path("output/my_photo.gcode"),
+})
+
+runner.run(ctx)
+```

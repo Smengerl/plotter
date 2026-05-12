@@ -4,12 +4,17 @@
 # Neural network model — requires controlnet_aux.
 # Model is automatically downloaded from Hugging Face on first run.
 
+name: "Lineart Detection"
+description: "MangaLine / sk_model lineart detector — produces clean anime/manga-style line drawings."
+
 steps:
   - step: load_image
+    label: "Load Image"
     # The test runner provides the real image path via metadata['source_path']
     config: {}
 
   - step: stylise_lineart
+    label: "Stylize via Lineart"
     config:
       style_res: 1024 # longest side of intermediate image in pixels
       model_path: null # null = auto-download from Hugging Face
@@ -19,5 +24,6 @@ steps:
       lineart_image_res: 512 # detector output resolution in pixels
 
   - step: save_image
+    label: "Save Image"
     config:
       output_path: "output/lineart_image.png"

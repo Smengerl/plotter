@@ -4,17 +4,23 @@
 # Neural network model — requires controlnet_aux.
 # Model is automatically downloaded from Hugging Face on first run.
 
+name: "DexiNed Edge Detection"
+description: "Dense Extreme Inception Network — neural network producing thin, sharp edge maps."
+
 steps:
   - step: load_image
+    label: "Load Image"
     # The test runner provides the real image path via metadata['source_path']
     config: {}
 
   - step: stylise_dexined
+    label: "Stylize via DexiNed"
     config:
       style_res: 1024 # longest side of intermediate image in pixels
       model_path: null # null = auto-download from Hugging Face
       device: auto # auto | cpu | cuda | mps
 
   - step: save_image
+    label: "Save Image"
     config:
       output_path: "output/dexined_image.png"

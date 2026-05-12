@@ -3,8 +3,8 @@
 setup_hf_token.py - Configure HuggingFace authentication token
 
 Usage (run from the project root):
-    python pipeline/setup_hf_token.py
-    ./pipeline/setup_hf_token.py
+    python pipeline/core/setup_hf_token.py
+    ./pipeline/core/setup_hf_token.py
 
 This script will:
 1. Prompt for your HuggingFace token
