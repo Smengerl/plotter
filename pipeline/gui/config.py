@@ -25,9 +25,10 @@ class ServerConfig:
         plotter_pipeline_stem: Stem of the dedicated plotter pipeline YAML.
     """
 
-    input_dir: Path = field(default_factory=lambda: Path("input"))
-    tools_dir: Path = field(default_factory=lambda: Path("configs"))
-    output_dir: Path = field(default_factory=lambda: Path("output"))
+    input_dir: Path = field(default_factory=lambda: Path("pipeline/input"))
+    tools_dir: Path = field(default_factory=lambda: Path("pipeline/configs"))
+    output_dir: Path = field(default_factory=lambda: Path("pipeline/output"))
+
     host: str = "127.0.0.1"
     port: int = 8000
     log_level: str = "info"
