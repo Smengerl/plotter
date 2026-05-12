@@ -402,7 +402,7 @@ It runs entirely on the host PC — **no plotter connection is required**.
 - Python 3.13 and the project virtualenv set up:
 
   ```bash
-  ./pipeline/setup_pipeline.sh
+  ./pipeline/scripts/setup_pipeline.sh
   ```
 
 - All hardware tests (Phase 1 + Phase 2) should have passed before an end-to-end plot is attempted, but Phase 3 can be run independently at any time.
@@ -431,7 +431,7 @@ All test cases in `pipeline/tests/test_*.py` must show `PASSED`. No `FAILED` or 
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| `ModuleNotFoundError` | Virtualenv not activated or incomplete install | Re-run `./pipeline/setup_pipeline.sh` |
+| `ModuleNotFoundError` | Virtualenv not activated or incomplete install | Re-run `./pipeline/scripts/setup_pipeline.sh` |
 | `ImportError: cannot import name ...` | Outdated installed package | `pip install -r pipeline/requirements.txt --upgrade` |
 | Individual test `FAILED` | Step logic regression | Check the failing test and the corresponding step in `pipeline/steps/` |
 
@@ -469,7 +469,7 @@ Each YAML file under `pipeline/configs/` (excluding the TOML profile) is loaded 
 |---------|-------------|-----|
 | `Step not found in registry` | Step name typo or missing registry entry | Check `pipeline/core/registry.py` |
 | `FileNotFoundError: testimage.png` | Test image missing | Confirm `pipeline/tests/testimage.png` exists |
-| NN model download fails | No internet / HuggingFace token required | Run `./pipeline/setup_hf_token.py` or use `--skip-stylizers` |
+| NN model download fails | No internet / HuggingFace token required | Run `./pipeline/core/setup_hf_token.py` or use `--skip-stylizers` |
 
 ---
 
@@ -480,7 +480,7 @@ Each YAML file under `pipeline/configs/` (excluding the TOML profile) is loaded 
 **Run:**
 
 ```bash
-.venv/bin/python pipeline/main.py \
+.venv/bin/python pipeline/core/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
     --input pipeline/tests/testimage.png \
     --output /tmp/test_output.gcode \
@@ -564,7 +564,7 @@ Edit `pipeline/configs/standard_pipeline.yaml`, set the `send_gcode` step:
 **Step 2 — Run:**
 
 ```bash
-.venv/bin/python pipeline/main.py \
+.venv/bin/python pipeline/core/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
     --input pipeline/tests/testimage.png \
     --output /tmp/tc_e1_dryrun.gcode \
@@ -618,7 +618,7 @@ Confirm homing completes without `ALARM:`. Then close the G-code sender (only on
 **Step 3 — Run:**
 
 ```bash
-.venv/bin/python pipeline/main.py \
+.venv/bin/python pipeline/core/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
     --input pipeline/tests/testimage.png \
     --output /tmp/tc_e2_live.gcode \
@@ -661,7 +661,7 @@ Use any clear subject photograph (portrait, object, landscape). A high-contrast 
 **Step 2 — Run:**
 
 ```bash
-.venv/bin/python pipeline/main.py \
+.venv/bin/python pipeline/core/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
     --input /path/to/your/photo.jpg \
     --output /tmp/tc_e3_custom.gcode \
@@ -682,7 +682,7 @@ A reasonable plot has 50–2000 pen events. If the count is very high (> 5000), 
 ```bash
 # Home first via UGS:  $H
 # Then close UGS and run:
-.venv/bin/python pipeline/main.py \
+.venv/bin/python pipeline/core/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
     --input /path/to/your/photo.jpg \
     --output /tmp/tc_e3_custom.gcode \

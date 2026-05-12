@@ -11,7 +11,7 @@ Usage:
 This script is intended to be invoked from the project root. It uses
 `sys.executable -m pytest` so it automatically runs inside the active
 Python environment (preferably the project's .venv created by
-`./pipeline/setup_pipeline.sh`).
+`./pipeline/scripts/setup_pipeline.sh`).
 
 Behavior:
  - Finds unit test files matching `test_*.py` in pipeline/tests/ and
