@@ -76,6 +76,8 @@ Notes
 """
 BOLD   = "\033[1m"
 
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_INPUT_DIR = _REPO_ROOT / "input"
 
 # ---------------------------------------------------------------------------
 # Helper Functions
@@ -179,9 +181,9 @@ def main() -> None:
     parser.add_argument(
         "--image",
         type=Path,
-        default=_TESTS_DIR / "testimage.png",
+        default=_INPUT_DIR / "testimage.png",
         metavar="PATH",
-        help="Input image (default: pipeline/tests/testimage.png)",
+        help="Input image (default: input/testimage.png)",
     )
     parser.add_argument(
         "--config",

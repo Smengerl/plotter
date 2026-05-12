@@ -1,0 +1,65 @@
+# pipeline/configs/informative_drawings.yaml
+#
+# Example pipeline: Informative Drawings sketch style for pen plotting
+#
+# Uses a dedicated ONNX/PyTorch model trained specifically for sketch-like
+# line drawing generation. Produces clean, information-preserving drawings
+# that retain key visual features while abstracting texture and shading.
+# Ideal as a default plotter pipeline for most photographic subjects.
+#
+# Notes:
+# - Requires: pip install onnxruntime
+# - First run downloads model weights from Hugging Face (~50 MB per model)
+# - CPU: ~3–10 seconds per image
+# - GPU (CUDA / MPS): ~1–3 seconds per image
+# - inform_style 1 = sharper / more contrasty (model.pth)
+# - inform_style 2 = softer / more artistic (model2.pth)
+
+name: "Informative Drawings"
+description: "ONNX/PyTorch sketch model — produces clean, information-preserving line drawings. Retains key visual features while abstracting texture and shading. Recommended default for photos."
+
+steps:
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
+  - step: load_image
+    label: "Load Input Image"
+    config: {}
+
+  # Step 2: Apply Informative Drawings sketch model
+  - step: stylise_informative
+    label: "Stylize: Informative Drawings"
+    config:
+      style_res: 1024 # Longest side of intermediate image in pixels
+
+      # Path to local model weights (null = auto-download from Hugging Face)
+      model_path: null
+
+      # Compute device: auto | cpu | cuda | mps
+      # auto = selects MPS on Apple Silicon, CUDA if available, else CPU
+      device: auto
+
+      # Model variant: 1 = sharper (model.pth), 2 = softer (model2.pth)
+      inform_style: 1
+
+  # Step 3: Vectorize the sketch image to paths
+  - step: vectorise
+    label: "Vectorize Paths"
+    config:
+      min_path_px: 10 # Minimum path length in pixels (shorter paths discarded)
+      simplify_eps: 1.5 # Ramer-Douglas-Peucker tolerance in pixels
+
+  # Step 4: Generate GCode for GRBL plotter
+  - step: gcode_from_svg
+    label: "Generate GCode (TOML Profile)"
+    config:
+      profile: "grbl_a4_pen"
+      target_width_mm: 180.0 # Drawing width in mm (default: 190.0 = A4 - 2x5mm margins)
+      target_height_mm: 250.0 # Drawing height in mm (default: 277.0 = A4 - 2x10mm margins)
+      keep_aspect: true # Maintain aspect ratio
+      linesort: true # Optimize path order by travel distance
+
+  # Step 5: Save GCode to file
+  # output_path is provided via CLI --output (no path needed here)
+  - step: save_gcode
+    label: "Save GCode"
+    config: {}

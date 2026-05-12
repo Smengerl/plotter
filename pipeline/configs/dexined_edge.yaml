@@ -1,0 +1,60 @@
+# pipeline/configs/dexined_edge.yaml
+#
+# Example pipeline: DexiNed edge detection for pen plotting
+#
+# Uses the Dense Extreme Inception Network (DexiNed) to produce extremely thin,
+# sharp, and topologically clean edge maps from photographs. Neural network model —
+# produces significantly better edge continuity than classical methods.
+#
+# Notes:
+# - Requires: pip install controlnet-aux onnxruntime
+# - First run downloads model weights from Hugging Face (~200 MB)
+# - CPU: ~5–30 seconds per image depending on resolution
+# - GPU (CUDA / MPS): ~1–5 seconds per image
+# - Set device: mps on Apple Silicon, cuda on NVIDIA, cpu otherwise
+
+name: "DexiNed Edge Detection"
+description: "Neural network edge detection (DexiNed) — produces extremely thin, sharp, topologically clean edge maps. Significantly better continuity than classical methods."
+
+steps:
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
+  - step: load_image
+    label: "Load Input Image"
+    config: {}
+
+  # Step 2: Apply DexiNed neural edge detection
+  - step: stylise_dexined
+    label: "Stylize: DexiNed Edge Detection"
+    config:
+      style_res: 1024 # Longest side of intermediate image in pixels
+
+      # Path to local model weights (null = auto-download from Hugging Face)
+      model_path: null
+
+      # Compute device: auto | cpu | cuda | mps
+      # auto = selects MPS on Apple Silicon, CUDA if available, else CPU
+      device: auto
+
+  # Step 3: Vectorize the binary edge map to paths
+  - step: vectorise
+    label: "Vectorize Paths"
+    config:
+      min_path_px: 10 # Minimum path length in pixels (shorter paths discarded)
+      simplify_eps: 1.5 # Ramer-Douglas-Peucker tolerance in pixels
+
+  # Step 4: Generate GCode for GRBL plotter
+  - step: gcode_from_svg
+    label: "Generate GCode (TOML Profile)"
+    config:
+      profile: "grbl_a4_pen"
+      target_width_mm: 180.0 # Drawing width in mm (default: 190.0 = A4 - 2x5mm margins)
+      target_height_mm: 250.0 # Drawing height in mm (default: 277.0 = A4 - 2x10mm margins)
+      keep_aspect: true # Maintain aspect ratio
+      linesort: true # Optimize path order by travel distance
+
+  # Step 5: Save GCode to file
+  # output_path is provided via CLI --output (no path needed here)
+  - step: save_gcode
+    label: "Save GCode"
+    config: {}

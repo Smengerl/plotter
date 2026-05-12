@@ -1,0 +1,59 @@
+# pipeline/examples/controlnet_pen_sketch.yaml
+#
+# Example pipeline: Pen sketch style via ControlNet + Stable Diffusion 1.5
+#
+# This pipeline converts any image into an artistic sketch-like drawing
+# with a specified style via text prompt. The result is then vectorized
+# and converted to GCode for pen plotting.
+#
+# Notes:
+# - Requires: pip install diffusers transformers safetensors torch accelerate
+# - First run downloads ~4GB of models (ControlNet + SD 1.5)
+# - CPU-only: ~30–60 minutes per image
+# - GPU (CUDA): ~30–120 seconds per image
+# - Use enable_model_cpu_offload: true to reduce VRAM (slower)
+# - 16 GB RAM: enable_model_cpu_offload is enabled below (required)
+
+name: "ControlNet: Pen Sketch"
+description: "Pen sketch style via ControlNet + Stable Diffusion 1.5 — lineart conditioning preserves structure while the prompt guides the ink-drawing aesthetic."
+
+steps:
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
+  - step: load_image
+    label: "Load Input Image"
+    config:
+      style_res: 512
+
+  # Step 2: Apply artistic style using ControlNet + SD 1.5
+  - step: stylise_controlnet
+    label: "Stylize: ControlNet Pen Sketch"
+    config:
+      # Style prompt - adjust to your artistic goal
+      prompt: "ink drawing, pen sketch, detailed line art, professional illustration, monochrome"
+      negative_prompt: "watercolor, photorealistic, color, blurry, low quality, distorted"
+
+      # HuggingFace token (optional, for gated models)
+      # If using gated models, save token to file and set path here
+      # Get token: https://huggingface.co/settings/tokens
+      # Save: echo 'hf_xxx...' > .hf_token
+      hf_token_path: ".hf_token"
+
+      # ControlNet type - determines what structure is preserved
+      # Options: canny, lineart, softedge, scribble, pose, depth, normal, seg
+      controlnet_type: lineart
+
+      # Diffusion settings
+      num_inference_steps: 25 # Higher = better quality, slower
+      guidance_scale: 7.5 # How much to follow prompt (1–15)
+
+      # Model and device
+      base_model: "runwayml/stable-diffusion-v1-5"
+      device: auto # auto | cpu | cuda | mps
+      enable_model_cpu_offload: true # Required on 16 GB RAM; offloads weights to CPU between steps
+
+  # Step 3: Save output image
+  # output_path is provided via CLI --output (no path needed here)
+  - step: save_image
+    label: "Save Stylized Image"
+    config: {}

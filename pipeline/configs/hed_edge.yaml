@@ -1,0 +1,60 @@
+# pipeline/configs/hed_edge.yaml
+#
+# Example pipeline: HED (Holistically-nested Edge Detection) for pen plotting
+#
+# Uses the HED neural network to produce soft, multi-scale edge maps that capture
+# both coarse structure and fine detail simultaneously. Edges are more rounded and
+# artistic than Canny — well suited for portraits and organic subjects.
+#
+# Notes:
+# - Requires: pip install controlnet-aux
+# - First run downloads model weights from Hugging Face (~60 MB)
+# - CPU: ~5–15 seconds per image depending on resolution
+# - GPU (CUDA / MPS): ~1–3 seconds per image
+# - Set device: mps on Apple Silicon, cuda on NVIDIA, cpu otherwise
+
+name: "HED Edge Detection"
+description: "Neural network edge detection (HED) — soft, multi-scale edges capturing both coarse structure and fine detail. Well suited for portraits and organic subjects."
+
+steps:
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
+  - step: load_image
+    label: "Load Input Image"
+    config: {}
+
+  # Step 2: Apply HED neural edge detection
+  - step: stylise_hed
+    label: "Stylize: HED Edge Detection"
+    config:
+      style_res: 1024 # Longest side of intermediate image in pixels
+
+      # Path to local model weights (null = auto-download from Hugging Face)
+      model_path: null
+
+      # Compute device: auto | cpu | cuda | mps
+      # auto = selects MPS on Apple Silicon, CUDA if available, else CPU
+      device: auto
+
+  # Step 3: Vectorize the soft edge map to paths
+  - step: vectorise
+    label: "Vectorize Paths"
+    config:
+      min_path_px: 10 # Minimum path length in pixels (shorter paths discarded)
+      simplify_eps: 1.5 # Ramer-Douglas-Peucker tolerance in pixels
+
+  # Step 4: Generate GCode for GRBL plotter
+  - step: gcode_from_svg
+    label: "Generate GCode (TOML Profile)"
+    config:
+      profile: "grbl_a4_pen"
+      target_width_mm: 180.0 # Drawing width in mm (default: 190.0 = A4 - 2x5mm margins)
+      target_height_mm: 250.0 # Drawing height in mm (default: 277.0 = A4 - 2x10mm margins)
+      keep_aspect: true # Maintain aspect ratio
+      linesort: true # Optimize path order by travel distance
+
+  # Step 5: Save GCode to file
+  # output_path is provided via CLI --output (no path needed here)
+  - step: save_gcode
+    label: "Save GCode"
+    config: {}

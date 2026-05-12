@@ -1,0 +1,51 @@
+# pipeline/examples/controlnet_woodcut.yaml
+#
+# Example pipeline: Woodcut / linocut print style via ControlNet + Stable Diffusion 1.5
+#
+# Produces bold, high-contrast imagery resembling hand-carved woodblock prints.
+# SoftEdge conditioning preserves silhouettes while allowing for heavy stylization.
+# The strong guidance scale forces the model to commit to the woodcut aesthetic.
+#
+# Notes:
+# - Requires: pip install diffusers transformers safetensors torch accelerate
+# - First run downloads ~4GB of models (ControlNet + SD 1.5)
+# - CPU-only: ~30–60 minutes per image
+# - GPU (CUDA): ~30–120 seconds per image
+# - 16 GB RAM: enable_model_cpu_offload is enabled below (required)
+
+name: "ControlNet: Woodcut Print"
+description: "Woodcut / linocut print style via ControlNet + Stable Diffusion 1.5 — bold, high-contrast strokes resembling hand-carved woodblock prints."
+
+steps:
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
+  - step: load_image
+    label: "Load Input Image"
+    config:
+      style_res: 512
+
+  # Step 2: Apply artistic style
+  - step: stylise_controlnet
+    label: "Stylize: ControlNet Woodcut Print"
+    config:
+      prompt: "woodcut print, linocut, bold black strokes, high contrast, coarse grain texture, expressionist, monochrome, vintage printmaking"
+      negative_prompt: "photorealistic, smooth, digital, color, watercolor, fine detail, blurry"
+
+      hf_token_path: ".hf_token"
+
+      # SoftEdge preserves overall shapes without locking to fine details,
+      # giving the model freedom to produce bold, chunky woodcut strokes
+      controlnet_type: softedge
+
+      num_inference_steps: 25
+      guidance_scale: 10.0 # High guidance for strong stylization
+
+      base_model: "runwayml/stable-diffusion-v1-5"
+      device: auto # auto | cpu | cuda | mps
+      enable_model_cpu_offload: true # Required on 16 GB RAM; offloads weights to CPU between steps
+
+  # Step 3: Save output image
+  # output_path is provided via CLI --output (no path needed here)
+  - step: save_image
+    label: "Save Stylized Image"
+    config: {}

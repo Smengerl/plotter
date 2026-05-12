@@ -20,6 +20,12 @@ __pycache__/
 *.pyc
 .venv/
 
+pipeline/input/*
+!pipeline/input/testimage.png
+
+# Input directory: ignore all files except the test image
+input/*
+!input/testimage.png
 
 .hf_token
 output/

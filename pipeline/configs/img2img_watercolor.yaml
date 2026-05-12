@@ -1,0 +1,50 @@
+# pipeline/examples/img2img_watercolor.yaml
+#
+# Example pipeline: Watercolor style via img2img + Stable Diffusion v1.5
+#
+# Applies a soft, translucent watercolor look. Lower strength (0.55) preserves
+# more of the original composition while adding gentle washes of color and
+# characteristic wet-on-wet bleeding at edges.
+#
+# Notes:
+# - Requires: pip install diffusers transformers safetensors torch accelerate
+# - First run downloads ~4GB of models
+# - CPU-only: ~10–30 minutes per image
+# - GPU (CUDA): ~1–3 minutes per image
+# - GPU (M1/M2/M3): ~3–10 minutes per image
+# - 16 GB RAM: enable_model_cpu_offload is enabled below (required)
+
+name: "Img2Img: Watercolor Painting"
+description: "Watercolor style via img2img + Stable Diffusion — low strength (0.55) preserves composition while adding soft washes, delicate edges, and wet-on-wet bleeding."
+
+steps:
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
+  - step: load_image
+    label: "Load Input Image"
+    config:
+      style_res: 512
+
+  # Step 2: Apply artistic style
+  - step: stylise_img2img
+    label: "Stylize: Img2Img Watercolor Painting"
+    config:
+      prompt: "watercolor painting, soft washes, delicate edges, wet-on-wet technique, pastel tones, translucent layers, botanical illustration"
+      negative_prompt: "oil paint, photorealistic, sharp edges, dark, heavy, digital art, low quality"
+
+      # Lower strength: keeps original structure, adds light stylization
+      strength: 0.55
+
+      num_inference_steps: 28
+      guidance_scale: 7.0
+
+      model_id: "stable-diffusion-v1-5/stable-diffusion-v1-5"
+      hf_token_path: ".hf_token"
+      device: auto # auto | cpu | cuda | mps
+      enable_model_cpu_offload: true # Required on 16 GB RAM; offloads weights to CPU between steps
+
+  # Step 3: Save output image
+  # output_path is provided via CLI --output (no path needed here)
+  - step: save_image
+    label: "Save Stylized Image"
+    config: {}

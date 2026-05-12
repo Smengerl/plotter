@@ -1,0 +1,63 @@
+# pipeline/configs/canny_edge.yaml
+#
+# Example pipeline: Canny edge detection for pen plotting
+#
+# Converts an image to a clean binary edge map using the classic Canny algorithm.
+# Produces sharp, thin edges — ideal for technical drawings, portraits, and objects
+# with well-defined boundaries.
+#
+# Notes:
+# - No GPU or internet connection required
+# - Very fast (~1–5 seconds per image)
+# - Adjust canny_low / canny_high for your image content:
+#     low threshold ratio: canny_low / canny_high ≈ 1:2 or 1:3 is recommended
+# - Increase canny_blur (odd integer ≥ 3) to suppress noise in busy images
+
+name: "Canny Edge Detection"
+description: "CPU-only Canny edge detection — produces sharp, thin binary edge maps. Ideal for technical drawings, portraits, and objects with well-defined boundaries."
+
+steps:
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
+  - step: load_image
+    label: "Load Input Image"
+    config: {}
+
+  # Step 2: Apply Canny edge detection
+  - step: stylise_canny
+    label: "Stylize: Canny Edge Detection"
+    config:
+      style_res: 1024 # Longest side of intermediate image in pixels
+
+      # Hysteresis thresholds — edges above canny_high are strong,
+      # edges between canny_low and canny_high are included only if
+      # connected to a strong edge
+      canny_low: 50 # Lower threshold (0–255)
+      canny_high: 150 # Upper threshold (0–255)
+
+      # Gaussian blur kernel size before edge detection (must be odd)
+      # 1 = no blur, 3–5 = slight smoothing, 7+ = heavy smoothing
+      canny_blur: 3
+
+  # Step 3: Vectorize the binary edge map to paths
+  - step: vectorise
+    label: "Vectorize Paths"
+    config:
+      min_path_px: 10 # Minimum path length in pixels (shorter paths discarded)
+      simplify_eps: 1.5 # Ramer-Douglas-Peucker tolerance in pixels
+
+  # Step 4: Generate GCode for GRBL plotter
+  - step: gcode_from_svg
+    label: "Generate GCode (TOML Profile)"
+    config:
+      profile: "grbl_a4_pen"
+      target_width_mm: 180.0 # Drawing width in mm (default: 190.0 = A4 - 2x5mm margins)
+      target_height_mm: 250.0 # Drawing height in mm (default: 277.0 = A4 - 2x10mm margins)
+      keep_aspect: true # Maintain aspect ratio
+      linesort: true # Optimize path order by travel distance
+
+  # Step 5: Save GCode to file
+  # output_path is provided via CLI --output (no path needed here)
+  - step: save_gcode
+    label: "Save GCode"
+    config: {}

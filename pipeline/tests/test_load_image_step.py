@@ -27,7 +27,7 @@ if str(_REPO_ROOT) not in sys.path:
 from pipeline.core.base import ImageContext
 from pipeline.steps.load_image_step import LoadImageStep
 
-_TESTIMAGE = _REPO_ROOT / "pipeline" / "tests" / "testimage.png"
+_TESTIMAGE = _REPO_ROOT / "input" / "testimage.png"
 
 
 def _ctx_with_source(path: Path) -> ImageContext:

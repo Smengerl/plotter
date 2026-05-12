@@ -1,0 +1,54 @@
+# pipeline/configs/xdog_sketch.yaml
+#
+# Example pipeline: XDoG (Extended Difference of Gaussians) sketch style for pen plotting
+#
+# Produces high-contrast, sketch-like drawings by combining Gaussian difference
+# filtering with a soft thresholding function. The result closely resembles
+# pencil or ink sketch drawings with artistic, flowing lines.
+#
+# Notes:
+# - No GPU or internet connection required
+# - Very fast (~1–5 seconds per image)
+# - Key parameters to tune:
+#     sigma:     controls the scale of detected edges (larger = coarser lines)
+#     k_sigma:   ratio of large to small Gaussian; higher = more abstract
+#     threshold: final binarization cutoff (lower = more lines, higher = fewer)
+#     epsilon:   pre-threshold level (-1..1); 0 = adaptive (recommended)
+#     phi:       sigmoid steepness; higher = harder edges
+
+steps:
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
+  - step: load_image
+    config: {}
+
+  # Step 2: Apply XDoG sketch filter
+  - step: stylise_xdog
+    config:
+      style_res: 1024 # Longest side of intermediate image in pixels
+
+      sigma: 0.4 # σ of the small Gaussian (edge scale)
+      k_sigma: 1.6 # σ ratio large / small Gaussian
+      epsilon: 0.0 # Pre-threshold level (-1..1); 0 = adaptive
+      phi: 10.0 # Steepness of sigmoid soft-threshold
+      threshold: 20.0 # Final binarization threshold (0–255)
+
+  # Step 3: Vectorize the sketch image to paths
+  - step: vectorise
+    config:
+      min_path_px: 10 # Minimum path length in pixels (shorter paths discarded)
+      simplify_eps: 1.5 # Ramer-Douglas-Peucker tolerance in pixels
+
+  # Step 4: Generate GCode for GRBL plotter
+  - step: gcode_from_svg
+    config:
+      profile: "grbl_a4_pen"
+      target_width_mm: 180.0 # Drawing width in mm (default: 190.0 = A4 - 2x5mm margins)
+      target_height_mm: 250.0 # Drawing height in mm (default: 277.0 = A4 - 2x10mm margins)
+      keep_aspect: true # Maintain aspect ratio
+      linesort: true # Optimize path order by travel distance
+
+  # Step 5: Save GCode to file
+  # output_path is provided via CLI --output (no path needed here)
+  - step: save_gcode
+    config: {}
