@@ -8,6 +8,7 @@
 #
 # Exports after sourcing:
 #   SYS_PYTHON   — system Python binary (python3.13 > python3.12 > python3.11 > python3)
+#   SYS_PIP      — system pip binary    (pip3.13 > pip3.12 > pip3.11 > pip3 > pip)
 #   VENV         — path to the virtual environment root (.venv in project root)
 #   VENV_BIN     — path to venv's bin/ (Unix) or Scripts/ (Windows / Git-Bash)
 #
@@ -21,6 +22,9 @@
 #
 #   resolve_venv_python
 #     Sets PYTHON to the venv's python executable.
+#
+#   resolve_venv_pip
+#     Sets PIP to the venv's pip executable.
 
 # ── Locate project root ───────────────────────────────────────────────────────
 # Fallback: two levels up from scripts/helpers/ → pipeline/ → project root
@@ -44,6 +48,27 @@ _find_python() {
 if ! SYS_PYTHON="$(_find_python)"; then
   echo "❌ Python not found. Please install Python 3.11–3.13." >&2
   echo "   macOS: brew install python@3.13" >&2
+  return 1 2>/dev/null || exit 1
+fi
+
+# ── Detect system pip (prefer versioned, accept pip3/pip) ─────────────────────
+_find_pip() {
+  for candidate in pip3.13 pip3.12 pip3.11 pip3 pip; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  # Last resort: ask the detected Python itself
+  if "$SYS_PYTHON" -m pip --version >/dev/null 2>&1; then
+    echo "$SYS_PYTHON -m pip"
+    return 0
+  fi
+  return 1
+}
+
+if ! SYS_PIP="$(_find_pip)"; then
+  echo "❌ pip not found. Try: $SYS_PYTHON -m ensurepip --upgrade" >&2
   return 1 2>/dev/null || exit 1
 fi
 
@@ -93,8 +118,9 @@ activate_venv() {
       # shellcheck source=/dev/null
       source "$VENV_BIN/activate"
       echo "📦 Installing pipeline[${extras}] from pyproject.toml..."
-      "$VENV_BIN/pip" install --upgrade pip --quiet
-      "$VENV_BIN/pip" install -e "$ROOT_DIR/pipeline[${extras}]"
+      resolve_venv_pip
+      "$PIP" install --upgrade pip setuptools wheel --quiet
+      "$PIP" install -e "$ROOT_DIR/pipeline[${extras}]"
     else
       echo "❌ Virtual environment not found at $VENV" >&2
       echo "   Run setup first:  ./pipeline/scripts/setup_pipeline.sh" >&2
@@ -121,4 +147,21 @@ resolve_venv_python() {
     fi
   fi
   export PYTHON
+}
+
+# ── resolve_venv_pip ──────────────────────────────────────────────────────────
+# Sets PIP to the venv's pip executable. Call after activate_venv.
+resolve_venv_pip() {
+  if is_windows; then
+    PIP="$VENV_BIN/pip.exe"
+    if [[ ! -x "$PIP" && -x "$VENV_BIN/pip3.exe" ]]; then
+      PIP="$VENV_BIN/pip3.exe"
+    fi
+  else
+    PIP="$VENV_BIN/pip"
+    if [[ ! -x "$PIP" && -x "$VENV_BIN/pip3" ]]; then
+      PIP="$VENV_BIN/pip3"
+    fi
+  fi
+  export PIP
 }

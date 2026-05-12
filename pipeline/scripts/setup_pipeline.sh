@@ -4,7 +4,7 @@
 # Usage (run from anywhere — the script finds the project root itself):
 #   ./pipeline/scripts/setup_pipeline.sh                     # installs extras: gui (default)
 #   EXTRAS=gui,diffusers ./pipeline/scripts/setup_pipeline.sh  # include SD backends
-#   PYTHON=python3.12 ./pipeline/scripts/setup_pipeline.sh     # pin a specific interpreter
+#   SYS_PYTHON=python3.12 ./pipeline/scripts/setup_pipeline.sh  # pin a specific interpreter
 #
 # Supported Python: 3.11, 3.12, 3.13  (vpype 1.15.x does not support 3.14+)
 # Install Python 3.13 on macOS:  brew install python@3.13
@@ -16,8 +16,9 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # shellcheck source=helpers/env.sh
 source "$SCRIPT_DIR/helpers/env.sh"
 
-# Allow PYTHON env-var override before check
-[[ -n "${PYTHON:-}" ]] && SYS_PYTHON="$PYTHON"
+# Allow SYS_PYTHON env-var override before version check
+# (named SYS_PYTHON to avoid conflict with the venv PYTHON set by resolve_venv_python)
+[[ -n "${SYS_PYTHON:-}" ]] || true   # already set by env.sh; user may export before running
 
 # ── Python version gate ───────────────────────────────────────────────────────
 check_python_version
@@ -33,16 +34,18 @@ if [[ -d "$VENV" ]]; then
   EXISTING_PY="$("$VENV_BIN/python" --version 2>&1 || echo 'unknown')"
   echo "Existing venv: $EXISTING_PY"
   echo "  (To recreate: rm -rf .venv && ./pipeline/scripts/setup_pipeline.sh)"
-  source "$VENV_BIN/activate"
+  activate_venv   # activate existing venv via helper (platform-independent)
   echo ""
   echo "--- Upgrading pip & reinstalling pipeline[${EXTRAS}] ---"
-  "$VENV_BIN/pip" install --upgrade pip --quiet
-  "$VENV_BIN/pip" install -e "$ROOT_DIR/pipeline[${EXTRAS}]"
+  resolve_venv_pip
+  "$PIP" install --upgrade pip setuptools wheel --quiet
+  "$PIP" install -e "$ROOT_DIR/pipeline[${EXTRAS}]"
 else
   activate_venv --auto-create "$EXTRAS"
 fi
 
 resolve_venv_python
+resolve_venv_pip
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo ""
