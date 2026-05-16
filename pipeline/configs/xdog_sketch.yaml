@@ -33,22 +33,8 @@ steps:
       phi: 10.0 # Steepness of sigmoid soft-threshold
       threshold: 20.0 # Final binarization threshold (0–255)
 
-  # Step 3: Vectorize the sketch image to paths
-  - step: vectorise
-    config:
-      min_path_px: 10 # Minimum path length in pixels (shorter paths discarded)
-      simplify_eps: 1.5 # Ramer-Douglas-Peucker tolerance in pixels
-
-  # Step 4: Generate GCode for GRBL plotter
-  - step: gcode_from_svg
-    config:
-      profile: "grbl_a4_pen"
-      target_width_mm: 180.0 # Drawing width in mm (default: 190.0 = A4 - 2x5mm margins)
-      target_height_mm: 250.0 # Drawing height in mm (default: 277.0 = A4 - 2x10mm margins)
-      keep_aspect: true # Maintain aspect ratio
-      linesort: true # Optimize path order by travel distance
-
-  # Step 5: Save GCode to file
+  # Step 3: Save output image
   # output_path is provided via CLI --output (no path needed here)
-  - step: save_gcode
+  - step: save_image
+    label: "Save Stylized Image"
     config: {}

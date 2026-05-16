@@ -20,29 +20,11 @@ name: "ControlNet Plotter Pipeline"
 description: "Applies ControlNet lineart style transfer, vectorizes, and generates GCode for GRBL."
 
 steps:
-  # Step 1: Apply artistic style using ControlNet + SD 1.5
-  #
-  # This step converts the input image to an artistic style
-  # guided by the text prompt and ControlNet conditioning.
-  - step: stylise_controlnet
-    label: "Stylize via ControlNet"
-    config:
-      # Style prompt - adjust to your artistic goal
-      prompt: "ink drawing, pen sketch, detailed line art, professional illustration, monochrome"
-      negative_prompt: "watercolor, photorealistic, color, blurry, low quality, distorted"
-
-      # ControlNet type - determines what structure is preserved
-      # Options: canny, lineart, softedge, scribble, pose, depth, normal, seg
-      controlnet_type: lineart
-
-      # Diffusion settings
-      num_inference_steps: 25 # Higher = better quality, slower
-      guidance_scale: 7.5 # How much to follow prompt (1–15)
-
-      # Model and device
-      base_model: "runwayml/stable-diffusion-v1-5"
-      device: auto # auto | cpu | cuda | mps
-      enable_model_cpu_offload: false # Reduce VRAM at cost of speed
+  # Step 1: Load input image
+  # source_path is provided via CLI --input (no path needed here)
+  - step: load_image
+    label: "Load Input Image"
+    config: {}
 
   # Step 2: Convert image to vector paths
   - step: vectorise
