@@ -4,7 +4,10 @@
 [![C/C++](https://img.shields.io/badge/C/C++-firmware-green)](#)
 [![License](https://img.shields.io/badge/license-CC%20BY--SA%204.0-blue)](http://creativecommons.org/licenses/by-sa/4.0/)
 
-This plotter draws vector graphics in G-code format using a pen. It is compatible with pens up to 11 mm in diameter, relies on inexpensive and widely available components, and uses a mostly 3D-printed frame with a few off-the-shelf mechanical parts.
+This plotter draws vector graphics in G-code format using a pen. It is compatible with pens up to 11 mm in diameter, relies on inexpensive and widely available components, and uses a mostly 3D-printed frame with a few off-the-shelf mechanical parts. A set of test cases guides the user to verify the functionality of each hardware component before running GRBL.
+
+The plotter's firmware is based on GRBL v1.1, which is a widely used open-source CNC controller firmware.
+It comes with a GUI toolset to transform images provided by the user to drawings in different styles via AI (technical drawing, pencil drawing, oil painting etc.) to send them to the plotter for drawing.
 
 ![Assembly overview](./print/zsb/full.png)
 
@@ -15,8 +18,9 @@ This plotter draws vector graphics in G-code format using a pen. It is compatibl
 - [Bill of Materials](#bill-of-materials)
 - [Assembly](#assembly)
 - [Electronics](#electronics) — see [electronics.md](electronics.md) for full details
-- [Software](#software) — see [firmware/README.md](firmware/README.md) for full details
+- [Firmware](#firmware) — see [firmware/README.md](firmware/README.md) for full details
 - [Testing](#testing) — see [testing.md](testing.md) for full details
+- [Software for host computer](#software-for-host-computer) — see [pipeline/README.md](pipeline/README.md) for full details
 - [License and Acknowledgements](#license-and-acknowledgements)
 
 ## Overview
@@ -27,9 +31,10 @@ This pen plotter is meant for hobbyists and makers who want a low-cost machine t
 
 - Compatible with pens up to 11 mm diameter
 - Mostly 3D-printed components for easy reproduction
-- Solenoid-based pen actuator
-- Uses commonly available NEMA 17 stepper motors and standard bearings
 - Designed for A4-sized paper by default (adjustable)
+- Open-source firmware based on GRBL v1.1
+- Test suite to verify hardware functionality before running GRBL
+- GUI toolset for image-to-G-code conversion with AI-based drawing styles (technical, pencil, oil painting etc.)
 
 ## Bill of Materials
 
@@ -112,7 +117,7 @@ Assembly steps:
 4. Assemble all wires according to [electronics.md](electronics.md).
 5. Attach the housing and fix it to the PCB holder and rods with M3 screws. Make sure the USB port and power jack are accessible.
 
-## Software
+## Firmware
 
 The plotter runs [GRBL](https://github.com/gnea/grbl) v1.1 on the Arduino Uno.
 All firmware sources live in `firmware/`; GRBL is included as a Git submodule under `firmware/grbl/`.
@@ -133,10 +138,14 @@ pio device monitor  # open serial console at 115200 baud
 A dedicated test suite verifies each hardware component before running GRBL.  
 See **[testing.md](testing.md)** for the full procedure.
 
-Summary:
+## Software for host computer
 
-- **Phase 1** — Four standalone Arduino sketches test X-axis movement, X endstops, Y-axis movement, and the pen-lift solenoid individually, without GRBL.
-- **Phase 2** — The same four functions are verified through GRBL using G-code commands from a PC.
+A set of CLI tools to send G-code files to the plotter is included in pipeline.
+The tool allows to configure individual processing pipelines by pure configuration without changing the code for images including adaptation of styles via prompt to a provided image, the necessary vectorization and sending the G-code.
+
+A GUI frontend is provided for convenient usage of these mechanism including management of the raw images, applying various pipelines to them, previewing the adapted images and eventually sending the images to the plotter.
+
+See **[pipeline/README.md](/pipeline/README.md)** for the full procedure.
 
 ## Acknowledgements
 
