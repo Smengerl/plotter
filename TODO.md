@@ -56,7 +56,3 @@ homing, solenoid on D11 via `VARIABLE_SPINDLE`.** `config.h`, `electronics.md`,
   inversion (`$3`), or squaring/skew of the drawing. `testing.md` TC5b-G
   covers only the X-length teach. Write a "GRBL settings & calibration"
   section (in `firmware/README.md` or a new `firmware/GRBL.md`).
-- [ ] **`send_gcode` gives no success/failure feedback.** Neither the CLI nor
-  the GUI reports whether a plot finished cleanly, stalled, or hit an alarm.
-  Decide the mechanism (step raises on GRBL error / writes a status into
-  `ctx`; GUI surfaces it in the log panel) and document it.

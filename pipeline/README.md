@@ -498,16 +498,20 @@ Writes the GCode lines to a file. Output path resolution:
 
 #### `send_gcode`
 
-Sends GCode directly to a GRBL controller via serial port using
-`pygrbl_streamer`. Typically kept `enabled: false` in the config and
-enabled only for actual plotting.
+Streams GCode to a GRBL controller over serial using `pygrbl_streamer`.
+Used by `pipeline/configs/plotter.yaml`.
+
+The step **fails the pipeline** (raises, so the CLI exits non-zero and the
+GUI marks the job `error`) if GRBL reports an `error:` / `ALARM:` during
+streaming, if the device disconnects, or if GRBL is not back in `Idle`
+afterwards. `pygrbl_streamer` on its own only logs these.
 
 | Config key | Default | Description |
 | --- | --- | --- |
 | `port` | `"/dev/tty.usbmodem1101"` | Serial port |
 | `baud` | `115200` | Baud rate |
-| `dry_run` | `false` | Log GCode without sending to the port |
-| `completion_timeout` | `300` | Timeout per GCode line in seconds |
+| `dry_run` | `false` | Open the port and validate, but do not send / move |
+| `completion_timeout` | `300` | Seconds to wait for GRBL to return to `Idle` after the last line |
 
 ---
 

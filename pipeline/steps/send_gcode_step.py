@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import logging
 import tempfile
+import time
 from pathlib import Path
 
 from pipeline.core.base import ImageContext, PipelineStep
@@ -49,7 +50,15 @@ class SendGcodeStep(PipelineStep):
       - pygrbl_streamer opens the port, initializes GRBL, and sends
         the file with intelligent buffer management (127-byte limit)
       - Progress is output via logger
-      - On alarm, automatic recovery is performed ($X)
+
+    Success / failure
+    -----------------
+    ``pygrbl_streamer`` never raises on a GRBL ``error:``/``ALARM:`` — it
+    logs them and (for ALARM) auto-sends ``$X`` and continues. This step
+    watches those callbacks and **raises ``RuntimeError`` after streaming**
+    if any alarm / error / disconnect occurred, or if GRBL is not back in
+    ``Idle`` afterwards. The runner then aborts and the failure propagates
+    to the CLI / GUI like any other step error.
 
     config keys                 Default                   Corresponds to CLI flag
     ---------------------------------------------------------------------------
@@ -95,30 +104,78 @@ class SendGcodeStep(PipelineStep):
 
         logger.info("Opening serial port %s @ %d baud …", port, baud)
 
+        alarms: list[str] = []
+        errors: list[str] = []
+        disconnects: list[str] = []
+
         class _LoggingStreamer(GrblStreamer):
-            """GrblStreamer subclass that redirects callbacks to logger."""
+            """GrblStreamer subclass: log callbacks and record problems."""
 
             def progress_callback(self, percent: int, command: str) -> None:
                 logger.info("[GRBL] Progress: %d%%  — %s", percent, command)
 
             def alarm_callback(self, line: str) -> None:
-                logger.warning("[GRBL] ALARM (automatic recovery via $X): %s", line)
+                alarms.append(line)
+                logger.error("[GRBL] ALARM (streamer auto-sent $X): %s", line)
 
             def error_callback(self, line: str) -> None:
                 if "DEVICE_DISCONNECTED" in line:
+                    disconnects.append(line)
                     logger.error("[GRBL] Connection to device lost: %s", line)
                 else:
+                    errors.append(line)
                     logger.error("[GRBL] Error: %s", line)
 
         streamer = _LoggingStreamer(port=port, baudrate=baud)
         try:
             streamer.open()
-            logger.info("Connection opened - sending GCode …")
+            logger.info("Connection opened - sending %d GCode lines …", len(gcode_lines))
+            t0 = time.monotonic()
             streamer.send_file(str(tmp_path), completion_timeout=completion_timeout)
-            logger.info("GCode sent successfully.")
+            elapsed = time.monotonic() - t0
+
+            problems: list[str] = []
+            if alarms:
+                problems.append(f"{len(alarms)} GRBL alarm(s), last: {alarms[-1]!r}")
+            if errors:
+                problems.append(f"{len(errors)} GRBL error(s), last: {errors[-1]!r}")
+            if disconnects:
+                problems.append("device disconnected during streaming")
+            if not problems and not _grbl_reached_idle(streamer):
+                problems.append(
+                    f"GRBL did not report Idle after streaming "
+                    f"(completion_timeout={completion_timeout}s) — the plot may be incomplete"
+                )
+
+            if problems:
+                raise RuntimeError("send_gcode failed: " + "; ".join(problems))
+
+            logger.info("GCode sent successfully (%d lines, %.0fs).",
+                        len(gcode_lines), elapsed)
         finally:
             streamer.close()
             tmp_path.unlink(missing_ok=True)
 
         return ctx
+
+
+def _grbl_reached_idle(streamer: "object", tries: int = 3) -> bool:
+    """Return True if a ``?`` status query shows GRBL back in ``Idle``.
+
+    ``send_file`` already polls for ``Idle`` but silently gives up on
+    timeout, so re-check here. A missing / unparseable response is treated
+    as "not Idle" only after ``tries`` attempts.
+    """
+    for _ in range(tries):
+        try:
+            streamer.write_line("?")  # type: ignore[attr-defined]
+        except Exception:  # noqa: BLE001
+            return False
+        for _ in range(6):
+            line = streamer.read_line_blocking()  # type: ignore[attr-defined]
+            if line is None:
+                break
+            if line.startswith("<"):
+                return "Idle" in line
+    return False
 

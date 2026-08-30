@@ -156,8 +156,21 @@ def main() -> int:
         logger.info("Config : %s", args.config)
 
     ctx = build_initial_context(args.input, args.output)
-    runner.run(ctx)
 
+    if args.dry_run:
+        runner.run(ctx)
+        return 0
+
+    try:
+        runner.run(ctx)
+    except Exception as exc:  # noqa: BLE001 - top-level CLI boundary
+        if args.verbose:
+            logger.exception("Pipeline failed:")
+        # print, not logger: vpype reconfigures the root logger mid-run
+        print(f"\n✗ Pipeline FAILED: {exc}", file=sys.stderr)
+        return 1
+
+    print("\n✓ Pipeline OK", file=sys.stderr)
     return 0
 
 

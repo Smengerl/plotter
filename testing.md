@@ -704,9 +704,15 @@ close the G-code sender (only one process may hold the serial port).
 | First draw move | `M5` — pen lowers (de-energized), carriage starts drawing |
 | Travel moves | Pen raises (`M3`) between strokes, no dragging marks on paper |
 | Paper feed | Y-axis advances paper smoothly |
-| Plot completion | Final `M5` (pen down / solenoid off), paper advances to the sheet end; log ends with `GCode sent successfully.` |
+| Plot completion | Final `M5` (pen down / solenoid off), paper advances to the sheet end; console prints `✓ Pipeline OK` (exit 0) |
 
-**Expected result:** A recognisable line drawing of the test image on the paper, with no skipped lines, no crash alarms, and no solenoid misfires.
+**Expected result:** A recognisable line drawing of the test image on the
+paper, with no skipped lines, no crash alarms, and no solenoid misfires.
+
+If GRBL reports an `error:`/`ALARM:` mid-stream, the device disconnects, or
+GRBL is not back in `Idle` at the end, the run **fails** — `✗ Pipeline
+FAILED: send_gcode failed: …` and a non-zero exit code (the GUI marks the
+job `error`).
 
 **Failure hints:**
 
