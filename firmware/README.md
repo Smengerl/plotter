@@ -27,11 +27,23 @@ parameters). The hardware and firmware **test procedure** lives in
 firmware/
 ├── platformio.ini        ← PlatformIO project (build & flash config)
 └── src/
-    ├── config.h          ← Plotter-specific GRBL settings (overrides grbl/grbl/config.h)
+    ├── config.h          ← Plotter compile-time overrides (see below)
     ├── main.cpp          ← Arduino-framework entry point (calls grbl_main)
     └── grbl_main_shim.c  ← Bridges GRBL's main() to grbl_main() to avoid linker conflict
 └── grbl/                 ← Git submodule: gnea/grbl (do not edit)
 ```
+
+### How `src/config.h` is applied
+
+`platformio.ini` force-includes it into every translation unit
+(`build_flags = ... -include src/config.h`). It `#include`s the stock
+`grbl/grbl/config.h` unchanged and then overrides only the settings this
+machine needs (`HOMING_CYCLE_0` = X only; asserts `VARIABLE_SPINDLE`).
+
+**Only compile-time options belong in `config.h`.** Machine parameters
+(steps/mm, feed rates, travel, limit inversion, homing enable/direction)
+are `$` settings stored in EEPROM — set them on the board, see
+[Key GRBL settings](#key-grbl-settings-first-run-checklist).
 
 
 ## Prerequisites
@@ -91,8 +103,9 @@ Type `$` to list all available commands, or `$$` to print current parameter valu
 
 ## Key GRBL settings (first-run checklist)
 
-After flashing, connect to the serial monitor and verify/set the following parameters.  
-All values are stored persistently in EEPROM.
+**Required after flashing a fresh chip.** The compiled-in power-up defaults
+are GRBL's generic values (250 steps/mm etc.); the plotter values live only
+in EEPROM. Connect to the serial monitor and set:
 
 ```gcode
 $100=5       ; X steps/mm

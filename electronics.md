@@ -132,7 +132,8 @@ Verify pin assignments against `firmware/src/config.h` and the
 ## Microstepping jumpers
 
 **Leave all MS jumpers unpopulated** (MS1, MS2, MS3 all open) for **full-step operation**.
-This matches `DEFAULT_X/Y_STEPS_PER_MM = 5` in `firmware/src/config.h`.
+This matches `$100`/`$101` = 5 steps/mm (see
+[firmware/README.md → Key GRBL settings](firmware/README.md#key-grbl-settings-first-run-checklist)).
 
 | MS1 | MS2 | MS3 | Mode |
 |-----|-----|-----|------|
@@ -175,12 +176,10 @@ endstop.** See the [canonical table](#machine-configuration-canonical).
 - Optical endstops need the +5 V supply pin; mechanical microswitches only need GND and Signal.
 - Internal pull-ups are enabled by GRBL; no external resistors needed for the signal line.
 
-> **TODO** ([TODO.md](TODO.md)): `DEFAULT_INVERT_LIMIT_PINS` (`$5`) is set to
-> `1` with the rationale "optical endstops are HIGH when open, LOW when
-> triggered" — but in GRBL 1.1 that polarity means `$5` should be `0`
-> (`$5=1` → *HIGH* = triggered). The setting is **unverified**. Measure the
-> real module output (beam clear vs. blocked), set `$5` accordingly, fix the
-> comment in `firmware/src/config.h`, and confirm the two parallel X switches
+> **TODO** ([TODO.md](TODO.md)): the correct `$5` (invert limit pins) value is
+> **unverified**. In GRBL 1.1, `$5=1` means "pin HIGH = triggered", `$5=0`
+> means "pin LOW = triggered". Measure the real module output (beam clear vs.
+> blocked) and set `$5` accordingly. Also confirm the two parallel X switches
 > can share D9 without an output clash (open-collector / wired-OR).
 
 ## Solenoid pen lift

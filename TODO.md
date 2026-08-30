@@ -15,14 +15,16 @@ The machine layout is now settled and captured in
 [electronics.md → Machine configuration](electronics.md#machine-configuration-canonical):
 **2 optical endstops both on X (X_MIN + X_MAX) on D9, no Y endstop, X-only
 homing, solenoid on D11 via `VARIABLE_SPINDLE`.** `config.h`, `electronics.md`,
-`testing.md` and `firmware/README.md` were updated to match. Remaining:
+`testing.md` and `firmware/README.md` were updated to match, and
+`firmware/src/config.h` is now actually wired into the build (`-include`;
+it overrides `HOMING_CYCLE_0` and asserts `VARIABLE_SPINDLE`, machine
+params via `$`). Remaining:
 
-- [ ] **Optical-endstop polarity / `$5` is unverified.** `config.h` sets
-  `DEFAULT_INVERT_LIMIT_PINS 1` with the rationale "HIGH when open, LOW when
-  triggered" — but in GRBL 1.1 that polarity means `$5` should be **0**
-  (`$5=1` → *HIGH* = triggered). Measure the real module output (beam clear
-  vs. blocked), set `$5`, fix the comment. Also confirm the two parallel X
-  switches can share D9 without an output clash (open-collector / wired-OR).
+- [ ] **Optical-endstop polarity / `$5` is unverified.** In GRBL 1.1,
+  `$5=1` → "pin HIGH = triggered", `$5=0` → "pin LOW = triggered". Measure
+  the real module output (beam clear vs. blocked) and set `$5` on the board.
+  Also confirm the two parallel X switches can share D9 without an output
+  clash (open-collector / wired-OR).
 - [ ] **Reduced solenoid holding current — not yet implemented.** With PWM on
   D11 the pen-up drive can pull in at `S1000` then hold at ~`S350` to cut the
   coil heat. Change `line_end` (and `document_start`) in
@@ -33,9 +35,10 @@ homing, solenoid on D11 via `VARIABLE_SPINDLE`.** `config.h`, `electronics.md`,
   production wiring has both X switches on D9. Rework it to drive toward each
   end and let the operator confirm which end was reached (no second pin).
   Rename the sketch / PlatformIO env to `tc2_endstops`.
-- [ ] **`config.h` `DEFAULT_X_MAX_TRAVEL` is a placeholder (220 mm).** Real
-  value comes from testing.md TC5b-G ("teach") and lives in `$130`; verify
-  the teach procedure works on the hardware.
+- [ ] **`$130` (X max travel) must be taught** — testing.md TC5b-G. Verify the
+  teach procedure (home X_MIN, jog to X_MAX, read MPos) works on the hardware.
+- [ ] **Verify homing + solenoid on the real board** now that `config.h` is
+  wired in: `$H` homes X only (no Z/Y move), `M3`/`M5` drive the pen on D11.
 - [ ] **`testing.md` TC9-G M3/M5 order** — `M5` (pen down) → dwell → `M3 S1000`
   (pen up). Confirm against the assembled hardware.
 - [ ] **GRBL startup banner** — `testing.md` §2.0 shows

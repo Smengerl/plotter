@@ -102,7 +102,7 @@ pio run -e tc1_x_axis -t upload
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
 | Wrong motor moves | X/Y motor cables swapped | Swap X and Y connectors on CNC Shield |
-| Both directions reversed | Direction invert wrong | Toggle bit 0 of `DEFAULT_DIRECTION_INVERT_MASK` in `config.h` |
+| Both directions reversed | DIR sense wrong | Flip the DIR level in the sketch; under GRBL later, set `$3=1` (invert X) |
 | Motor buzzes, no movement | Current limit too low or motor coil pairs swapped | Re-adjust A4988 trimmer; check motor wiring order |
 
 ---
@@ -139,8 +139,9 @@ pio run -e tc2_x_endstops -t upload
 | 6 | Asks: "Did the carriage stop at the X_MAX end?" | Operator confirms |
 | 7 | Prints PASS / FAIL | — |
 
-**Endstop logic:** Optical endstops are HIGH when beam is open, LOW when triggered.  
-This matches `DEFAULT_INVERT_LIMIT_PINS 1` in `config.h`.
+**Endstop logic:** the sketch reads the raw pin (LOW = beam blocked). Under
+GRBL this is governed by `$5` — see the TODO in
+[electronics.md → Endstops](electronics.md#endstops).
 
 **Failure hints:**
 
@@ -179,7 +180,7 @@ pio run -e tc3_y_axis -t upload
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
 | Carriage moves instead of paper feed | X/Y motor cables swapped | Swap X and Y connectors on CNC Shield |
-| Both directions reversed | Direction invert wrong | Toggle bit 1 of `DEFAULT_DIRECTION_INVERT_MASK` in `config.h` |
+| Both directions reversed | DIR sense wrong | Flip the DIR level in the sketch; under GRBL later, set `$3=2` (invert Y) |
 | Motor turns but paper doesn't move | Feed roller not gripping | Check roller tension spring and bail assembly |
 
 ---
