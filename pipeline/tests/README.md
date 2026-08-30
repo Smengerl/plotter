@@ -1,43 +1,41 @@
+# pipeline/tests — unit tests and smoke runners
 
-# pipeline/tests — test pipelines and smoke runners
+For where these tests fit into bring-up, see
+[../../testing.md → Phase 3](../../testing.md#phase-3--pipeline-software-tests).
 
-> **TODO** ([../../TODO.md](../../TODO.md)): the paths and script names in this
-> file are stale — `pipeline_tests/…` should be `pipeline/tests/…`,
-> `run_all_stylizers.py` does not exist (it is `run_all_tests.py`), and the
-> test image is `pipeline/input/testimage.png`, not `pipeline/tests/testimage.png`.
->
-> For where these tests fit into commissioning, see
-> [../../testing.md → Phase 3](../../testing.md#phase-3--pipeline-software-tests).
+This directory contains the pytest unit tests (`test_*.py`) plus a set of
+pipeline configuration YAMLs (`pipeline_configs/`) used for smoke testing the
+pipeline steps. Two helper scripts are provided:
 
-This directory contains unit tests and a set of pipeline configuration
-YAML files used for smoke testing the pipeline steps. Two helper scripts
-are provided:
+- `run_all_pipeline_configs.py` — executes each `stylize_*.yaml` under
+  `pipeline/tests/pipeline_configs/` with the normal `PipelineRunner`.
+- `run_all_tests.py` — unified runner: pytest for `test_*.py`, then the config
+  smoke tests.
 
-- `run_all_pipeline_configs.py` — executes every YAML in
-  `pipeline_tests/pipeline_configs/` using the `PipelineRunner`.
-- `run_all_stylizers.py` — legacy stylizer smoke runner (kept for
-  backwards compatibility).
+> **TODO** ([../../TODO.md](../../TODO.md)): `run_all_pipeline_configs.py` still
+> has stale docstring text (references `run_all_stylizers.py` and several
+> non-existent directories) and uses the undefined names `_CONFIGS_DIR` /
+> `_TESTS_DIR`. Clean the script up.
 
 ## Important behavior
 
-The unified pipeline config runner intentionally does NOT preload the
-image into the pipeline context. Instead it sets:
+The smoke runner intentionally does NOT preload the image into the pipeline
+context. Instead it sets only the source path:
 
 ```python
-ctx = ImageContext(metadata={"source_path": Path("pipeline/tests/testimage.png")})
+ctx = ImageContext(metadata={"source_path": Path("pipeline/input/testimage.png")})
 ```
 
- This enforces the requirement that pipelines be self-contained: if a
- YAML needs to load an image from disk it must include a `load_image`
- step which reads `metadata['source_path']`. If a pipeline requires a
- pre-loaded `ctx.image`, the YAML must be designed accordingly and tests
- should run it by a custom harness that provides `ctx.image`.
+This enforces that pipelines are self-contained: a YAML that needs an image
+from disk must include a `load_image` step which reads
+`metadata['source_path']`. A pipeline that requires a pre-loaded `ctx.image`
+must be run by a custom harness that provides it.
 
 ## Why
 
-This makes test behavior explicit and prevents silent inconsistencies:
-the runner no longer overrides a pipeline's configured behavior by
-mutating or pre-loading the image.
+This makes test behavior explicit and prevents silent inconsistencies: the
+runner no longer overrides a pipeline's configured behavior by mutating or
+pre-loading the image.
 
 ## Running tests
 
@@ -50,9 +48,5 @@ Unit tests (fast):
 Full smoke tests (may download model weights):
 
 ```bash
-python pipeline/tests/run_all_pipeline_configs.py
+.venv/bin/python pipeline/tests/run_all_pipeline_configs.py
 ```
-
-If you want the old behavior where the runner preloads the image for
-convenience, run `run_all_stylizers.py` instead — but prefer fixing the
-YAML to be explicit about `load_image` in the long term.

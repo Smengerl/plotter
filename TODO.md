@@ -49,41 +49,26 @@ Inline `TODO:` markers throughout the docs point back here.
 
 ## Packaging / installation
 
-- [ ] **`pipeline/README.md` install instructions vs. `pyproject.toml`.**
-  `fastapi`, `uvicorn` and `PyYAML` live in the optional `gui` extra, not in
-  core `dependencies`. So `pip install -e pipeline/` (documented as "core +
-  GUI") cannot run `pipeline-server`, and cannot even run `pipeline-run` on a
-  YAML config (needs PyYAML). Either move PyYAML to core deps or fix the docs
-  (`pip install -e "pipeline/[gui]"`).
-- [ ] **`setup_pipeline.sh` does not exist** (removed in the pyproject
-  migration) but is still referenced by `testing.md` Phase 3 prerequisites
-  and `.github/copilot-instructions.md`.
-- [ ] **`requirements.txt` does not exist** but `.github/copilot-instructions.md`
-  documents its structure and `testing.md` TC-P1 failure hints reference it.
-- [ ] **Test count "62"** is hard-coded in `testing.md` TC-P1 and
-  `.github/copilot-instructions.md`; the suite currently has ~109 test
-  functions. Prefer "all tests pass" over a fixed number.
+- [ ] **`PyYAML` (and `fastapi`/`uvicorn`) live only in the `gui` extra.**
+  The docs now use `pip install -e "pipeline/[gui]"` as the baseline, but a
+  bare `pip install -e pipeline/` still cannot run `pipeline-run` on a YAML
+  config (`PipelineRunner.from_yaml` needs PyYAML). Move `PyYAML` into core
+  `dependencies` in `pipeline/pyproject.toml`.
+- [ ] **`setup_pipeline.sh` / `requirements.txt` do not exist** (removed in the
+  pyproject migration). Still referenced by `.github/copilot-instructions.md`
+  (flagged there with a TODO note; the structure block and the "62 tests"
+  figure need removing).
 - [ ] **License mismatch**: `LICENSE.txt` + root `README.md` say CC BY-SA 4.0
   (whole project); `pipeline/pyproject.toml` says MIT. Decide the split
   (e.g. hardware/docs CC BY-SA, code MIT) and state it explicitly.
-- [ ] `pipeline/README.md` NN-stylizer section claims `controlnet-aux`,
-  `torch`, `torchvision` are "included in the `diffusers` extras" — they are
-  in core `dependencies`; only ControlNet/Img2Img (SD) need `[diffusers]`.
 
 ## Docs / tests
 
-- [ ] **GUI port**: `pipeline/README.md` says `http://localhost:8080`;
-  `gui/config.py` / `server.py` default to `8000`.
-- [ ] **`pipeline/tests/README.md` paths are stale**: `pipeline_tests/…` →
-  `pipeline/tests/…`; `run_all_stylizers.py` does not exist (it is
-  `run_all_tests.py`); the test image is `pipeline/input/testimage.png`, not
-  `pipeline/tests/testimage.png`. Same wrong image path in `testing.md`
-  TC-P2 / TC-P3 / TC-E*.
-- [ ] `pipeline/tests/run_all_pipeline_configs.py` docstring names four
-  different config directories; align it with what the script actually does
-  (`pipeline/tests/pipeline_configs/stylize_*.yaml`).
-- [ ] `testing.md` TC-P2 mentions a `--skip-stylizers` flag — verify it
-  exists in `run_all_pipeline_configs.py`.
+- [ ] `pipeline/tests/run_all_pipeline_configs.py` is itself broken: stale
+  docstring (mentions `run_all_stylizers.py` and non-existent directories),
+  and it uses the undefined names `_CONFIGS_DIR` / `_TESTS_DIR`. Clean it up
+  and confirm whether the `--skip-stylizers` flag (referenced in `testing.md`
+  TC-P2) actually exists.
 - [ ] `pipeline/examples/run_examples.sh` is broken: the example block is
   duplicated verbatim; `--config ../configs/pipeline/examples/…` resolves to
   nothing; configs live in `pipeline/configs/`, not `pipeline/examples/`;
@@ -91,7 +76,6 @@ Inline `TODO:` markers throughout the docs point back here.
 
 ## Minor
 
-- [ ] Root `README.md` "Authors": `https://github.com/Smenger` → `Smengerl`.
 - [ ] Root `README.md` BOM section mentions "McMaster" references;
   `BOM.md` only has AliExpress links.
 - [ ] Root `README.md` §Assembly: list items are all numbered `1.`.

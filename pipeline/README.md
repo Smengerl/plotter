@@ -34,15 +34,15 @@ For where this fits in the overall bring-up, see
 > On macOS, `python3` often resolves to 3.14 — always use `python3.13` explicitly.
 
 ```bash
-# 1. Create virtual environment and install all dependencies
+# 1. Create virtual environment and install dependencies
 python3.13 -m venv .venv
 .venv/bin/pip install --upgrade pip "setuptools<82" wheel
-.venv/bin/pip install -e pipeline/          # core + GUI deps
+.venv/bin/pip install -e "pipeline/[gui]"   # core + web GUI; add ,diffusers for SD
 
 # 2. Run the pipeline
 .venv/bin/pipeline-run \
     --config pipeline/configs/standard_pipeline.yaml \
-    --input  input/photo.jpg \
+    --input  pipeline/input/testimage.png \
     --output output/result.gcode
 ```
 
@@ -79,14 +79,17 @@ python3.13 -m venv .venv
 ### Install the pipeline package
 
 ```bash
-# Core + web GUI (recommended default)
+# Core only — CLI, OpenCV + NN stylizers, vectorise, G-code
 .venv/bin/pip install -e pipeline/
 
-# Include Stable Diffusion backends (ControlNet, Img2Img)
-.venv/bin/pip install -e "pipeline/[diffusers]"
+# Core + web GUI (recommended default)
+.venv/bin/pip install -e "pipeline/[gui]"
+
+# Add the Stable Diffusion backends (ControlNet, Img2Img)
+.venv/bin/pip install -e "pipeline/[gui,diffusers]"
 
 # Everything including dev/test tools
-.venv/bin/pip install -e "pipeline/[diffusers,dev]"
+.venv/bin/pip install -e "pipeline/[gui,diffusers,dev]"
 ```
 
 The `-e` flag installs in **editable mode** — changes to source files are
@@ -96,7 +99,7 @@ reflected immediately without reinstalling.
 
 ```bash
 .venv/bin/pip install --upgrade pip "setuptools<82" wheel
-.venv/bin/pip install -e pipeline/
+.venv/bin/pip install -e "pipeline/[gui]"
 ```
 
 To start completely fresh:
@@ -105,7 +108,7 @@ To start completely fresh:
 rm -rf .venv
 python3.13 -m venv .venv
 .venv/bin/pip install --upgrade pip "setuptools<82" wheel
-.venv/bin/pip install -e pipeline/
+.venv/bin/pip install -e "pipeline/[gui]"
 ```
 
 ### Windows
@@ -115,7 +118,7 @@ Replace `.venv/bin/` with `.venv\Scripts\` in all commands:
 ```powershell
 python -m venv .venv
 .venv\Scripts\pip install --upgrade pip "setuptools<82" wheel
-.venv\Scripts\pip install -e pipeline/
+.venv\Scripts\pip install -e "pipeline/[gui]"
 .venv\Scripts\pipeline-run --config pipeline/configs/standard_pipeline.yaml
 ```
 
@@ -150,13 +153,14 @@ After installation, pip registers four commands in `.venv/bin/`
 
 ### `pipeline-server` — GUI web server
 
-Starts the FastAPI-based Pipeline Manager GUI at `http://localhost:8080`.
-Requires the `gui` extras (installed by default with `setup_pipeline.sh`).
+Starts the FastAPI-based Pipeline Manager GUI at `http://127.0.0.1:8000`
+(override with `--host` / `--port`).
+Requires the `gui` extras: `.venv/bin/pip install -e "pipeline/[gui]"`.
 
 ```bash
 .venv/bin/pipeline-server
 .venv/bin/pipeline-server --port 9000
-.venv/bin/pipeline-server --input-dir input --tools-dir pipeline/configs
+.venv/bin/pipeline-server --input-dir pipeline/input --tools-dir pipeline/configs
 ```
 
 ### `get-hf-token` — Save a HuggingFace token
@@ -336,8 +340,10 @@ OpenCV adaptive threshold — good for documents and high-contrast images.
 ### Stylizers — Neural Network (GPU recommended)
 
 These steps download pre-trained models from HuggingFace on first use.
-They require `pip install controlnet-aux torch torchvision` (included in
-the `diffusers` extras: `.venv/bin/pip install -e "pipeline/[diffusers]"`).
+Their dependencies (`controlnet-aux`, `torch`, `torchvision`, `timm`,
+`onnxruntime`) are already in the core `dependencies` — no extra needed
+beyond the standard install. Only the diffusion stylizers below
+(`stylise_controlnet`, `stylise_img2img`) additionally need `[diffusers]`.
 
 All NN stylizers share these common config keys:
 
@@ -386,7 +392,7 @@ No additional config keys beyond the common ones above.
 ### Stylizers — Diffusion (HuggingFace token required for some models)
 
 These steps require `diffusers`, `transformers`, `torch`, `accelerate`.
-Install via `.venv/bin/pip install -e "pipeline/[diffusers]"`.
+Install via `.venv/bin/pip install -e "pipeline/[gui,diffusers]"`.
 
 For gated models (FLUX, SD3): run `.venv/bin/get-hf-token` first.
 

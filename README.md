@@ -161,7 +161,7 @@ The tool allows to configure individual processing pipelines by pure configurati
 
 A GUI frontend is provided for convenient usage of these mechanism including management of the raw images, applying various pipelines to them, previewing the adapted images and eventually sending the images to the plotter.
 
-See **[pipeline/README.md](/pipeline/README.md)** for the full procedure.
+See **[pipeline/README.md](pipeline/README.md)** for the full procedure.
 
 ## Acknowledgements
 
@@ -180,7 +180,7 @@ This project is licensed under the Creative Commons Attribution-ShareAlike 4.0 I
 
 ## Authors
 
-- Simon Gerlach <https://github.com/Smenger>
+- Simon Gerlach <https://github.com/Smengerl>
 
 ---
 

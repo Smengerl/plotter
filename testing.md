@@ -435,17 +435,17 @@ It runs entirely on the host PC — **no plotter connection is required**.
 ### Phase 3 Prerequisites
 
 - Python 3.13 and the project virtualenv set up — see
-  [pipeline/README.md → Installation](pipeline/README.md#installation).
-
-  > **TODO** ([TODO.md](TODO.md)): older revisions of this guide referenced
-  > `./pipeline/scripts/setup_pipeline.sh`, which no longer exists.
+  [pipeline/README.md → Installation](pipeline/README.md#installation)
+  (`python3.13 -m venv .venv && .venv/bin/pip install -e "pipeline/[gui]"`).
 
 - All hardware tests (Phase 1 + Phase 2) should have passed before an end-to-end plot is attempted, but Phase 3 can be run independently at any time.
 
-> **TODO** ([TODO.md](TODO.md)) — applies to all of Phase 3 & 4:
-> - The test image is `pipeline/input/testimage.png` (not `pipeline/tests/testimage.png`).
-> - Failure hints below still mention `requirements.txt` / `setup_pipeline.sh`, which no longer exist — use `pip install -e "pipeline/[gui]"` instead.
-> - `pipeline/configs/standard_pipeline.yaml`, used as the example config, is itself stale (wrong name/description, legacy `gcode_gen` step). Once a clean plotter pipeline config exists, switch the examples to it.
+The test image used throughout Phase 3 & 4 is `pipeline/input/testimage.png`.
+
+> **TODO** ([TODO.md](TODO.md)): `pipeline/configs/standard_pipeline.yaml`, used
+> as the example config below, is itself stale (wrong name/description, legacy
+> `gcode_gen` step). Once a clean plotter pipeline config exists, switch the
+> examples to it.
 
 ---
 
@@ -470,15 +470,15 @@ It runs entirely on the host PC — **no plotter connection is required**.
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| `ModuleNotFoundError` | Virtualenv not activated or incomplete install | Re-run `./pipeline/scripts/setup_pipeline.sh` |
-| `ImportError: cannot import name ...` | Outdated installed package | `pip install -r pipeline/requirements.txt --upgrade` |
+| `ModuleNotFoundError` | Virtualenv not activated or incomplete install | `.venv/bin/pip install -e "pipeline/[gui]"` |
+| `ImportError: cannot import name ...` | Outdated installed package | `.venv/bin/pip install -e "pipeline/[gui]" --upgrade` |
 | Individual test `FAILED` | Step logic regression | Check the failing test and the corresponding step in `pipeline/steps/` |
 
 ---
 
 ### TC-P2 — Pipeline Config Smoke Tests
 
-**Goal:** All pipeline YAML configurations in `pipeline/configs/` execute without Python errors on the test image.
+**Goal:** The sample pipeline YAML configs execute without Python errors on the test image.
 
 **Run:**
 
@@ -488,14 +488,16 @@ It runs entirely on the host PC — **no plotter connection is required**.
 
 **What this does:**
 
-Each YAML file under `pipeline/configs/` (excluding the TOML profile) is loaded and executed against `pipeline/tests/testimage.png`. The runner checks that every step completes without raising an exception.
+Each `stylize_*.yaml` under `pipeline/tests/pipeline_configs/` is loaded and
+executed against `pipeline/input/testimage.png`. The runner checks that every
+step completes without raising an exception.
 
 **Expected:** All configs report `OK`. Example output:
 
 ```text
-[OK] standard_pipeline.yaml
 [OK] stylize_canny.yaml
 [OK] stylize_xdog.yaml
+[OK] stylize_adaptive.yaml
 ...
 ```
 
@@ -507,8 +509,8 @@ Each YAML file under `pipeline/configs/` (excluding the TOML profile) is loaded 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
 | `Step not found in registry` | Step name typo or missing registry entry | Check `pipeline/core/registry.py` |
-| `FileNotFoundError: testimage.png` | Test image missing | Confirm `pipeline/tests/testimage.png` exists |
-| NN model download fails | No internet / HuggingFace token required | Run `./pipeline/core/setup_hf_token.py` or use `--skip-stylizers` |
+| `FileNotFoundError: testimage.png` | Test image missing | Confirm `pipeline/input/testimage.png` exists |
+| NN model download fails | No internet / HuggingFace token required | Run `.venv/bin/get-hf-token` |
 
 ---
 
@@ -521,7 +523,7 @@ Each YAML file under `pipeline/configs/` (excluding the TOML profile) is loaded 
 ```bash
 .venv/bin/python pipeline/core/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
-    --input pipeline/tests/testimage.png \
+    --input pipeline/input/testimage.png \
     --output /tmp/test_output.gcode \
     --verbose
 ```
@@ -605,7 +607,7 @@ Edit `pipeline/configs/standard_pipeline.yaml`, set the `send_gcode` step:
 ```bash
 .venv/bin/python pipeline/core/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
-    --input pipeline/tests/testimage.png \
+    --input pipeline/input/testimage.png \
     --output /tmp/tc_e1_dryrun.gcode \
     --verbose
 ```
@@ -659,7 +661,7 @@ Confirm homing completes without `ALARM:`. Then close the G-code sender (only on
 ```bash
 .venv/bin/python pipeline/core/main.py \
     --config pipeline/configs/standard_pipeline.yaml \
-    --input pipeline/tests/testimage.png \
+    --input pipeline/input/testimage.png \
     --output /tmp/tc_e2_live.gcode \
     --verbose
 ```
