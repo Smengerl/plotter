@@ -44,8 +44,8 @@
 // ── Endstop pins ──────────────────────────────────────────────────────────
 // X_LIMIT_BIT / Y_LIMIT_BIT are on PORTB → Arduino pin = bit + 8
 
-#define PIN_X_MIN (X_LIMIT_BIT + 8) // PORTB bit 1 → D9
-#define PIN_Y_MIN (Y_LIMIT_BIT + 8) // PORTB bit 2 → D10
+#define PIN_X_MIN (X_LIMIT_BIT + 8) // PORTB bit 1 → D9  (X_MIN + X_MAX combined)
+#define PIN_Y_MIN (Y_LIMIT_BIT + 8) // PORTB bit 2 → D10 (Y_LIMIT — unused, no Y endstop)
 
 // ── Solenoid / spindle PWM pin ────────────────────────────────────────────
 // SPINDLE_PWM_BIT is on PORTB → Arduino pin = bit + 8

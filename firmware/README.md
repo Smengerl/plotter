@@ -1,7 +1,7 @@
 # GRBL Firmware
 
 > ⚠️ **Work in progress** — see [../TODO.md](../TODO.md) for known open issues
-> (endstop wiring, GRBL banner text).
+> (`$5` limit-pin polarity, GRBL banner text, on-hardware verification).
 
 This document describes the GRBL setup for the G-code Pen Plotter.  
 GRBL v1.1 runs on the Arduino Uno via the Arduino CNC Shield v3.  
@@ -175,7 +175,7 @@ the TC numbers:
 ```bash
 cd firmware
 pio run -e tc1_x_axis     -t upload   # TC1 — X-axis movement
-pio run -e tc2_x_endstops -t upload   # TC2 — X-axis endstops
+pio run -e tc2_endstops   -t upload   # TC2 — endstops (X_MIN + X_MAX)
 pio run -e tc3_y_axis     -t upload   # TC3 — Y-axis movement
 pio run -e tc4_pen_lift   -t upload   # TC4 — pen lift (solenoid)
 pio device monitor                    # 115200 baud

@@ -31,10 +31,6 @@ params via `$`). Remaining:
   `pipeline/configs/grbl_a4_pen.toml` to `M3 S1000` → `G4 P0.05` → `M3 S350`,
   tune the hold value, verify coil temperature after a long plot. Firmware
   needs no change. Full write-up in electronics.md → "Solenoid pen lift".
-- [ ] **`firmware/test/tc2_x_endstops` needs updating.** It reads X_MAX on D10;
-  production wiring has both X switches on D9. Rework it to drive toward each
-  end and let the operator confirm which end was reached (no second pin).
-  Rename the sketch / PlatformIO env to `tc2_endstops`.
 - [ ] **`$130` (X max travel) must be taught** — testing.md TC5b-G. Verify the
   teach procedure (home X_MIN, jog to X_MAX, read MPos) works on the hardware.
 - [ ] **Verify homing + solenoid on the real board** now that `config.h` is

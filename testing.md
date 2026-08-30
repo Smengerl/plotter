@@ -60,10 +60,10 @@ The sketch guides you through each step and prints `PASS` or `FAIL` at the end.
 ```
 firmware/
 └── test/
-    ├── tc1_x_axis/       tc1_x_axis.cpp
-    ├── tc2_x_endstops/   tc2_x_endstops.cpp
-    ├── tc3_y_axis/       tc3_y_axis.cpp
-    └── tc4_pen_lift/     tc4_pen_lift.cpp
+    ├── tc1_x_axis/     tc1_x_axis.cpp
+    ├── tc2_endstops/   tc2_endstops.cpp
+    ├── tc3_y_axis/     tc3_y_axis.cpp
+    └── tc4_pen_lift/   tc4_pen_lift.cpp
 ```
 
 Flash command pattern:
@@ -107,37 +107,32 @@ pio run -e tc1_x_axis -t upload
 
 ---
 
-### TC2 — X-Axis Endstops
+### TC2 — Endstops
 
 The machine has **two optical endstops, both on the X axis** (X_MIN + X_MAX),
-and none on Y — see [electronics.md → Machine configuration](electronics.md#machine-configuration-canonical).
+wired in parallel onto the single `X_LIMIT` pin (D9). None on Y. See
+[electronics.md → Machine configuration](electronics.md#machine-configuration-canonical).
+The sketch cannot tell the two switches apart (neither can GRBL) — you
+confirm which physical end was reached.
 
-> **Wiring note.** In the *production* GRBL wiring both X switches share the
-> `X_LIMIT` pin (D9). This standalone sketch instead reads X_MAX on D10 as a
-> convenience, so for TC2 wire X_MAX's signal to the **Y-** header
-> temporarily, then move both switches onto the **X-** header before flashing
-> GRBL. (TODO, see [TODO.md](TODO.md): update the sketch so it exercises both
-> switches through D9 and just asks the operator which end was reached.)
-
-**Goal:** Verify both X-axis optical endstops fire at the correct ends and in the correct sense.
+**Goal:** Both X switches trigger `X_LIMIT` at the correct ends and in the correct sense.
 
 **Flash:**
 
 ```bash
-pio run -e tc2_x_endstops -t upload
+pio run -e tc2_endstops -t upload
 ```
 
 **What the sketch does:**
 
 | Step | Action | Expected |
 |------|--------|----------|
-| 1 | Prompts operator to centre the carriage | — |
-| 2 | Reads both endstop pins | Both HIGH (open / untriggered) |
-| 3 | Drives carriage slowly toward MIN end (DIR=LOW) until X_MIN (D9) goes LOW | Carriage stops at front/left end |
-| 4 | Asks: "Did the carriage stop at the X_MIN end?" | Operator confirms |
-| 5 | Drives carriage slowly toward MAX end (DIR=HIGH) until X_MAX (D10) goes LOW | Carriage stops at back/right end |
-| 6 | Asks: "Did the carriage stop at the X_MAX end?" | Operator confirms |
-| 7 | Prints PASS / FAIL | — |
+| 1 | Prompts operator to centre the carriage; checks `X_LIMIT` (D9) | Reads HIGH (open) |
+| 2 | Drives slowly toward X_MIN until D9 goes active; stops; backs off | Stops at front/left end |
+| 3 | Asks: "stopped at the FRONT/LEFT end (X_MIN)?" | Operator confirms |
+| 4 | Drives slowly toward X_MAX until D9 goes active; stops; backs off | Stops at back/right end |
+| 5 | Asks: "stopped at the BACK/RIGHT end (X_MAX)?" | Operator confirms |
+| 6 | Prints PASS / FAIL | — |
 
 **Endstop logic:** the sketch reads the raw pin (LOW = beam blocked). Under
 GRBL this is governed by `$5` — see the TODO in
@@ -147,10 +142,10 @@ GRBL this is governed by `$5` — see the TODO in
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| Endstop already LOW at idle | Optical beam blocked, or wiring short | Check endstop placement and wiring |
-| Endstop never fires | No 5 V supply on endstop header, or signal wire missing | Check 3-pin connector (GND/5V/SIG) |
-| MIN and MAX swapped | Endstop cables exchanged | Swap X_MIN and X_MAX connectors |
-| Carriage reaches mechanical stop without trigger | Endstop not in the optical path | Adjust endstop mounting position |
+| `X_LIMIT` reads active at idle | A switch is blocked, wiring shorted, or module polarity inverted | Check placement/wiring; if idle is genuinely LOW, invert `TRIGGERED_LEVEL` in the sketch and set `$5` the other way |
+| Limit never fires at an end | No 5 V on the header, signal wire missing, or that switch not in the beam path | Check the 3-pin connector (GND/5V/SIG); adjust the switch mount |
+| One end works, the other doesn't | Only one of the two switch signals reaches D9 | Check how the two outputs are combined onto the X- pin (diode-OR / wired-OR) |
+| Direction reversed (hits X_MAX when driving toward X_MIN) | X DIR sense inverted | Flip the DIR level in the sketch; under GRBL set `$3=1` |
 
 ---
 
