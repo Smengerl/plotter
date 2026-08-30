@@ -1,104 +1,81 @@
 #!/usr/bin/env python3
 """
-pipeline/tests/run_all_stylizers.py - Smoke test of all stylizers
+pipeline/tests/run_all_pipeline_configs.py - Pipeline-config smoke test
 
-Processes an input image once with each stylizer config YAML
-from ``pipeline/configs/stylize_*.yaml`` via the normal PipelineRunner
-and saves results (PNG + SVG + GCODE) in ``output/``.
+Runs every ``*.yaml`` in ``pipeline/tests/pipeline_configs/`` through the
+normal ``PipelineRunner`` against a test image and reports pass / skip /
+error for each. Intermediate outputs (PNG / SVG / GCODE, when produced) are
+written under ``pipeline/tests/output/<config_stem>/``.
 
-Usage
------
-    # from the plotter root directory:
-    python pipeline/tests/run_all_stylizers.py
+The runner provides only ``metadata["source_path"]`` — it does NOT preload
+``ctx.image`` — so every config must be self-contained (start with a
+``load_image`` step).
 
-    # specific image:
-    python pipeline/tests/run_all_stylizers.py --image foto.jpg
+Configs whose optional dependency is missing (e.g. ``diffusers`` for the
+ControlNet / Img2Img configs) are reported as *skipped*, not failed.
 
-    # test single config:
-    python pipeline/tests/run_all_stylizers.py --config pipeline/configs/stylize_canny.yaml
+Usage (from the repo root):
 
-    # specify output directory:
-    python pipeline/tests/run_all_stylizers.py --output-dir /tmp/plotter_out
+    python pipeline/tests/run_all_pipeline_configs.py
+    python pipeline/tests/run_all_pipeline_configs.py --fast          # CPU-only configs
+    python pipeline/tests/run_all_pipeline_configs.py --image foto.jpg
+    python pipeline/tests/run_all_pipeline_configs.py --config pipeline/tests/pipeline_configs/stylize_canny.yaml
+    python pipeline/tests/run_all_pipeline_configs.py --output-dir /tmp/plotter_out
 
-Output
-------
-    pipeline/tests/output/
-        stylize_canny/      testimage.png  testimage.svg  testimage.gcode
-        stylize_xdog/       testimage.png  …
-        stylize_adaptive/   testimage.png  …
-        stylize_hed/        testimage.png  …  (only if controlnet_aux installed)
-        stylize_dexined/    testimage.png  …  (only if controlnet_aux installed)
-        stylize_lineart/    testimage.png  …  (only if controlnet_aux installed)
-        stylize_informative/testimage.png  …
+Exit code: non-zero if any config errors.
 """
 
 from __future__ import annotations
 
 import argparse
-"""
-pipeline/tests/run_all_pipeline_configs.py - Execute pipeline YAMLs from tests
+import sys
+import time
+from pathlib import Path
 
-This script executes every YAML file in ``pipeline/tests/pipeline_configs/``
-using the normal ``PipelineRunner``. Important behaviour note:
+import cv2
+import yaml
 
-- The script does NOT preload or inject the actual image file into the
-  pipeline context. Instead it provides only ``metadata['source_path']``
-  (the input image path) in the ``ImageContext``. This means pipelines
-  must be self-contained and either include a ``load_image`` step (which
-  will read ``metadata['source_path']``) or explicitly expect a
-  pre-populated ``ctx.image``.
+from pipeline.core.base import ImageContext
+from pipeline.core.runner import PipelineRunner
+from pipeline.steps.vectorize_step import paths_to_svg
 
-Usage
------
-    # from the plotter root directory:
-    python pipeline/tests/run_all_pipeline_configs.py
+# ── Paths ────────────────────────────────────────────────────────────────────
+_TESTS_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _TESTS_DIR.parent.parent
+_CONFIGS_DIR = _TESTS_DIR / "pipeline_configs"
+_INPUT_DIR = _REPO_ROOT / "pipeline" / "input"
 
-    # specific image:
-    python pipeline/tests/run_all_pipeline_configs.py --image foto.jpg
+# Config stems that need neither a model download nor a GPU.
+_FAST_CONFIGS = {"stylize_canny", "stylize_xdog", "stylize_adaptive", "vectorize"}
 
-    # test single config:
-    python pipeline/tests/run_all_pipeline_configs.py --config pipeline/pipeline_configs/canny.yaml
+# ── Terminal colours ─────────────────────────────────────────────────────────
+RESET = "\033[0m"
+BOLD = "\033[1m"
+RED = "\033[31m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
 
-    # specify output directory:
-    python pipeline/tests/run_all_pipeline_configs.py --output-dir /tmp/plotter_out
-
-Output
-------
-    pipeline/tests/output/
-        <config_name>/  testimage.png  testimage.svg  testimage.gcode
-
-Notes
------
- - The runner intentionally does not mutate the YAML files. If a YAML
-   currently contains an ``input_path`` key in the ``load_image`` step, it
-   is informational only — the runner will provide the real file via
-   ``metadata['source_path']`` at runtime.
-"""
-BOLD   = "\033[1m"
-
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-_INPUT_DIR = _REPO_ROOT / "input"
 
 # ---------------------------------------------------------------------------
 # Helper Functions
 # ---------------------------------------------------------------------------
 
-def _find_stylizer_configs(configs_dir: Path) -> list[Path]:
-    """Returns all ``*.yaml`` files sorted."""
+def _find_configs(configs_dir: Path) -> list[Path]:
+    """Return all ``*.yaml`` files in *configs_dir*, sorted."""
     return sorted(configs_dir.glob("*.yaml"))
 
 
 def _config_name(yaml_path: Path) -> str:
-    """``canny.yaml`` → ``canny``"""
+    """``stylize_canny.yaml`` -> ``stylize_canny``."""
     return yaml_path.stem
 
 
 def _print_header(configs: list[Path]) -> None:
     names = ", ".join(_config_name(c) for c in configs)
-    print(f"\n{BOLD}{'─' * 60}{RESET}")
-    print(f"{BOLD}  Stylizer Smoke Test{RESET}")
-    print(f"{'─' * 60}")
-    print(f"  Stylizers : {names}")
+    print(f"\n{BOLD}{'-' * 60}{RESET}")
+    print(f"{BOLD}  Pipeline-config smoke test{RESET}")
+    print(f"{'-' * 60}")
+    print(f"  Configs : {names}")
 
 
 def _run_config(
@@ -106,91 +83,86 @@ def _run_config(
     image_path: Path,
     output_dir: Path,
 ) -> tuple[bool | None, str]:
-    """
-    Executes a single YAML pipeline and saves PNG + SVG + GCODE.
+    """Execute a single config YAML.
 
-    Returns ``(True, msg)`` on success,
-            ``(None, msg)`` if optional dependency is missing, and
-            ``(False, msg)`` on actual error.
+    Returns ``(True, msg)`` on success, ``(None, msg)`` if an optional
+    dependency is missing, ``(False, msg)`` on an actual error.
     """
-    from PIL import Image as _Image
-
     name = _config_name(yaml_path)
-    run_dir = output_dir / f"stylize_{name}"
+    run_dir = output_dir / name
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    png_path   = run_dir / f"{image_path.stem}.png"
-    svg_path   = run_dir / f"{image_path.stem}.svg"
+    png_path = run_dir / f"{image_path.stem}.png"
+    svg_path = run_dir / f"{image_path.stem}.svg"
     gcode_path = run_dir / f"{image_path.stem}.gcode"
 
     try:
-        # Load YAML but do NOT mutate its configuration. We want pipelines
-        # to run exactly as they are defined under pipeline_configs. The
-        # canonical way for a pipeline to get an input file is via
-        # ``metadata["source_path"]`` and the ``LoadImageStep`` — therefore
-        # we only provide the metadata here and do NOT preload ctx.image.
-        cfg = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
-        steps_cfg: list[dict] = cfg["steps"]
+        runner = PipelineRunner.from_yaml(yaml_path)
 
-        runner = PipelineRunner(steps_cfg)
-
-        # Provide only metadata; do not set ctx.image so LoadImageStep (if
-        # present) will load the image itself from metadata["source_path"].
+        # Provide only the source path; LoadImageStep loads the image itself.
         ctx = ImageContext(metadata={"source_path": image_path})
 
         t0 = time.monotonic()
         ctx = runner.run(ctx)
         elapsed = time.monotonic() - t0
 
-        binary = ctx.intermediates["binary"]
-        paths  = ctx.intermediates.get("paths", [])
-
-        # PNG
-        cv2.imwrite(str(png_path), binary)
-
-        # SVG
-        if paths:
-            paths_to_svg(paths, binary.shape[:2], svg_path)
-
-        # GCODE
+        binary = ctx.intermediates.get("binary")
+        paths = ctx.intermediates.get("paths", [])
         gcode_lines: list[str] = ctx.intermediates.get("gcode_lines", [])
+
+        if binary is not None:
+            cv2.imwrite(str(png_path), binary)
+            shape = binary.shape[:2]
+        elif ctx.has_image:
+            ctx.image.save(png_path)
+            shape = (ctx.image.height, ctx.image.width)
+        else:
+            shape = None
+
+        if paths and shape is not None:
+            paths_to_svg(paths, shape, svg_path)
+
         if gcode_lines:
             gcode_path.write_text("\n".join(gcode_lines) + "\n", encoding="utf-8")
 
         return True, (
-            f"{elapsed:.2f}s  →  {run_dir.name}/"
-            f"  ({len(paths)} paths, {len(gcode_lines)} GCode lines)"
+            f"{elapsed:.2f}s  ->  {run_dir.name}/  "
+            f"({len(paths)} paths, {len(gcode_lines)} GCode lines)"
         )
 
     except ImportError as exc:
-        short = str(exc).split("\n")[0]
-        return None, f"skipped (missing dependency: {short})"  # type: ignore[return-value]
+        return None, f"skipped (missing dependency: {str(exc).splitlines()[0]})"
 
     except Exception as exc:  # noqa: BLE001
         return False, f"ERROR: {exc}"
 
 
 # ---------------------------------------------------------------------------
-# Main Program
+# Main
 # ---------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Executes all stylize_*.yaml configs via the PipelineRunner."
+        description="Run every pipeline_configs/*.yaml through the PipelineRunner."
     )
     parser.add_argument(
         "--image",
         type=Path,
         default=_INPUT_DIR / "testimage.png",
         metavar="PATH",
-        help="Input image (default: input/testimage.png)",
+        help="Input image (default: pipeline/input/testimage.png)",
     )
     parser.add_argument(
         "--config",
         type=Path,
         default=None,
         metavar="YAML",
-        help="Single config file (default: all stylize_*.yaml)",
+        help="Run a single config file instead of the whole directory",
+    )
+    parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="Only run the CPU-only configs (no model downloads)",
     )
     parser.add_argument(
         "--output-dir",
@@ -205,63 +177,50 @@ def main() -> None:
     output_dir: Path = args.output_dir.resolve()
 
     if not image_path.exists():
-        print(f"{RED}Error: Input image not found: {image_path}{RESET}")
+        print(f"{RED}Error: input image not found: {image_path}{RESET}")
         sys.exit(1)
 
-    # Build config list
     if args.config:
         configs = [args.config.resolve()]
     else:
-        configs = _find_stylizer_configs(_CONFIGS_DIR)
+        configs = _find_configs(_CONFIGS_DIR)
+        if args.fast:
+            configs = [c for c in configs if _config_name(c) in _FAST_CONFIGS]
         if not configs:
-            print(f"{RED}Error: No stylize_*.yaml in {_CONFIGS_DIR}{RESET}")
+            print(f"{RED}Error: no configs found in {_CONFIGS_DIR}{RESET}")
             sys.exit(1)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     _print_header(configs)
-    print(f"  Image       : {image_path}")
-    print(f"  Output      : {output_dir}")
-    print(f"  Configs     : {_CONFIGS_DIR}")
-    print(f"{'─' * 60}\n")
+    print(f"  Image   : {image_path}")
+    print(f"  Output  : {output_dir}")
+    print(f"{'-' * 60}\n")
 
     results: list[tuple[str, bool | None, str]] = []
 
     for yaml_path in configs:
         name = _config_name(yaml_path)
-        print(f"  [{name:<14}]  … ", end="", flush=True)
-
+        print(f"  [{name:<20}]  ... ", end="", flush=True)
         success, msg = _run_config(yaml_path, image_path, output_dir)
-
-        if success is True:
-            symbol = f"{GREEN}✓{RESET}"
-        elif success is None:
-            symbol = f"{YELLOW}~{RESET}"
-        else:
-            symbol = f"{RED}✗{RESET}"
-
+        symbol = {True: f"{GREEN}OK{RESET}", None: f"{YELLOW}~ {RESET}", False: f"{RED}X {RESET}"}[success]
         print(f"{symbol}  {msg}")
         results.append((name, success, msg))
 
-    # Summary
-    n_ok   = sum(1 for _, s, _ in results if s is True)
+    n_ok = sum(1 for _, s, _ in results if s is True)
     n_skip = sum(1 for _, s, _ in results if s is None)
-    n_err  = sum(1 for _, s, _ in results if s is False)
+    n_err = sum(1 for _, s, _ in results if s is False)
 
-    print(f"\n{'─' * 60}")
+    print(f"\n{'-' * 60}")
     print(
-        f"  Results: {GREEN}{n_ok} successful{RESET}  "
+        f"  Results: {GREEN}{n_ok} ok{RESET}  "
         f"{YELLOW}{n_skip} skipped{RESET}  "
         f"{RED}{n_err} errors{RESET}"
     )
-    print(f"{'─' * 60}\n")
-
-    if n_ok > 0:
-        print(f"  Saved files in: {output_dir}\n")
+    print(f"{'-' * 60}\n")
 
     sys.exit(1 if n_err > 0 else 0)
 
 
 if __name__ == "__main__":
     main()
-

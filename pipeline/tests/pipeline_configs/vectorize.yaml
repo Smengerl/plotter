@@ -45,8 +45,7 @@ steps:
   - step: gcode_from_svg
     label: "Generate GCode (TOML Profile)"
     config:
-      profile: "grbl_a4_pen"
-      toml_path: "/pipeline/configs/grbl_a4_pen.toml" # Optional path to custom GCode profile (overrides built-in)
+      profile: "grbl_a4_pen" # built-in profile (pipeline/configs/grbl_a4_pen.toml)
       target_width_mm: 180.0 # Drawing width in mm (default: 190.0 = A4 - 2x5mm margins)
       target_height_mm: 250.0 # Drawing height in mm (default: 277.0 = A4 - 2x10mm margins)
       keep_aspect: true # Maintain aspect ratio (default: True)

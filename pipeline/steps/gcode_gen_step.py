@@ -77,12 +77,19 @@ class GCodeGenStep(PipelineStep):
 
         paths = ctx.intermediates["paths"]
 
-        # "binary" provides the image size; alternatively passed directly as "image_shape"
+        # Image size: intermediates["binary"] > intermediates["image_shape"] > ctx.image
         binary = ctx.intermediates.get("binary")
         if binary is not None:
             img_h, img_w = binary.shape[:2]
-        else:
+        elif "image_shape" in ctx.intermediates:
             img_h, img_w = ctx.intermediates["image_shape"]
+        elif ctx.has_image:
+            img_w, img_h = ctx.image.size
+        else:
+            raise ValueError(
+                "GCodeGenStep: cannot determine image size — no binary, "
+                "image_shape or ctx.image. Add LoadImageStep before this step."
+            )
 
         target_width_mm: float = float(c.get("target_width_mm", 180.0))
         target_height_mm: float = float(c.get("target_height_mm", 250.0))

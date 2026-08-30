@@ -7,15 +7,11 @@ This directory contains the pytest unit tests (`test_*.py`) plus a set of
 pipeline configuration YAMLs (`pipeline_configs/`) used for smoke testing the
 pipeline steps. Two helper scripts are provided:
 
-- `run_all_pipeline_configs.py` — executes each `stylize_*.yaml` under
-  `pipeline/tests/pipeline_configs/` with the normal `PipelineRunner`.
-- `run_all_tests.py` — unified runner: pytest for `test_*.py`, then the config
-  smoke tests.
-
-> **TODO** ([../../TODO.md](../../TODO.md)): `run_all_pipeline_configs.py` still
-> has stale docstring text (references `run_all_stylizers.py` and several
-> non-existent directories) and uses the undefined names `_CONFIGS_DIR` /
-> `_TESTS_DIR`. Clean the script up.
+- `run_all_pipeline_configs.py` — runs each `*.yaml` in
+  `pipeline/tests/pipeline_configs/` through `PipelineRunner`. `--fast`
+  restricts it to the CPU-only configs (no model downloads).
+- `run_all_tests.py` — unified runner: pytest for `test_*.py`, then the smoke
+  test (`--skip-smoke` / `--fast` / `--pytest-args "..."`).
 
 ## Important behavior
 
@@ -45,8 +41,8 @@ Unit tests (fast):
 .venv/bin/pytest pipeline/tests/ -v
 ```
 
-Full smoke tests (may download model weights):
+Config smoke test (`--fast` = CPU-only, no downloads):
 
 ```bash
-.venv/bin/python pipeline/tests/run_all_pipeline_configs.py
+.venv/bin/python pipeline/tests/run_all_pipeline_configs.py --fast
 ```

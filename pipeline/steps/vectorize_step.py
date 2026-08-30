@@ -127,6 +127,9 @@ class VectorizeStep(PipelineStep):
         )
 
         ctx.intermediates["paths"] = paths
+        # Record the source resolution so downstream GCode steps have the
+        # image size even when no stylizer ran (no intermediates["binary"]).
+        ctx.intermediates.setdefault("image_shape", tuple(binary.shape[:2]))
         return ctx
 
 

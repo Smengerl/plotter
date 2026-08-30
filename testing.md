@@ -530,26 +530,32 @@ The test image used throughout Phase 3 & 4 is `pipeline/input/testimage.png`.
 **Run:**
 
 ```bash
-.venv/bin/python pipeline/tests/run_all_pipeline_configs.py
+.venv/bin/python pipeline/tests/run_all_pipeline_configs.py          # all configs
+.venv/bin/python pipeline/tests/run_all_pipeline_configs.py --fast   # CPU-only, no downloads
 ```
 
 **What this does:**
 
-Each `stylize_*.yaml` under `pipeline/tests/pipeline_configs/` is loaded and
-executed against `pipeline/input/testimage.png`. The runner checks that every
-step completes without raising an exception.
+Each `*.yaml` under `pipeline/tests/pipeline_configs/` is loaded via
+`PipelineRunner.from_yaml` and executed against `pipeline/input/testimage.png`.
+Every step must complete without raising. Configs whose optional dependency is
+missing (e.g. `diffusers`) are reported as *skipped*, not failed.
 
-**Expected:** All configs report `OK`. Example output:
+**Expected:** every config reports `OK` (or `~` skipped), none `X`:
 
 ```text
-[OK] stylize_canny.yaml
-[OK] stylize_xdog.yaml
-[OK] stylize_adaptive.yaml
-...
+  [stylize_adaptive    ]  ... OK   ...
+  [stylize_canny       ]  ... OK   ...
+  [stylize_controlnet  ]  ... ~    skipped (missing dependency: ...)
+  ...
+  Results: N ok  M skipped  0 errors
 ```
 
-> ⚠️ Configs that use neural-network stylizers (`stylize_controlnet.yaml`, `stylize_img2img.yaml`, etc.) will download model weights on the first run (~2–4 GB). Subsequent runs use the cached models.  
-> Skip NN-heavy configs during initial testing with `--skip-stylizers` if needed.
+> ⚠️ Without `--fast`, the NN configs (`stylize_hed`, `stylize_dexined`,
+> `stylize_lineart`, `stylize_informative`) download model weights on first
+> run (~0.1–0.4 GB each); the diffusion configs (`stylize_controlnet`,
+> `stylize_img2img`) need the `[diffusers]` extra and are skipped without it.
+> Use `--fast` for a quick check that needs no network.
 
 **Failure hints:**
 
