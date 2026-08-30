@@ -489,10 +489,11 @@ It runs entirely on the host PC — **no plotter connection is required**.
 
 The test image used throughout Phase 3 & 4 is `pipeline/input/testimage.png`.
 
-> **TODO** ([TODO.md](TODO.md)): `pipeline/configs/standard_pipeline.yaml`, used
-> as the example config below, is itself stale (wrong name/description, legacy
-> `gcode_gen` step). Once a clean plotter pipeline config exists, switch the
-> examples to it.
+Two configs are used below:
+- `pipeline/examples/standard_pipeline.yaml` — offline: image → sketch →
+  vectorize → **G-code file** (Phase 3).
+- `pipeline/configs/plotter.yaml` — image → vectorize → G-code → **serial
+  stream to GRBL** (Phase 4). Set its `port:` for your machine.
 
 ---
 
@@ -569,38 +570,39 @@ missing (e.g. `diffusers`) are reported as *skipped*, not failed.
 
 ### TC-P3 — End-to-End G-code Generation
 
-**Goal:** The full pipeline (stylization → vectorization → G-code generation) produces a valid `.gcode` file for a real input image.
+**Goal:** The full offline pipeline (sketch → vectorize → G-code) produces a valid `.gcode` file for a real input image.
 
 **Run:**
 
 ```bash
-.venv/bin/python pipeline/core/main.py \
-    --config pipeline/configs/standard_pipeline.yaml \
-    --input pipeline/input/testimage.png \
+.venv/bin/pipeline-run \
+    --config pipeline/examples/standard_pipeline.yaml \
+    --input  pipeline/input/testimage.png \
     --output /tmp/test_output.gcode \
     --verbose
 ```
 
 **Expected:**
 
-1. Pipeline runs without errors.
-2. Output file `/tmp/test_output.gcode` is created and non-empty.
-3. File contains valid G-code: starts with `G21` (millimeter mode) and includes `G00`/`G01` move commands.
+1. Pipeline runs without errors; the log ends with `Pipeline completed.`
+2. `/tmp/test_output.gcode` is created and non-empty.
+3. It is valid G-code: starts with `G21` / `G90`, contains `G1` moves and `M3`/`M5` pen commands, and ends on `M5`.
 
 **Quick validation:**
 
 ```bash
-head -5 /tmp/test_output.gcode   # should show G21, G90, etc.
-grep -c "G0" /tmp/test_output.gcode  # should be > 0
+head -6 /tmp/test_output.gcode          # G21, G90, G1 F3000, M3 S1000, ...
+grep -c "^G1 " /tmp/test_output.gcode   # should be > 0
+tail -3 /tmp/test_output.gcode          # should contain a final M5
 ```
 
 **Failure hints:**
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| `=== Complete ===` not reached | A step raised an exception | Run with `--verbose` and check the log |
-| Output file empty or missing | GCode generation step not in config | Confirm `gcode_gen` step is present and enabled in the YAML |
-| G-code contains only preamble, no moves | Vectorization produced 0 paths | Increase `style_res` or decrease `min_path_px` in config |
+| Pipeline aborts with a traceback | A step raised an exception | Re-run with `--verbose` and read the failing step |
+| Output file empty / only header+footer | Vectorization produced 0 paths | Lower `min_path_px` / `simplify_eps`, or raise `style_res`, or lower `threshold` in the `stylise_xdog` step |
+| `ModuleNotFoundError` | Incomplete install | `.venv/bin/pip install -e "pipeline/[gui]"` |
 
 ---
 
@@ -633,7 +635,8 @@ ls /dev/ttyUSB* /dev/ttyACM*
 # Check Device Manager → Ports (COM & LPT)
 ```
 
-Note the port (e.g. `/dev/tty.usbmodem1101`) — you will need it in the YAML config below.
+Then set that port in `pipeline/configs/plotter.yaml` (the `send_gcode`
+step's `port:` field). All Phase 4 tests use that config.
 
 ---
 
@@ -641,36 +644,25 @@ Note the port (e.g. `/dev/tty.usbmodem1101`) — you will need it in the YAML co
 
 **Goal:** Verify the pipeline generates G-code and the serial connection to GRBL is established — without any physical motion.
 
-**Step 1 — Enable `send_gcode` in dry-run mode:**
+**Step 1 — Put `plotter.yaml` in dry-run mode:**
 
-Edit `pipeline/configs/standard_pipeline.yaml`, set the `send_gcode` step:
-
-```yaml
-- step: send_gcode
-  enabled: true
-  config:
-    port: /dev/tty.usbmodem1101   # ← your port here
-    baud: 115200
-    dry_run: true                  # true = connect and read, but do NOT send
-    response_timeout_s: 30.0
-```
+In `pipeline/configs/plotter.yaml`, set the `send_gcode` step's
+`dry_run: true`.
 
 **Step 2 — Run:**
 
 ```bash
-.venv/bin/python pipeline/core/main.py \
-    --config pipeline/configs/standard_pipeline.yaml \
-    --input pipeline/input/testimage.png \
-    --output /tmp/tc_e1_dryrun.gcode \
+.venv/bin/pipeline-run \
+    --config pipeline/configs/plotter.yaml \
+    --input  pipeline/input/testimage.png \
     --verbose
 ```
 
 **Expected:**
 
 - Pipeline runs through all steps without error.
-- Log shows serial port opened successfully.
+- Log shows the serial port opened successfully.
 - Log shows G-code lines read/validated but **not** sent (`dry_run=true`).
-- Output file `/tmp/tc_e1_dryrun.gcode` is created and non-empty.
 - Plotter does **not** move.
 
 **Failure hints:**
@@ -687,35 +679,20 @@ Edit `pipeline/configs/standard_pipeline.yaml`, set the `send_gcode` step:
 
 **Goal:** The plotter draws the full test image (`testimage.png`) without errors or mechanical faults.
 
-**Step 1 — Switch `send_gcode` to live mode:**
-
-```yaml
-- step: send_gcode
-  enabled: true
-  config:
-    port: /dev/tty.usbmodem1101   # ← your port here
-    baud: 115200
-    dry_run: false                 # ← live send
-    response_timeout_s: 30.0
-```
+**Step 1 — Switch `plotter.yaml` back to live mode:** set `dry_run: false`.
 
 **Step 2 — Home the plotter first:**
 
-Connect with UGS (or any G-code sender) and send:
-
-```gcode
-$H
-```
-
-Confirm homing completes without `ALARM:`. Then close the G-code sender (only one process may hold the serial port at a time).
+Connect with UGS (or any G-code sender), send `$H`, and run **TC5b-G** if you
+have not stored `$130` yet. Confirm homing completes without `ALARM:`. Then
+close the G-code sender (only one process may hold the serial port).
 
 **Step 3 — Run:**
 
 ```bash
-.venv/bin/python pipeline/core/main.py \
-    --config pipeline/configs/standard_pipeline.yaml \
-    --input pipeline/input/testimage.png \
-    --output /tmp/tc_e2_live.gcode \
+.venv/bin/pipeline-run \
+    --config pipeline/configs/plotter.yaml \
+    --input  pipeline/input/testimage.png \
     --verbose
 ```
 
@@ -723,11 +700,11 @@ Confirm homing completes without `ALARM:`. Then close the G-code sender (only on
 
 | Checkpoint | Expected |
 |-----------|----------|
-| Pen lift at start | Solenoid clicks, pen moves UP before first travel move |
-| First draw move | Pen lowers, carriage starts drawing |
-| Travel moves | Pen raises between strokes, no dragging marks on paper |
-| Paper feed | Y-axis advances paper smoothly at each new line |
-| Plot completion | Log shows `=== Complete ===`; plotter returns to origin |
+| Start | `M3 S1000` — solenoid energizes, pen lifts, carriage moves to the origin |
+| First draw move | `M5` — pen lowers (de-energized), carriage starts drawing |
+| Travel moves | Pen raises (`M3`) between strokes, no dragging marks on paper |
+| Paper feed | Y-axis advances paper smoothly |
+| Plot completion | Final `M5` (pen down / solenoid off), paper advances to the sheet end; log ends with `GCode sent successfully.` |
 
 **Expected result:** A recognisable line drawing of the test image on the paper, with no skipped lines, no crash alarms, and no solenoid misfires.
 
@@ -735,12 +712,13 @@ Confirm homing completes without `ALARM:`. Then close the G-code sender (only on
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| `ALARM:1` during plot | Hard limit triggered — carriage overran endstop | Check `$130`/`$131` max travel; re-home with `$H` |
-| `ALARM:3` / `ALARM:4` | Feed hold triggered | Check for mechanical obstruction; inspect belt tension |
-| Pen drags during travel | Pen lift not working | Re-run TC4/TC9-G; check solenoid power and `$30`/`$31` |
+| `ALARM:1` during plot | X hard limit — drawing wider than the taught `$130` | Re-run TC5b-G; reduce `target_width_mm` in `plotter.yaml` |
+| `ALARM:2` | Soft limit — move outside `$130`/`$131` | Same as above; check the drawing fits A4 |
+| Pen drags during travel | Pen lift not working | Re-run TC4/TC9-G; check the D11 wiring and `$30=1000` |
+| Pen too faint / not touching | Solenoid stuck energized, or spring too strong | Check `M5` de-energizes; check the return spring |
+| Solenoid hot after the plot | Long travels keep it energized | Confirm the file ends on `M5`; consider the holding-current change (see electronics.md) |
 | Paper slips or jams | Roller tension too low | Adjust paper bail spring; check paper is straight |
-| Plot starts at wrong position | Homing not done before run | Always run `$H` before a plot |
-| Serial timeout | GRBL not responding within `response_timeout_s` | Increase timeout; check USB cable; check baud rate |
+| Serial timeout | GRBL not responding within `completion_timeout` | Raise `completion_timeout`; check USB cable / baud |
 
 ---
 
@@ -752,34 +730,26 @@ Confirm homing completes without `ALARM:`. Then close the G-code sender (only on
 
 Use any clear subject photograph (portrait, object, landscape). A high-contrast image with distinct edges works best.
 
-**Step 2 — Run:**
+**Step 2 — Preview the G-code first** (recommended):
 
 ```bash
-.venv/bin/python pipeline/core/main.py \
-    --config pipeline/configs/standard_pipeline.yaml \
-    --input /path/to/your/photo.jpg \
-    --output /tmp/tc_e3_custom.gcode \
-    --verbose
+.venv/bin/pipeline-run \
+    --config pipeline/examples/standard_pipeline.yaml \
+    --input  /path/to/your/photo.jpg \
+    --output /tmp/tc_e3_custom.gcode
+grep -c "^M3 " /tmp/tc_e3_custom.gcode   # pen-up events (≈ travel moves)
 ```
 
-**Step 3 — Verify the G-code before sending** (optional but recommended for large files):
+A reasonable plot has 50–2000 pen-up events. If it is very high (> 5000),
+raise `min_path_px` / `simplify_eps` in `standard_pipeline.yaml` — long plots
+also mean more solenoid-energized time.
+
+**Step 3 — Home ($H, run TC5b-G if needed), close UGS, then plot:**
 
 ```bash
-wc -l /tmp/tc_e3_custom.gcode          # line count
-grep -c "M3\|M5" /tmp/tc_e3_custom.gcode  # number of pen lift/lower events
-```
-
-A reasonable plot has 50–2000 pen events. If the count is very high (> 5000), consider increasing `min_path_px` or `simplify_eps` in the config.
-
-**Step 4 — Home and run** (same as TC-E2):
-
-```bash
-# Home first via UGS:  $H
-# Then close UGS and run:
-.venv/bin/python pipeline/core/main.py \
-    --config pipeline/configs/standard_pipeline.yaml \
-    --input /path/to/your/photo.jpg \
-    --output /tmp/tc_e3_custom.gcode \
+.venv/bin/pipeline-run \
+    --config pipeline/configs/plotter.yaml \
+    --input  /path/to/your/photo.jpg \
     --verbose
 ```
 
@@ -789,11 +759,11 @@ A reasonable plot has 50–2000 pen events. If the count is very high (> 5000), 
 
 | Issue | Config key to adjust | Direction |
 |-------|---------------------|-----------|
-| Too many fine lines / long plot time | `min_path_px` | Increase (e.g. 15–30) |
-| Lines too jagged | `simplify_eps` | Increase (e.g. 2.0–3.0) |
-| Drawing too small on paper | `target_width_mm` / `target_height_mm` | Increase toward A4 limits |
-| Drawing clipped or outside paper | `origin_x` / `origin_y` | Increase margins |
-| Pen marks too faint | `feedrate_draw` | Decrease (slower = more ink) |
+| Too many fine lines / long plot time | `min_path_px` (vectorise) | Increase (e.g. 15–30) |
+| Lines too jagged | `simplify_eps` (vectorise) | Increase (e.g. 2.0–3.0) |
+| Drawing too small on paper | `target_width_mm` / `target_height_mm` (gcode_from_svg) | Increase toward A4 limits |
+| Drawing clipped / off the paper | `offset_x` / `offset_y` in `grbl_a4_pen.toml` | Increase the margins |
+| Pen marks too faint | drawing feedrate in `grbl_a4_pen.toml` `segment_first` (`G1 F1500`) | Decrease (slower = more ink) |
 
 ---
 

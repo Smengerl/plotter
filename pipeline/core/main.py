@@ -9,11 +9,11 @@ Usage examples
 --------------
 Normal execution (run from the project root)::
 
-    python pipeline/core/main.py --config pipeline/configs/standard_pipeline.yaml --input foto.jpg --output out.gcode
+    python pipeline/core/main.py --config pipeline/examples/standard_pipeline.yaml --input foto.jpg --output out.gcode
 
 List steps only without executing::
 
-    python pipeline/core/main.py --config pipeline/configs/standard_pipeline.yaml --input foto.jpg --output out.gcode --dry-run
+    python pipeline/core/main.py --config pipeline/examples/standard_pipeline.yaml --input foto.jpg --output out.gcode --dry-run
 
 Custom configuration::
 

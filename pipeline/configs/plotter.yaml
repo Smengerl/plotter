@@ -1,0 +1,46 @@
+# pipeline/configs/plotter.yaml
+#
+# The "Send to Plotter" pipeline. The GUI dispatches this (matched by the
+# file stem "plotter", see gui/config.py) when you send a finished output
+# image to the machine: it vectorizes the image and streams the G-code to
+# GRBL over serial. It writes no file.
+#
+# CLI equivalent:
+#   .venv/bin/pipeline-run \
+#       --config pipeline/configs/plotter.yaml \
+#       --input  output/portrait__xdog_sketch.png
+#
+# Set the serial port for your machine (macOS: ls /dev/tty.usbmodem*).
+# Home the plotter ($H) and close any other G-code sender first — only one
+# process can hold the port.
+
+name: "Send to plotter"
+description: "Vectorize an image and stream the G-code to the GRBL plotter over serial."
+
+steps:
+  # 1. Load the (already stylized) image — path comes from --input
+  - step: load_image
+    config: {}
+
+  # 2. Trace it into vector paths
+  - step: vectorise
+    config:
+      min_path_px: 10
+      simplify_eps: 1.5
+
+  # 3. Generate G-code via the built-in GRBL A4 pen profile
+  - step: gcode_from_svg
+    config:
+      profile: grbl_a4_pen
+      target_width_mm: 190.0
+      target_height_mm: 277.0
+      keep_aspect: true
+      linesort: true
+
+  # 4. Stream it to the controller
+  - step: send_gcode
+    config:
+      port: /dev/tty.usbmodem1101   # <-- set your port
+      baud: 115200
+      dry_run: false                # true = open the port and validate, but do not move
+      completion_timeout: 300

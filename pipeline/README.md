@@ -1,8 +1,6 @@
 # Plotter Pipeline
 
-> ⚠️ **Work in progress** — see [../TODO.md](../TODO.md) for known open issues
-> (install-extras vs. `pyproject.toml`, GUI port, stale example config,
-> missing `plotter.yaml`).
+> ⚠️ **Work in progress** — see [../TODO.md](../TODO.md) for known open issues.
 
 Image-to-GCode pipeline for the pen plotter. Takes any photo or image as
 input, applies an optional stylization step, vectorizes the result, and
@@ -42,7 +40,7 @@ python3.13 -m venv .venv
 
 # 2. Run the pipeline
 .venv/bin/pipeline-run \
-    --config pipeline/configs/standard_pipeline.yaml \
+    --config pipeline/examples/standard_pipeline.yaml \
     --input  pipeline/input/testimage.png \
     --output output/result.gcode
 ```
@@ -120,7 +118,7 @@ Replace `.venv/bin/` with `.venv\Scripts\` in all commands:
 python -m venv .venv
 .venv\Scripts\pip install --upgrade pip "setuptools<82" wheel
 .venv\Scripts\pip install -e "pipeline/[gui]"
-.venv\Scripts\pipeline-run --config pipeline/configs/standard_pipeline.yaml
+.venv\Scripts\pipeline-run --config pipeline/examples/standard_pipeline.yaml
 ```
 
 ### GPU acceleration (CUDA)
@@ -141,7 +139,7 @@ After installation, pip registers four commands in `.venv/bin/`
 ### `pipeline-run` — Run the pipeline
 
 ```bash
-.venv/bin/pipeline-run --config pipeline/configs/standard_pipeline.yaml --input input/photo.jpg
+.venv/bin/pipeline-run --config pipeline/examples/standard_pipeline.yaml --input pipeline/input/testimage.png
 ```
 
 | Option | Description |

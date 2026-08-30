@@ -1,143 +1,37 @@
 #!/usr/bin/env bash
 # pipeline/examples/run_examples.sh
 #
-# Run all style-transfer example pipelines.
-#
-# Each pipeline is configured entirely in its YAML file — edit the YAML to
-# change prompts, parameters, or steps. All outputs go to output/.
-#
-# Usage:
+# Runs a few pipelines against one input image so you can eyeball the output.
 #   ./pipeline/examples/run_examples.sh [INPUT_IMAGE]
 #
-# Prerequisites:
-#   python3 -m venv .venv
-#   .venv/bin/pip install -e "pipeline/[diffusers]"
+# Default input: pipeline/input/testimage.png. Outputs go to output/.
+# Needs `.venv/bin/pip install -e "pipeline/[gui]"` (add ,diffusers for the
+# ControlNet / Img2Img configs).
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-
-PLOTTER_RUN="$ROOT_DIR/.venv/bin/pipeline-run"
-
-if [[ ! -x "$PLOTTER_RUN" ]]; then
-  echo "❌ .venv not found or pipeline-run not installed." >&2
-  echo "   Run: python3 -m venv .venv && .venv/bin/pip install -e \"pipeline/[diffusers]\"" >&2
-  exit 1
-fi
-
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
-INPUT="${1:-input/testimage.png}"
-OUTPUT_DIR="output"
-mkdir -p "$OUTPUT_DIR"
+RUN="$ROOT_DIR/.venv/bin/pipeline-run"
+[[ -x "$RUN" ]] || { echo "❌ .venv not found — see pipeline/README.md" >&2; exit 1; }
 
-echo "=========================================="
-echo "Plotter Style-Transfer Examples"
-echo "Input: $INPUT"
-echo "=========================================="
-echo ""
+INPUT="${1:-pipeline/input/testimage.png}"
+OUT="output"
+mkdir -p "$OUT"
+echo "Input: $INPUT   Output dir: $OUT/"
+echo
 
-# Check once whether diffusers/torch are available
-if ! "$PLOTTER_RUN" --version >/dev/null 2>&1 && ! python3 -c "import torch, diffusers" 2>/dev/null; then
-    echo "❌ PyTorch / diffusers not installed. Run:"
-    echo "   .venv/bin/pip install -e \"pipeline/[diffusers]\""
-    echo ""
-    exit 1
-fi
+# End-to-end: sketch -> vectorize -> G-code file
+"$RUN" --config pipeline/examples/standard_pipeline.yaml \
+       --input "$INPUT" --output "$OUT/standard_pipeline.gcode"
 
-run_example() {
-    local num="$1"
-    local label="$2"
-    local config="$3"
-    local output="$4"
+# CPU-only stylizers (image -> PNG). No downloads.
+for cfg in canny_edge xdog_sketch adaptive_threshold; do
+    "$RUN" --config "pipeline/configs/${cfg}.yaml" \
+           --input "$INPUT" --output "$OUT/${cfg}.png"
+done
 
-    echo "${num}  ${label}"
-    echo "   Config: ${config}"
-    echo ""
-
-    "$PLOTTER_RUN" \
-        --config ../configs/"$config" \
-        --input  "$INPUT" \
-        --output "$OUTPUT_DIR/${output}" \
-        --verbose
-
-    echo ""
-    echo "   ✅ $OUTPUT_DIR/${output}"
-    echo ""
-}
-
-# ── ControlNet examples (structure-preserving) ────────────────────────────────
-echo "── ControlNet (structure-preserving) ──────────────────────"
-echo "   ⚠️  First run downloads ~4GB models (ControlNet + SD 1.5)"
-echo ""
-
-run_example "1️⃣ " "Pen Sketch       (lineart conditioning)" \
-    "pipeline/examples/controlnet_pen_sketch.yaml"  "controlnet_pen_sketch.png"
-
-run_example "2️⃣ " "Technical Drawing (canny conditioning)" \
-    "pipeline/examples/controlnet_technical.yaml"   "controlnet_technical.png"
-
-run_example "3️⃣ " "Woodcut Print     (softedge conditioning)" \
-    "pipeline/examples/controlnet_woodcut.yaml"     "controlnet_woodcut.png"
-
-# ── img2img examples (no ControlNet, faster) ──────────────────────────────────
-echo "── img2img (no ControlNet, faster) ────────────────────────"
-echo "   ⚠️  First run downloads ~4GB models (SD 1.5)"
-echo ""
-
-run_example "4️⃣ " "Oil Painting  (strength 0.75)" \
-    "pipeline/examples/img2img_oil_painting.yaml"  "img2img_oil_painting.png"
-
-run_example "5️⃣ " "Watercolor    (strength 0.55, subtle)" \
-    "pipeline/examples/img2img_watercolor.yaml"    "img2img_watercolor.png"
-
-run_example "6️⃣ " "Charcoal      (strength 0.85, aggressive)" \
-    "pipeline/examples/img2img_charcoal.yaml"      "img2img_charcoal.png"
-
-# ── Summary ───────────────────────────────────────────────────────────────────
-echo "=========================================="
-echo "✅ All examples complete"
-echo "=========================================="
-echo ""
-echo "Generated images:"
-ls -lh "$OUTPUT_DIR"/*.png 2>/dev/null || echo "   (none found)"
-echo ""
-
-# ── ControlNet examples (structure-preserving) ────────────────────────────────
-echo "── ControlNet (structure-preserving) ──────────────────────"
-echo "   ⚠️  First run downloads ~4GB models (ControlNet + SD 1.5)"
-echo ""
-
-run_example "1️⃣ " "Pen Sketch       (lineart conditioning)" \
-    "pipeline/examples/controlnet_pen_sketch.yaml"  "controlnet_pen_sketch.png"
-
-run_example "2️⃣ " "Technical Drawing (canny conditioning)" \
-    "pipeline/examples/controlnet_technical.yaml"   "controlnet_technical.png"
-
-run_example "3️⃣ " "Woodcut Print     (softedge conditioning)" \
-    "pipeline/examples/controlnet_woodcut.yaml"     "controlnet_woodcut.png"
-
-# ── img2img examples (no ControlNet, faster) ──────────────────────────────────
-echo "── img2img (no ControlNet, faster) ────────────────────────"
-echo "   ⚠️  First run downloads ~4GB models (SD 1.5)"
-echo ""
-
-run_example "4️⃣ " "Oil Painting  (strength 0.75)" \
-    "pipeline/examples/img2img_oil_painting.yaml"  "img2img_oil_painting.png"
-
-run_example "5️⃣ " "Watercolor    (strength 0.55, subtle)" \
-    "pipeline/examples/img2img_watercolor.yaml"    "img2img_watercolor.png"
-
-run_example "6️⃣ " "Charcoal      (strength 0.85, aggressive)" \
-    "pipeline/examples/img2img_charcoal.yaml"      "img2img_charcoal.png"
-
-# ── Summary ───────────────────────────────────────────────────────────────────
-echo "=========================================="
-echo "✅ All examples complete"
-echo "=========================================="
-echo ""
-echo "Generated images:"
-ls -lh "$OUTPUT_DIR"/*.png 2>/dev/null || echo "   (none found)"
-echo ""
-
+echo
+echo "✅ done — results in $OUT/"
+ls -lh "$OUT"

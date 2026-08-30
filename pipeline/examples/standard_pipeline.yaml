@@ -1,0 +1,48 @@
+# pipeline/examples/standard_pipeline.yaml
+#
+# Reference end-to-end CLI pipeline: photo -> Canny edges -> vector paths ->
+# G-code file for the GRBL plotter. CPU-only, no model downloads, no network.
+#
+#   .venv/bin/pipeline-run \
+#       --config pipeline/examples/standard_pipeline.yaml \
+#       --input  pipeline/input/testimage.png \
+#       --output output/result.gcode
+#
+# This one writes a .gcode file — it is a CLI example, not a GUI "stylizer"
+# pipeline (those live in pipeline/configs/ and end in save_image). To stream
+# G-code straight to the machine, use pipeline/configs/plotter.yaml instead.
+
+name: "Standard Pipeline"
+description: "CPU-only reference flow: Canny edges -> vectorize -> G-code file (grbl_a4_pen profile)."
+
+steps:
+  # 1. Load the input image (path comes from --input)
+  - step: load_image
+    config: {}
+
+  # 2. Canny edge detection (fast, CPU-only)
+  - step: stylise_canny
+    config:
+      style_res: 1024
+      canny_low: 50
+      canny_high: 150
+      canny_blur: 3
+
+  # 3. Trace the binary result into vector paths
+  - step: vectorise
+    config:
+      min_path_px: 10   # discard contours shorter than this (px)
+      simplify_eps: 1.5 # Ramer-Douglas-Peucker tolerance (px)
+
+  # 4. Generate G-code via the built-in GRBL A4 pen profile
+  - step: gcode_from_svg
+    config:
+      profile: grbl_a4_pen
+      target_width_mm: 190.0
+      target_height_mm: 277.0
+      keep_aspect: true
+      linesort: true
+
+  # 5. Save the G-code (path comes from --output)
+  - step: save_gcode
+    config: {}

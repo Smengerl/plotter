@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from pipeline.gui import filesystem
@@ -17,17 +17,17 @@ router = APIRouter()
 
 
 @router.get("", response_class=JSONResponse)
-async def list_pipelines() -> list[dict[str, Any]]:
-    """Return all pipeline configs from the in-memory cache.
+async def list_pipelines(request: Request) -> list[dict[str, Any]]:
+    """Return the runnable stylizer pipeline configs from the cache.
 
-    Invalid YAML configs are included with ``valid=false`` and an
-    ``error`` message so the frontend can show an "invalid" badge.
+    The dedicated "Send to Plotter" pipeline (stem
+    ``ServerConfig.plotter_pipeline_stem``) is excluded — it is dispatched
+    only via ``POST /api/plotter/send``, not run as a regular pipeline.
 
-    Returns:
-        List of pipeline metadata dicts with keys:
-        stem, name, description, valid, error.
+    Invalid YAML configs are included with ``valid=false`` and an ``error``
+    message so the frontend can show an "invalid" badge.
     """
-    pipelines = filesystem.get_pipelines()
+    plotter_stem = request.app.state.cfg.plotter_pipeline_stem
     return [
         {
             "stem":        p["stem"],
@@ -36,5 +36,6 @@ async def list_pipelines() -> list[dict[str, Any]]:
             "valid":       p["valid"],
             "error":       p["error"],
         }
-        for p in pipelines
+        for p in filesystem.get_pipelines()
+        if p["stem"] != plotter_stem
     ]

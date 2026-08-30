@@ -42,20 +42,6 @@ homing, solenoid on D11 via `VARIABLE_SPINDLE`.** `config.h`, `electronics.md`,
   `Grbl 1.1h ['$' for help]` + `[MSG:Caution: Unlocked]`; confirm the exact
   strings the shipped build prints.
 
-## Pipeline configs
-
-- [ ] **`pipeline/configs/standard_pipeline.yaml` is stale.**
-  `name`/`description` say "ControlNet … style transfer" but there is no
-  stylizer step; the file header comment says "Informative Drawings"; it uses
-  the legacy `gcode_gen` step; it ends in `save_gcode`/`send_gcode`, which is
-  incompatible with the GUI model (regular pipelines must produce a PNG).
-  It is still referenced as the main example in `pipeline/README.md` and
-  `testing.md` TC-P3 / Phase 4.
-- [ ] **No `pipeline/configs/plotter.yaml`.** `gui/config.py`
-  (`plotter_pipeline_stem = "plotter"`) and `routers/plotter.py` require a
-  pipeline with stem `plotter`; "Send to Plotter" returns HTTP 422 without it.
-  Add one (`load_image → vectorise → gcode_from_svg → send_gcode`).
-
 ## Documentation gaps
 
 - [ ] **No schematic / wiring diagram.** `electronics.md` describes the 5 V/GND
@@ -73,12 +59,4 @@ homing, solenoid on D11 via `VARIABLE_SPINDLE`.** `config.h`, `electronics.md`,
 - [ ] **`send_gcode` gives no success/failure feedback.** Neither the CLI nor
   the GUI reports whether a plot finished cleanly, stalled, or hit an alarm.
   Decide the mechanism (step raises on GRBL error / writes a status into
-  `ctx`; GUI surfaces it in the log panel) and document it. See discussion in
-  the session notes.
-
-## Docs / tests
-
-- [ ] `pipeline/examples/run_examples.sh` is broken: the example block is
-  duplicated verbatim; `--config ../configs/pipeline/examples/…` resolves to
-  nothing; configs live in `pipeline/configs/`, not `pipeline/examples/`;
-  `pipeline-run --version` is not a real flag. Either fix or delete.
+  `ctx`; GUI surfaces it in the log panel) and document it.
