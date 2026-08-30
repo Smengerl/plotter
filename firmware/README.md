@@ -17,7 +17,8 @@ parameters). The hardware and firmware **test procedure** lives in
 - [First-time setup](#first-time-setup)
 - [Build and flash](#build-and-flash)
 - [Serial monitor / GRBL console](#serial-monitor--grbl-console)
-- [Key GRBL settings](#key-grbl-settings-first-run-checklist)
+- [Key GRBL settings](#key-grbl-settings-first-run-checklist) — first-run checklist
+- [GRBL settings & calibration](GRBL.md) — full `$` reference + tuning
 - [Hardware & firmware tests](#hardware--firmware-tests) — pointer to `testing.md`
 
 
@@ -132,7 +133,10 @@ $31=0        ; Min spindle "RPM"
 tell X_MIN from X_MAX (they share one limit pin), so after homing you must
 **measure the X length and store it in `$130`** — see
 [testing.md → TC5b-G "Teach the X-axis length"](../testing.md#tc5b-g--teach-the-x-axis-length).
-The full electrical layout is in
+
+The full `$` reference, calibration procedures (steps/mm, direction,
+acceleration, squaring) and per-setting notes are in
+**[GRBL.md](GRBL.md)**. The electrical layout is in
 [electronics.md → Machine configuration](../electronics.md#machine-configuration-canonical).
 
 ### Steps/mm calculation

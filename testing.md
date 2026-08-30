@@ -295,7 +295,9 @@ $130=<that value minus ~3 mm>   ; store X max travel
 $20=1                 ; enable soft limits — moves are now bounded
 ```
 
-Re-run whenever the belt, pulleys or switch positions change.
+Re-run whenever the belt, pulleys or switch positions change. For steps/mm,
+direction, acceleration and squaring, see
+[firmware/GRBL.md → Calibration](firmware/GRBL.md#calibration).
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|

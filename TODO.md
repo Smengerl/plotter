@@ -47,10 +47,3 @@ params via `$`). Remaining:
   Add a proper schematic (or at least annotated photos) for: the MOSFET
   gate/flyback/pull-down circuit, and how the two X optical endstops are
   combined onto D9.
-- [ ] **No complete GRBL `$$` reference, and calibration is thin.**
-  `firmware/README.md` has a first-run checklist of ~18 settings, but no full
-  table of every `$n` with its meaning/units, and no guidance on: tuning
-  `$100/$101` against a measured travel, `$120/$121` acceleration, direction
-  inversion (`$3`), or squaring/skew of the drawing. `testing.md` TC5b-G
-  covers only the X-length teach. Write a "GRBL settings & calibration"
-  section (in `firmware/README.md` or a new `firmware/GRBL.md`).
