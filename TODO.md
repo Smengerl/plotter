@@ -67,6 +67,4 @@ Inline `TODO:` markers throughout the docs point back here.
 
 ## Minor
 
-- [ ] Root `README.md` BOM section mentions "McMaster" references;
-  `BOM.md` only has AliExpress links.
 - [ ] Root `README.md` §Assembly: list items are all numbered `1.`.
