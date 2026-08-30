@@ -16,14 +16,19 @@
 #     epsilon:   pre-threshold level (-1..1); 0 = adaptive (recommended)
 #     phi:       sigmoid steepness; higher = harder edges
 
+name: "XDoG Sketch"
+description: "CPU-only XDoG (Extended Difference-of-Gaussians) — flowing pencil/ink-style sketch lines. No GPU or internet required."
+
 steps:
   # Step 1: Load input image
   # source_path is provided via CLI --input (no path needed here)
   - step: load_image
+    label: "Load Input Image"
     config: {}
 
   # Step 2: Apply XDoG sketch filter
   - step: stylise_xdog
+    label: "Stylize: XDoG Sketch"
     config:
       style_res: 1024 # Longest side of intermediate image in pixels
 

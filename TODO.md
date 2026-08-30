@@ -43,7 +43,6 @@ Inline `TODO:` markers throughout the docs point back here.
   (`plotter_pipeline_stem = "plotter"`) and `routers/plotter.py` require a
   pipeline with stem `plotter`; "Send to Plotter" returns HTTP 422 without it.
   Add one (`load_image → vectorise → gcode_from_svg → send_gcode`).
-- [ ] `pipeline/configs/xdog_sketch.yaml` has no `name:` field.
 
 ## Packaging / installation
 
