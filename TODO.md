@@ -63,3 +63,15 @@ Inline `TODO:` markers throughout the docs point back here.
   duplicated verbatim; `--config ../configs/pipeline/examples/…` resolves to
   nothing; configs live in `pipeline/configs/`, not `pipeline/examples/`;
   `pipeline-run --version` is not a real flag. Either fix or delete.
+
+## Nice to have
+
+- [ ] Many `label:` lines in `pipeline/configs/*.yaml` only restate the step
+  key (`label: "Stylize: Canny Edge Detection"` on `stylise_canny`). Since the
+  display name now falls back to the step key, the purely decorative labels
+  could be dropped; keep only the ones that add real information
+  (`load_image` -> "Load Input Image").
+- [ ] `PipelineStep.name` class attribute is now consistent (= registry key)
+  but only set on 6 of ~17 step classes and only read as a display-name
+  fallback for steps built outside the runner (i.e. some unit tests). Either
+  set it on all step classes or drop it and rely on `_registry_key`.

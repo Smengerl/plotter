@@ -234,7 +234,7 @@ steps:
 | --- | --- | --- |
 | `step` | ✅ | Step name — must match a key in `STEP_REGISTRY` |
 | `config` | ✅ | Parameters for this step (can be `{}`) |
-| `label` | — | Custom display name shown in log output |
+| `label` | — | Custom display name shown in log / GUI progress. Defaults to the step key (e.g. `stylise_canny`). |
 | `enabled` | — | Set `false` to skip this step (default: `true`) |
 
 ### TOML GCode profile

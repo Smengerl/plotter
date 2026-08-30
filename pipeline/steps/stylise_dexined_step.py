@@ -36,7 +36,7 @@ class StyliseDexiNedStep(NNStylizerStep):
     threshold         128      binarization threshold (0–255)
     """
 
-    name = "dexined"
+    name = "stylise_dexined"
 
     def _import_detector(self) -> Any:
         try:

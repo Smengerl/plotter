@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 # Called after each step (or in dry-run: before each step without execution).
 #   step_index   – 1-based index of the current step
 #   total_steps  – total number of steps in the pipeline
-#   label        – display name of the step (step.label or class name)
+#   label        – display name of the step (see PipelineStep.display_name)
 ProgressCallback = Callable[[int, int, str], None]
 
 
@@ -69,8 +69,9 @@ class PipelineRunner:
         for the step shown during execution.
     name : str
         Human-readable name of this pipeline. Displayed when the
-        pipeline starts. Defaults to ``"Pipeline"`` for backward
-        compatibility; supply a descriptive name in YAML configs.
+        pipeline starts. Defaults to ``"Pipeline"`` for direct
+        construction; ``from_yaml`` uses the YAML ``name`` key and
+        falls back to the config file's stem.
     description : str | None
         Optional longer description of what the pipeline does.
         Logged below the name when execution starts.
@@ -140,11 +141,11 @@ class PipelineRunner:
 
         Expected YAML format::
 
-            name: "My Pipeline"           # optional — shown on execution
+            name: "My Pipeline"           # optional — defaults to the file stem
             description: "Optional text"  # optional — shown below name
             steps:
               - step: load_image
-                label: "Load Source Image"  # optional — shown per step
+                label: "Load Source Image"  # optional — defaults to the step key
                 config: {}
               - step: stylise_canny
                 config: {style_res: 1024}
@@ -199,7 +200,10 @@ class PipelineRunner:
 
         return cls(
             steps_config=data["steps"],
-            name=data.get("name", "Pipeline"),
+            # Fall back to the config's file name (e.g. "xdog_sketch") rather than
+            # the generic "Pipeline" so every consumer - CLI log, GUI list, GUI
+            # job panel - shows the same, identifiable name without extra work.
+            name=data.get("name") or config_path.stem,
             description=data.get("description"),
             dry_run=dry_run,
             on_progress=on_progress,
@@ -244,7 +248,7 @@ class PipelineRunner:
             log(f"  {description}")
 
         for i, step in enumerate(self._steps, start=1):
-            display_name = step.label or type(step).__name__
+            display_name = step.display_name
             log(f"Step {i}/{total}: {display_name}")
 
             if not dry_run:
@@ -293,8 +297,10 @@ class PipelineRunner:
                     f"Available steps: {available}"
                 )
 
-            steps.append(cls(config))
-            steps[-1].label = entry.get("label") or None
+            step = cls(config)
+            step.label = entry.get("label") or None
+            step._registry_key = name
+            steps.append(step)
             logger.debug("Step registered: %s -> %s", name, cls.__name__)
 
         return steps
@@ -314,7 +320,7 @@ class PipelineRunner:
         MissingContextError
             On the first missing key found.
         """
-        step_name = type(step).__name__
+        step_name = step.display_name
         for key in step.requires():
             parts = key.split(".", maxsplit=1)
             section = parts[0]

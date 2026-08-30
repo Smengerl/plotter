@@ -156,9 +156,10 @@ def _scan_output_images(output_dir: Path) -> list[dict[str, Any]]:
 def _scan_pipelines(tools_dir: Path) -> list[dict[str, Any]]:
     """Scan *tools_dir* for YAML pipeline configs and return metadata dicts.
 
-    Each YAML file is loaded via ``PipelineRunner.from_yaml()`` to extract
-    the ``name`` and ``description`` fields.  If loading fails the entry is
-    still included with ``valid=False`` and the exception message in ``error``.
+    Each YAML file is loaded via ``PipelineRunner.from_yaml()`` to read its
+    ``name`` (falls back to the file stem) and ``description``.  If loading
+    fails the entry is still included with ``valid=False`` and the exception
+    message in ``error``.
 
     Args:
         tools_dir: Directory to scan for ``*.yaml`` / ``*.yml`` pipeline files.
@@ -192,17 +193,9 @@ def _scan_pipelines(tools_dir: Path) -> list[dict[str, Any]]:
 
         try:
             runner = PipelineRunner.from_yaml(path)
-            # Use the YAML name only when it was explicitly set (runner defaults to
-            # "Pipeline" when the key is absent, which is not useful as a display name).
-            yaml_name: str | None = None
-            try:
-                import yaml as _yaml  # noqa: PLC0415
-                with path.open(encoding="utf-8") as _f:
-                    _data = _yaml.safe_load(_f) or {}
-                yaml_name = _data.get("name")
-            except Exception:  # noqa: BLE001
-                pass
-            name = yaml_name if yaml_name else stem
+            # from_yaml falls back to the file stem when the YAML has no
+            # "name" key, so runner.name is always a usable display name.
+            name = runner.name
             description = runner.description
         except Exception as exc:  # noqa: BLE001
             valid = False

@@ -38,11 +38,11 @@ class PipelineStep(ABC):
         documented in the respective subclass. Missing keys are
         handled via ``self.config.get(key, default)``.
     label : str | None
-        Optional human-readable display name for this step.
-        Used by the runner when logging execution progress, e.g.
-        ``"Step 2/4: Vectorizing"``.  When ``None`` the runner falls
-        back to the class name.  Can also be set after instantiation
-        by the runner when reading ``label`` from the YAML config.
+        Optional human-readable display name for this step, read from the
+        YAML ``label`` key by the runner. When it is not set, the display
+        name falls back to the registry key the step was built from
+        (e.g. ``"stylise_xdog"``), then to the class name. See
+        :pyattr:`display_name`.
 
     Example::
 
@@ -54,9 +54,31 @@ class PipelineStep(ABC):
                 return ctx
     """
 
+    #: Canonical step name. Concrete steps may set this to their registry key
+    #: (e.g. ``name = "stylise_xdog"``). Used as a display-name fallback for
+    #: steps constructed outside the runner; the runner itself passes the
+    #: registry key via ``_registry_key``.
+    name: str | None = None
+
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config: dict[str, Any] = config or {}
         self.label: str | None = None
+        #: Registry key this step was built from; set by ``PipelineRunner``.
+        self._registry_key: str | None = None
+
+    @property
+    def display_name(self) -> str:
+        """Human-readable name for logs and progress reporting.
+
+        Resolution order: YAML ``label`` -> registry key the step was built
+        from -> class-level ``name`` -> class name. Always returns a string.
+        """
+        return (
+            self.label
+            or self._registry_key
+            or type(self).name
+            or type(self).__name__
+        )
 
     def requires(self) -> list[str]:
         """

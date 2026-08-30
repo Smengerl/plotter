@@ -39,7 +39,7 @@ class StyliseLineartStep(NNStylizerStep):
     lineart_image_res         512      --lineart-image-res
     """
 
-    name = "lineart"
+    name = "stylise_lineart"
     HF_REPO: str = "lllyasviel/Annotators"
 
     def __init__(self, config: dict | None = None) -> None:
