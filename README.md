@@ -94,12 +94,12 @@ Fully assembled lever mechanism:
 Fully assembled drive shaft:
 <img src="./print/zsb/drive_assembly.png">
 
-1. Slide the carriage onto the guide rods and secure the timing belt to the carriage. Fit the belt around the drive and idler pulleys and tension appropriately.
+4. Slide the carriage onto the guide rods and secure the timing belt to the carriage. Fit the belt around the drive and idler pulleys and tension appropriately.
 
 Fully assembled carriage and timing belt mechanism:
 <img src="./print/zsb/carriage_assembly.png">
 
-1. Assemble and install the paper bail rollers and springs that hold and move the paper.
+5. Assemble and install the paper bail rollers and springs that hold and move the paper.
 
 Detail for each paper bail roller:
 <img src="./print/zsb/paper_bail_roller_assembly.png">
@@ -107,7 +107,7 @@ Detail for each paper bail roller:
 Fully assembled paper bail:
 <img src="./print/zsb/paper_bail_assembly.png">
 
-1. Optionally assemble and attach the housing halves for a finished enclosure.
+6. Optionally assemble and attach the housing halves for a finished enclosure.
 
 Important: some assembly steps (press-fitting nuts and bearings, re-threading printed holes) may require light machining or careful rework for reliable operation.
 

@@ -64,7 +64,3 @@ Inline `TODO:` markers throughout the docs point back here.
   duplicated verbatim; `--config ../configs/pipeline/examples/…` resolves to
   nothing; configs live in `pipeline/configs/`, not `pipeline/examples/`;
   `pipeline-run --version` is not a real flag. Either fix or delete.
-
-## Minor
-
-- [ ] Root `README.md` §Assembly: list items are all numbered `1.`.
