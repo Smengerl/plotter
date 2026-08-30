@@ -263,6 +263,6 @@ PASS / FAIL on the serial monitor.
 
 Only proceed to flashing GRBL once all Phase 1 tests pass.
 
-> **TODO** ([TODO.md](TODO.md)): the pin map above lists one X endstop and one
-> Y endstop, but the `tc2_x_endstops` sketch drives the carriage to both ends
-> and expects two X endstops. This needs to be resolved.
+> **TODO** ([TODO.md](TODO.md)): the `tc2_x_endstops` sketch still reads X_MAX
+> on a separate pin (D10); production wiring has both X switches on D9. It
+> needs reworking — see testing.md TC2.

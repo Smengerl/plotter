@@ -507,12 +507,9 @@ Two configs are used below:
 .venv/bin/pytest pipeline/tests/ -v
 ```
 
-> **TODO** ([TODO.md](TODO.md)): the fixed count "62" quoted in older
-> revisions is stale (the suite has ~109 test functions). Treat "all green"
-> as the pass criterion.
-
 **Expected:** every test in `pipeline/tests/test_*.py` shows `PASSED`; no
-`FAILED` or `ERROR` entries.
+`FAILED` or `ERROR` entries. (Don't check against a fixed count — the suite
+grows.)
 
 **Failure hints:**
 
