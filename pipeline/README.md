@@ -1,8 +1,15 @@
 # Plotter Pipeline
 
+> ⚠️ **Work in progress** — see [../TODO.md](../TODO.md) for known open issues
+> (install-extras vs. `pyproject.toml`, GUI port, stale example config,
+> missing `plotter.yaml`).
+
 Image-to-GCode pipeline for the pen plotter. Takes any photo or image as
 input, applies an optional stylization step, vectorizes the result, and
 outputs GCode for GRBL.
+
+For where this fits in the overall bring-up, see
+[../testing.md → Phase 3](../testing.md#phase-3--pipeline-software-tests).
 
 ---
 
@@ -15,6 +22,7 @@ outputs GCode for GRBL.
 5. [Available Steps](#available-steps)
 6. [Adding Custom Steps](#adding-custom-steps)
 7. [Overriding Paths via CLI](#overriding-paths-via-cli)
+8. [Alternative tools](#alternative-tools)
 
 ---
 
@@ -672,3 +680,27 @@ ctx = ImageContext(metadata={
 
 runner.run(ctx)
 ```
+
+---
+
+## Alternative tools
+
+This pipeline is the supported path, but the plotter is a plain GRBL machine —
+any SVG→G-code and G-code-sender toolchain works.
+
+**SVG / vector graphics → G-code**
+
+- [Inkscape](https://inkscape.org/) with the [Gcodetools](https://github.com/cnc-club/gcodetools) extension
+- [vpype](https://github.com/abey79/vpype) + [vpype-gcode](https://github.com/plottertools/vpype-gcode) (this project uses both internally)
+- [svg2gcode](https://github.com/sameer/svg2gcode) — simple CLI converter
+
+Configure the tool to emit `M3 S1000` (pen UP) and `M5` (pen DOWN) at path
+boundaries — see the profile in [configs/grbl_a4_pen.toml](configs/grbl_a4_pen.toml).
+
+**Sending G-code to the plotter**
+
+- [UGS (Universal G-code Sender)](https://universalgcodesender.com/) — cross-platform GUI
+- [bCNC](https://github.com/vlachoudis/bCNC) — Python-based, feature-rich
+- [CNCjs](https://cnc.js.org/) — browser-based, runs as a Node.js server
+
+Connect at 115200 baud. Only one process may hold the serial port at a time.

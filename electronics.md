@@ -1,7 +1,11 @@
 # Electronics Guide
 
+> ⚠️ **Work in progress** — see [TODO.md](TODO.md) for known open issues
+> (notably how many endstops the machine has and how they are wired).
+
 This document covers the controller setup, wiring, pin mapping, and component details for the G-code Pen Plotter.
 For firmware and GRBL configuration see [firmware/README.md](firmware/README.md).
+For the hardware test procedure see [testing.md](testing.md).
 
 ## Table of contents
 
@@ -154,24 +158,16 @@ If your hardware uses the opposite mapping (energized = pen DOWN), either swap M
 
 ## Hardware verification before flashing GRBL
 
-Before flashing GRBL, verify each hardware subsystem independently using the standalone test sketches in `firmware/test/`.
-They require no GRBL knowledge and give clear PASS / FAIL feedback via the serial monitor.
-**Work through them in order** -- each test builds on the previous one being confirmed working.
+Once the wiring above is complete, verify each subsystem independently with the
+standalone test sketches in `firmware/test/` (X axis, endstops, Y axis, pen
+lift) **before** flashing GRBL. They need no GRBL knowledge and print
+PASS / FAIL on the serial monitor.
 
-| Step | Test sketch | What is verified |
-|------|-------------|-----------------|
-| 1 | `tc1_x_axis` | X stepper turns, carriage moves in the correct direction |
-| 2 | `tc2_x_endstops` | Both X optical endstops fire at the right ends of the rail |
-| 3 | `tc3_y_axis` | Y stepper turns, paper feed moves in the correct direction |
-| 4 | `tc4_pen_lift` | Solenoid actuates and pen returns to UP on every cycle |
+→ Procedure, expected values and failure diagnosis:
+**[testing.md → Phase 1](testing.md#phase-1--standalone-arduino-tests-no-grbl)**.
 
-Flash a test sketch with PlatformIO (no GRBL is needed):
+Only proceed to flashing GRBL once all Phase 1 tests pass.
 
-```
-pio run -e tc1_x_axis -t upload
-```
-
-Open the serial monitor at 115 200 baud and follow the on-screen prompts.
-See [testing.md](testing.md) for full test documentation including expected results and failure hints.
-
-Only proceed to flashing GRBL once all four tests pass.
+> **TODO** ([TODO.md](TODO.md)): the pin map above lists one X endstop and one
+> Y endstop, but the `tc2_x_endstops` sketch drives the carriage to both ends
+> and expects two X endstops. This needs to be resolved.

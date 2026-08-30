@@ -1,6 +1,14 @@
 
 # pipeline/tests — test pipelines and smoke runners
 
+> **TODO** ([../../TODO.md](../../TODO.md)): the paths and script names in this
+> file are stale — `pipeline_tests/…` should be `pipeline/tests/…`,
+> `run_all_stylizers.py` does not exist (it is `run_all_tests.py`), and the
+> test image is `pipeline/input/testimage.png`, not `pipeline/tests/testimage.png`.
+>
+> For where these tests fit into commissioning, see
+> [../../testing.md → Phase 3](../../testing.md#phase-3--pipeline-software-tests).
+
 This directory contains unit tests and a set of pipeline configuration
 YAML files used for smoke testing the pipeline steps. Two helper scripts
 are provided:

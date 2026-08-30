@@ -1,8 +1,15 @@
 # GRBL Firmware
 
+> ⚠️ **Work in progress** — see [../TODO.md](../TODO.md) for known open issues
+> (endstop wiring, GRBL banner text).
+
 This document describes the GRBL setup for the G-code Pen Plotter.  
 GRBL v1.1 runs on the Arduino Uno via the Arduino CNC Shield v3.  
 All firmware sources live in the `firmware/` directory. GRBL itself is included as a Git submodule under `grbl/`.
+
+This file is **firmware reference only** (layout, build, flash, GRBL
+parameters). The hardware and firmware **test procedure** lives in
+[../testing.md](../testing.md).
 
 ## Table of contents
 - [Repository layout](#repository-layout)
@@ -11,9 +18,7 @@ All firmware sources live in the `firmware/` directory. GRBL itself is included 
 - [Build and flash](#build-and-flash)
 - [Serial monitor / GRBL console](#serial-monitor--grbl-console)
 - [Key GRBL settings](#key-grbl-settings-first-run-checklist)
-- [Hardware & firmware tests](#hardware--firmware-tests)
-- [Converting SVG to G-code](#converting-svgvector-graphics-to-g-code)
-- [Sending G-code to the plotter](#sending-g-code-to-the-plotter)
+- [Hardware & firmware tests](#hardware--firmware-tests) — pointer to `testing.md`
 
 
 ## Repository layout
@@ -118,7 +123,7 @@ steps/mm = (200 steps/rev × 1 full step) / (20 teeth × 2 mm/tooth) = 5
 No MS jumpers are installed on the CNC Shield — the A4988 operates in full-step mode.  
 Adjust `$100` / `$101` if you change the pulley tooth count or enable microstepping.
 
-#### Pen lift G-code
+### Pen lift G-code
 
 The solenoid is controlled via the GRBL spindle output (see [electronics.md](../electronics.md) for wiring details).
 
@@ -132,193 +137,30 @@ If your hardware is wired the other way (energized = pen DOWN), swap the M3/M5 c
 
 ## Hardware & firmware tests
 
-The test suite is split into two phases:
+The full test procedure — standalone hardware sketches and GRBL integration
+tests — lives in **[../testing.md](../testing.md)**:
 
-| Phase | Firmware | TCs | Purpose |
-|-------|----------|-----|---------|
-| Phase 1 | Standalone sketch per test | TC1–TC4 | Test individual hardware components without GRBL |
-| Phase 2 | GRBL (production firmware) | TC5-G–TC9-G | Verify the complete system via G-code |
+| Phase | Content | Precondition |
+| --- | --- | --- |
+| [Phase 1](../testing.md#phase-1--standalone-arduino-tests-no-grbl) | Standalone sketches TC1–TC4 (no GRBL) | Wiring complete |
+| [Phase 2](../testing.md#phase-2--grbl-integration-tests) | GRBL integration tests TC5-G–TC9-G | Phase 1 passed, GRBL flashed |
 
-See [testing.md](../testing.md) for the full detailed test procedure with expected outputs and pass/fail criteria.
+Run Phase 1 first, then flash GRBL (see [Build and flash](#build-and-flash)),
+then Phase 2.
 
-**Phase 1 — Standalone Arduino sketches (TC1–TC4)**
-
-Run these first — they are faster to flash and easier to debug individual signals.  
-Each sketch is self-contained and prints `PASS` / `FAIL` to the serial monitor.
-
-The sketch filenames and PlatformIO env names correspond directly to the TC numbers:
-
-```
-firmware/test/
-├── tc1_x_axis/       tc1_x_axis.cpp      # TC1 — X-Axis Movement
-├── tc2_x_endstops/   tc2_x_endstops.cpp  # TC2 — X-Axis Endstops
-├── tc3_y_axis/       tc3_y_axis.cpp      # TC3 — Y-Axis Movement
-└── tc4_pen_lift/     tc4_pen_lift.cpp    # TC4 — Pen Lift (Solenoid)
-```
-
-Flash / run each test with PlatformIO (open serial monitor at 115200 baud after upload):
+The Phase 1 sketches live in `firmware/test/`; the PlatformIO env names match
+the TC numbers:
 
 ```bash
 cd firmware
-pio run -e tc1_x_axis     -t upload   # flash TC1
-pio run -e tc2_x_endstops -t upload   # flash TC2
-pio run -e tc3_y_axis     -t upload   # flash TC3
-pio run -e tc4_pen_lift   -t upload   # flash TC4
-pio device monitor
+pio run -e tc1_x_axis     -t upload   # TC1 — X-axis movement
+pio run -e tc2_x_endstops -t upload   # TC2 — X-axis endstops
+pio run -e tc3_y_axis     -t upload   # TC3 — Y-axis movement
+pio run -e tc4_pen_lift   -t upload   # TC4 — pen lift (solenoid)
+pio device monitor                    # 115200 baud
 ```
 
-**Phase 2 — GRBL integration tests (TC5-G–TC9-G)**
+## See also
 
-After all Phase 1 tests pass, flash production GRBL firmware (see [Build and flash](#build-and-flash)) and run the tests below in order.  
-Each command is sent via the MDI console of a G-code sender (e.g. [UGS](https://universalgcodesender.com/)) at **115200 baud**.
-
----
-
-### TC5-G — Initialisation and homing
-
-**Goal:** GRBL starts cleanly and the homing cycle completes without errors.
-
-```gcode
-$H
-```
-
-**Expected:**
-1. Carriage accelerates toward the X_MIN endstop.
-2. Touches X_MIN, backs off by 5 mm (pull-off `$27`).
-3. GRBL responds with `ok` and sets machine position X=0, Y=0.
-
-| Response | Meaning |
-|----------|---------|
-| `ok` | Homing successful |
-| `ALARM:8` | Homing failed — endstop not reached within travel limit; check endstop wiring |
-| `ALARM:9` | Homing failed — endstop stuck triggered after pull-off; check sensor alignment |
-
----
-
-### TC6-G — Endstop signals in idle state
-
-**Goal:** Confirm both endstops read as open (not triggered) when the carriage is clear of all switches, and that each one is detectable individually.
-
-**Step 1 — Status report with carriage in the middle:**
-```gcode
-$X
-?
-```
-The `Pn:` field must be **absent** (or show no flags):
-```
-<Idle|MPos:0.000,0.000,0.000|FS:0,0>
-```
-
-**Step 2 — Trigger X_MIN by hand:**  
-Block the X_MIN optical sensor with a finger, then send:
-```gcode
-?
-```
-Expected: status line contains `Pn:X`.  Unblock the sensor and confirm `Pn:X` disappears.
-
-**Step 3 — Trigger X_MAX by hand:**  
-Block the X_MAX optical sensor and confirm `Pn:X` appears again, then disappears when released.
-
-| Observation | Meaning |
-|-------------|---------|
-| `Pn:X` appears only when expected | Endstop wiring correct |
-| `Pn:X` always present | Sensor continuously triggered or signal wire shorted to GND |
-| `Pn:X` never appears | No 5 V on endstop header, broken signal wire, or sensor faulty |
-
----
-
-### TC7-G — X-axis movement
-
-**Goal:** GRBL drives the carriage in both directions and stops correctly at the X_MIN endstop.
-
-**Step 1 — Move away from home:**
-```gcode
-$X
-G91
-G1 X50 F800
-G90
-```
-> Confirm: carriage moved ~50 mm away from X_MIN.
-
-**Step 2 — Drive toward X_MIN with hard limits enabled:**
-```gcode
-$21=1
-G91
-G1 X-200 F800
-```
-> Expected: GRBL stops as soon as X_MIN triggers and raises `ALARM:1` (hard limit).  
-> The carriage must **not** crash into the mechanical stop.
-
-```gcode
-$21=0
-$X
-G90
-```
-> Re-disable hard limits and clear the alarm for the next test.
-
----
-
-### TC8-G — Y-axis movement
-
-**Goal:** Verify GRBL feeds paper in both directions at a controlled speed.
-
-Insert a sheet of paper into the paper bail before running this test.
-
-```gcode
-$X
-G91
-G1 Y30 F500
-```
-> Confirm: paper is pulled **into** the plotter ~30 mm.
-
-```gcode
-G1 Y-30 F500
-G90
-```
-> Confirm: paper is ejected ~30 mm.
-
-**If direction is wrong:** send `$3=2` (invert Y) or `$3=3` (invert X and Y), then retry.
-
----
-
-### TC9-G — Pen lift: 1 s down, then up
-
-**Goal:** GRBL lowers and raises the pen on command with correct timing.
-
-> ⚠️ Do not energise the solenoid for more than ~2 s continuously.
-
-```gcode
-M3 S1000
-G4 P1
-M5
-```
-
-**Expected:**
-1. `M3 S1000` — solenoid fires immediately, pen moves **up** (lift).
-2. `G4 P1` — 1-second dwell; pen stays up.
-3. `M5` — solenoid de-energises, pen returns **down** via spring.
-
-> If the solenoid does not fire: run `$$` and verify `$30=1000` (max spindle speed) and `$31=0` (min spindle speed).
-
----
-
-See [testing.md](../testing.md) for the complete Phase 2 procedure including failure hints and a result log table.
-
-
-## Converting SVG/vector graphics to G-code
-
-Recommended tools:
-
-- **[Inkscape](https://inkscape.org/)** with the [InkscapeGcodeTools](https://github.com/cnc-club/gcodetools) extension
-- **[vpype](https://github.com/abey79/vpype)** + **[vpype-gcode](https://github.com/plottertools/vpype-gcode)** plug-in
-- **[svg2gcode](https://github.com/sameer/svg2gcode)** — simple CLI converter
-
-Pen-up/pen-down: configure the tool to emit `M3 S1000` (pen UP) and `M5` (pen DOWN) at path boundaries, or insert them manually.
-
-
-## Sending G-code to the plotter
-
-- **[UGS (Universal G-code Sender)](https://universalgcodesender.com/)** — GUI, works on all platforms
-- **[bCNC](https://github.com/vlachoudis/bCNC)** — Python-based, feature-rich
-- **[CNCjs](https://cnc.js.org/)** — browser-based, runs as a Node.js server
-
+- Generating G-code from images (this project's pipeline) and third-party
+  SVG→G-code / G-code sender tools: [../pipeline/README.md](../pipeline/README.md).

@@ -1,8 +1,15 @@
 # G-code Pen Plotter
 
+[![Status](https://img.shields.io/badge/status-WIP-orange)](TODO.md)
 [![3D Printing](https://img.shields.io/badge/3D_printing-STL-green)](#)
 [![C/C++](https://img.shields.io/badge/C/C++-firmware-green)](#)
 [![License](https://img.shields.io/badge/license-CC%20BY--SA%204.0-blue)](http://creativecommons.org/licenses/by-sa/4.0/)
+
+> ⚠️ **Work in progress.** This project is under active development — hardware
+> wiring, firmware configuration and the software pipeline are all still
+> changing, and some documents have drifted apart during past refactors.
+> Known contradictions and errors are tracked in **[TODO.md](TODO.md)**;
+> inline `TODO:` markers in the docs point there. Expect updates.
 
 This plotter draws vector graphics in G-code format using a pen. It is compatible with pens up to 11 mm in diameter, relies on inexpensive and widely available components, and uses a mostly 3D-printed frame with a few off-the-shelf mechanical parts. A set of test cases guides the user to verify the functionality of each hardware component before running GRBL.
 
@@ -19,7 +26,7 @@ It comes with a GUI toolset to transform images provided by the user to drawings
 - [Assembly](#assembly)
 - [Electronics](#electronics) — see [electronics.md](electronics.md) for full details
 - [Firmware](#firmware) — see [firmware/README.md](firmware/README.md) for full details
-- [Testing](#testing) — see [testing.md](testing.md) for full details
+- [Testing & commissioning](#testing) — see [testing.md](testing.md) for the full procedure
 - [Software for host computer](#software-for-host-computer) — see [pipeline/README.md](pipeline/README.md) for full details
 - [License and Acknowledgements](#license-and-acknowledgements)
 
@@ -135,8 +142,17 @@ pio device monitor  # open serial console at 115200 baud
 
 ## Testing
 
-A dedicated test suite verifies each hardware component before running GRBL.  
-See **[testing.md](testing.md)** for the full procedure.
+**[testing.md](testing.md) is the single source for the whole test and
+commissioning sequence** — from the standalone hardware checks, through
+flashing GRBL, to a full end-to-end plot:
+
+| Phase | What it covers |
+| --- | --- |
+| [Phase 0](testing.md#phase-0--prerequisites) | Assembly, wiring and software install (pointers) |
+| [Phase 1](testing.md#phase-1--standalone-arduino-tests-no-grbl) | Standalone Arduino sketches TC1–TC4 (no GRBL) |
+| [Phase 2](testing.md#phase-2--grbl-integration-tests) | GRBL integration tests TC5-G–TC9-G |
+| [Phase 3](testing.md#phase-3--pipeline-software-tests) | Host-side Python pipeline tests TC-P1–TC-P3 |
+| [Phase 4](testing.md#phase-4--full-system-end-to-end-plot) | Full system end-to-end plot TC-E1–TC-E3 |
 
 ## Software for host computer
 

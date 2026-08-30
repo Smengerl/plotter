@@ -23,3 +23,7 @@ Thanks for your interest in contributing to this project! Contributions are welc
 ## Testing
 
 Because this is a hobbyist project, automated tests may be limited. Include manual testing steps in your PR description and screenshots where appropriate.
+
+The full test and commissioning procedure (hardware sketches, GRBL integration,
+pipeline tests, end-to-end plot) is in [testing.md](testing.md). Known open
+issues are tracked in [TODO.md](TODO.md).

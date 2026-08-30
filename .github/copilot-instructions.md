@@ -1,5 +1,11 @@
 # GitHub Copilot Instructions for Plotter Project
 
+> **TODO** (see `../TODO.md`): parts of this file are stale — there is no
+> `requirements.txt` (the project uses `pyproject.toml`), no
+> `setup_pipeline.sh`, and the test count is no longer 62. Treat the
+> `requirements.txt` structure and the "62 tests" figure below as outdated;
+> use `pip install -e "pipeline/[gui]"` and "all tests pass".
+
 **Language**: English (all code comments, docstrings, and documentation must be in English)
 
 **Project Type**: Image-to-GCode Pipeline
@@ -24,8 +30,9 @@ def load_toml(path):  # ❌ Bad
 ## Testing
 
 **Command**: `.venv/bin/pytest pipeline/tests/ -v`
-**Target**: All 62 tests must pass before committing
+**Target**: All tests must pass before committing
 **Location**: `pipeline/tests/`
+**Commissioning context**: `../testing.md` → Phase 3
 
 ## When to Create New Code
 

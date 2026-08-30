@@ -1,11 +1,18 @@
-# Hardware Test Guide
+# Test & Commissioning Guide
 
-This document describes the step-by-step test procedure to verify the correct function of the plotter hardware and the host-side pipeline software.
+> ⚠️ **Work in progress.** Some steps below still contain known contradictions
+> and stale references, marked inline with `TODO:` and tracked in
+> [TODO.md](TODO.md). Read those markers before relying on the affected step.
 
-Tests are split into four phases:
+**This document is the single source for the whole test and commissioning
+sequence.** Other files (`README.md`, `firmware/README.md`, `electronics.md`,
+`pipeline/README.md`) only link here — they do not repeat the procedure.
+
+The sequence is split into phases:
 
 | Phase | What is tested | TCs | Purpose |
 |-------|----------------|-----|---------|
+| [Phase 0](#phase-0--prerequisites) | Assembly, wiring, software install | — | Bring the machine and host into a testable state |
 | [Phase 1](#phase-1--standalone-arduino-tests-no-grbl) | Standalone Arduino sketch per TC | TC1–TC4 | Test individual hardware components directly, no GRBL involved |
 | [Phase 2](#phase-2--grbl-integration-tests) | GRBL (production firmware) | TC5-G–TC9-G | Verify the full hardware system through GRBL and G-code |
 | [Phase 3](#phase-3--pipeline-software-tests) | Host-side Python pipeline | TC-P1–TC-P3 | Verify the image-processing and G-code generation pipeline |
@@ -20,13 +27,26 @@ Run the phases in order:
 
 ---
 
-## Prerequisites
+## Phase 0 — Prerequisites
 
-- Arduino Uno + CNC Shield v3 fully wired (see [electronics.md](electronics.md))
-- 12 V power supply connected to the CNC Shield
-- USB cable connected to the Arduino
-- PlatformIO installed (`pio` CLI or VS Code extension)
-- Serial monitor ready (PlatformIO: `pio device monitor`, or any 115200-baud terminal)
+**Mechanics & electronics**
+
+1. Frame printed and assembled — see [README.md → Assembly](README.md#assembly).
+2. Electronics wired — see [electronics.md → Wiring steps](electronics.md#wiring-steps).
+3. 12 V power supply connected to the CNC Shield screw terminals; USB cable to the Arduino.
+4. PlatformIO installed (`pio` CLI or the VS Code extension).
+5. A serial monitor ready (`pio device monitor`, or any 115200-baud terminal).
+
+**Host software** (only needed from Phase 3 onward)
+
+6. Python 3.13 and the project virtualenv installed — see
+   [pipeline/README.md → Installation](pipeline/README.md#installation).
+
+**GRBL settings** (only needed from Phase 2 onward)
+
+7. After flashing GRBL, walk through the first-run parameter checklist and
+   verify with `$$` — see
+   [firmware/README.md → Key GRBL settings](firmware/README.md#key-grbl-settings-first-run-checklist).
 
 ---
 
@@ -87,6 +107,12 @@ pio run -e tc1_x_axis -t upload
 ---
 
 ### TC2 — X-Axis Endstops
+
+> **TODO** ([TODO.md](TODO.md)): this test assumes **two endstops on the X axis**
+> (`D9 = X_MIN`, `D10 = X_MAX`). `firmware/src/config.h`, `BOM.md` and
+> `electronics.md` §Endstops instead describe **one endstop per axis**
+> (`D9 = X_MIN`, `D10 = Y_MIN`, both axes home). Resolve the real wiring before
+> trusting this step.
 
 **Goal:** Verify both X-axis optical endstops are wired to the correct pins and fire at the correct ends.
 
@@ -263,6 +289,10 @@ Expected: status contains `Pn:X`. Unblock — confirm `Pn:X` disappears.
 **Step 3 — Trigger X_MAX by hand:**  
 Block the X_MAX optical sensor — confirm `Pn:X` appears, then disappears when released.
 
+> **TODO** ([TODO.md](TODO.md)): depends on the unresolved endstop-wiring
+> question (see TC2). If `D10` is the Y limit pin, blocking that sensor shows
+> `Pn:Y`, not `Pn:X`, and this step needs rewriting.
+
 | Observation | Meaning |
 |-------------|---------|
 | `Pn:X` only when expected | Endstop wiring correct |
@@ -356,6 +386,11 @@ G90
 
 > ⚠️ Same solenoid safety rules apply: do not energise continuously for more than ~2 s.
 
+> **TODO** ([TODO.md](TODO.md)): confirm the M3/M5 mapping against the
+> assembled hardware and `pipeline/configs/grbl_a4_pen.toml` — this guide
+> assumes inverted wiring (`M3 S1000` = energised = pen **UP**, `M5` = pen
+> **DOWN** via spring).
+
 ```gcode
 M5                  ; solenoid OFF → pen DOWN (spring return)
 G4 P1               ; dwell 1 second
@@ -399,19 +434,24 @@ It runs entirely on the host PC — **no plotter connection is required**.
 
 ### Phase 3 Prerequisites
 
-- Python 3.13 and the project virtualenv set up:
+- Python 3.13 and the project virtualenv set up — see
+  [pipeline/README.md → Installation](pipeline/README.md#installation).
 
-  ```bash
-  ./pipeline/scripts/setup_pipeline.sh
-  ```
+  > **TODO** ([TODO.md](TODO.md)): older revisions of this guide referenced
+  > `./pipeline/scripts/setup_pipeline.sh`, which no longer exists.
 
 - All hardware tests (Phase 1 + Phase 2) should have passed before an end-to-end plot is attempted, but Phase 3 can be run independently at any time.
+
+> **TODO** ([TODO.md](TODO.md)) — applies to all of Phase 3 & 4:
+> - The test image is `pipeline/input/testimage.png` (not `pipeline/tests/testimage.png`).
+> - Failure hints below still mention `requirements.txt` / `setup_pipeline.sh`, which no longer exist — use `pip install -e "pipeline/[gui]"` instead.
+> - `pipeline/configs/standard_pipeline.yaml`, used as the example config, is itself stale (wrong name/description, legacy `gcode_gen` step). Once a clean plotter pipeline config exists, switch the examples to it.
 
 ---
 
 ### TC-P1 — Unit Tests
 
-**Goal:** All 62 pipeline unit tests pass without errors.
+**Goal:** All pipeline unit tests pass without errors.
 
 **Run:**
 
@@ -419,13 +459,12 @@ It runs entirely on the host PC — **no plotter connection is required**.
 .venv/bin/pytest pipeline/tests/ -v
 ```
 
-**Expected:**
+> **TODO** ([TODO.md](TODO.md)): the fixed count "62" quoted in older
+> revisions is stale (the suite has ~109 test functions). Treat "all green"
+> as the pass criterion.
 
-```text
-62 passed in <N>s
-```
-
-All test cases in `pipeline/tests/test_*.py` must show `PASSED`. No `FAILED` or `ERROR` entries are acceptable.
+**Expected:** every test in `pipeline/tests/test_*.py` shows `PASSED`; no
+`FAILED` or `ERROR` entries.
 
 **Failure hints:**
 
@@ -717,7 +756,7 @@ Use this table to record results during commissioning:
 
 | ID | Test | Result | Notes |
 |----|------|:------:|-------|
-| TC-P1 | Unit Tests (62 tests) | ☐ PASS / ☐ FAIL | |
+| TC-P1 | Unit Tests (`pytest pipeline/tests/`) | ☐ PASS / ☐ FAIL | |
 | TC-P2 | Pipeline Config Smoke Tests | ☐ PASS / ☐ FAIL | |
 | TC-P3 | End-to-End G-code Generation | ☐ PASS / ☐ FAIL | |
 
