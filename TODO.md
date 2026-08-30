@@ -54,11 +54,22 @@ Inline `TODO:` markers throughout the docs point back here.
 
 ## Docs / tests
 
-- [ ] `pipeline/tests/run_all_pipeline_configs.py` is itself broken: stale
-  docstring (mentions `run_all_stylizers.py` and non-existent directories),
-  and it uses the undefined names `_CONFIGS_DIR` / `_TESTS_DIR`. Clean it up
-  and confirm whether the `--skip-stylizers` flag (referenced in `testing.md`
-  TC-P2) actually exists.
+- [ ] **The pipeline-config smoke test is completely non-functional.**
+  - `pipeline/tests/run_all_pipeline_configs.py` has a second module
+    docstring pasted in after `import argparse`, and the real imports
+    (`from pathlib import Path`, `import sys`, colour constants,
+    `_CONFIGS_DIR` / `_TESTS_DIR`) are missing entirely → it dies with
+    `NameError: name 'Path' is not defined` on line 79, before doing
+    anything.
+  - `pipeline/tests/run_all_tests.py` hard-codes
+    `RUN_STYLIZERS = ROOT / "run_all_stylizers.py"`, which does not exist,
+    so it silently skips the smoke phase and only runs pytest.
+  - Net effect: `testing.md` TC-P2 cannot pass as written. Either fix
+    `run_all_pipeline_configs.py` (imports + point it at
+    `pipeline/tests/pipeline_configs/`) and repoint `run_all_tests.py`
+    at it, or drop both and simplify TC-P2 to plain `pytest`.
+  - (`--skip-stylizers` does exist — on `run_all_tests.py`, not on
+    `run_all_pipeline_configs.py`; TC-P2 attaches it to the wrong script.)
 - [ ] `pipeline/examples/run_examples.sh` is broken: the example block is
   duplicated verbatim; `--config ../configs/pipeline/examples/…` resolves to
   nothing; configs live in `pipeline/configs/`, not `pipeline/examples/`;
