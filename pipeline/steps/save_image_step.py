@@ -64,6 +64,8 @@ class SaveImageStep(PipelineStep):
                                 target file already exists.
     """
 
+    name = "Save image"
+
     def requires(self) -> list[str]:
         return ["image"]
 

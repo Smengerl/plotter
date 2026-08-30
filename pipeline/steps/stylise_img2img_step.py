@@ -76,6 +76,8 @@ class StyliseImg2ImgStep(DiffusionStylizerStep):
     binary_threshold   128                                       Binarization threshold
     """
 
+    name = "Img2img style transfer"
+
     def __init__(self, config: dict | None = None) -> None:
         super().__init__(config)
         c = self.config

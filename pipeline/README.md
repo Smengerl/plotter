@@ -234,7 +234,7 @@ steps:
 | --- | --- | --- |
 | `step` | ✅ | Step name — must match a key in `STEP_REGISTRY` |
 | `config` | ✅ | Parameters for this step (can be `{}`) |
-| `label` | — | Custom display name shown in log / GUI progress. Defaults to the step key (e.g. `stylise_canny`). |
+| `label` | — | Per-use display-name override, shown in log / GUI progress. Defaults to the step class's own name (e.g. `stylise_canny` → "Canny edge detection"). Only set it when a pipeline needs a more specific name (e.g. two `load_image` steps). |
 | `enabled` | — | Set `false` to skip this step (default: `true`) |
 
 ### TOML GCode profile
@@ -532,6 +532,8 @@ class MyStep(PipelineStep):
     ------------------------------------
     my_param      42        What this controls.
     """
+
+    name = "My step"   # human-readable default for logs / GUI progress
 
     def requires(self) -> list[str]:
         # Declare which context keys must be present before this step runs.

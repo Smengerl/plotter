@@ -38,15 +38,17 @@ class PipelineStep(ABC):
         documented in the respective subclass. Missing keys are
         handled via ``self.config.get(key, default)``.
     label : str | None
-        Optional human-readable display name for this step, read from the
-        YAML ``label`` key by the runner. When it is not set, the display
-        name falls back to the registry key the step was built from
-        (e.g. ``"stylise_xdog"``), then to the class name. See
-        :pyattr:`display_name`.
+        Per-use display-name override, read from the YAML ``label`` key by
+        the runner. Set it only when a step needs a name more specific than
+        its class default (e.g. two ``load_image`` steps in one pipeline).
+        When absent, :pyattr:`display_name` falls back to the class-level
+        :pyattr:`name`.
 
     Example::
 
         class MyStep(PipelineStep):
+            name = "My step"
+
             def process(self, ctx: ImageContext) -> ImageContext:
                 value = self.config.get("my_param", 42)
                 # ... transformation ...
@@ -54,10 +56,9 @@ class PipelineStep(ABC):
                 return ctx
     """
 
-    #: Canonical step name. Concrete steps may set this to their registry key
-    #: (e.g. ``name = "stylise_xdog"``). Used as a display-name fallback for
-    #: steps constructed outside the runner; the runner itself passes the
-    #: registry key via ``_registry_key``.
+    #: Human-readable default title for this step, e.g. ``"Canny edge
+    #: detection"``. Shown in logs and GUI progress whenever a config gives
+    #: no ``label``. Every concrete step should set it.
     name: str | None = None
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
@@ -70,13 +71,14 @@ class PipelineStep(ABC):
     def display_name(self) -> str:
         """Human-readable name for logs and progress reporting.
 
-        Resolution order: YAML ``label`` -> registry key the step was built
-        from -> class-level ``name`` -> class name. Always returns a string.
+        Resolution order: YAML ``label`` (per-use override) -> class-level
+        ``name`` (human default) -> registry key -> class name. Always
+        returns a string.
         """
         return (
             self.label
-            or self._registry_key
             or type(self).name
+            or self._registry_key
             or type(self).__name__
         )
 

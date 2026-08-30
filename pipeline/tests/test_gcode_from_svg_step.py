@@ -241,7 +241,7 @@ segment = "G1 X{x:.3f} Y{y:.3f}\\n"
         assert "G21" in joined
 
     def test_step_name_attribute(self):
-        assert GCodeFromSvgStep.name == "gcode_from_svg"
+        assert GCodeFromSvgStep.name == "Generate G-code"
 
     def test_registered_in_registry(self):
         from pipeline.core.registry import STEP_REGISTRY

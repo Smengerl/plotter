@@ -61,6 +61,8 @@ class VectorizeStep(PipelineStep):
                                (only used when no intermediates["binary"] present)
     """
 
+    name = "Vectorize"
+
     def requires(self) -> list[str]:
         return ["image"]
 

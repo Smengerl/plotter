@@ -35,7 +35,8 @@ def load_toml(path):  # ❌ Bad
 ### Adding a Pipeline Step
 
 1. Create `pipeline/steps/my_step.py` with `MyStep` class (inherit `PipelineStep`)
-2. Implement `process(self, ctx: ImageContext) -> ImageContext`
+2. Implement `process(self, ctx: ImageContext) -> ImageContext`; set a
+   `name = "..."` class attribute (human-readable, shown in logs / GUI progress)
 3. Add entry to `STEP_REGISTRY` in `pipeline/core/registry.py`
 4. Create `pipeline/tests/test_my_step.py` with unit tests
 5. Run `.venv/bin/pytest pipeline/tests/ -v` — all tests must pass

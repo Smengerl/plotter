@@ -36,7 +36,7 @@ class StyliseHEDStep(NNStylizerStep):
     threshold      128      binarization threshold (0–255)
     """
 
-    name = "stylise_hed"
+    name = "HED edge detection"
 
     def _import_detector(self) -> Any:
         try:

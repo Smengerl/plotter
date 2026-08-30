@@ -36,6 +36,8 @@ class SaveGCodeStep(PipelineStep):
                             Overridden by metadata["output_path"] if set.
     """
 
+    name = "Save G-code"
+
     def requires(self) -> list[str]:
         return ["intermediates.gcode_lines"]
 

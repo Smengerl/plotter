@@ -40,6 +40,8 @@ class StyliseAdaptiveStep(StylizerStep):
     adapt_blur     0           --adapt-blur
     """
 
+    name = "Adaptive threshold"
+
     def _stylise(self, ctx: ImageContext) -> "npt.NDArray[np.uint8]":
         c = self.config
         block_size: int = ensure_odd(max(3, int(c.get("block_size", 11))))

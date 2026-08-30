@@ -23,19 +23,16 @@ steps:
   # Step 1: Load input image
   # source_path is provided via CLI --input (no path needed here)
   - step: load_image
-    label: "Load Input Image"
     config: {}
 
   # Step 2: Convert image to vector paths
   - step: vectorise
-    label: "Vectorize Paths"
     config:
       min_path_px: 10 # Minimum path length in pixels (shorter paths discarded)
       simplify_eps: 1.5 # Ramer-Douglas-Peucker tolerance in pixels
 
   # Step 3: Generate GCode for GRBL plotter
   - step: gcode_gen
-    label: "Generate GCode"
     config:
       target_width_mm: 180.0 # Drawing width in mm (X-axis)
       target_height_mm: 250.0 # Drawing height in mm (Y-axis)
@@ -50,14 +47,12 @@ steps:
 
   # Step 4: Save GCode to file
   - step: save_gcode
-    label: "Save GCode"
     config: {}
 
   # Step 5 (Optional): Send GCode to GRBL hardware
   # Set enabled: true to send directly to plotter.
   # Requires proper serial port configuration.
   - step: send_gcode
-    label: "Send GCode to Plotter"
     enabled: false # false = step is skipped by runner
     config:
       port: /dev/tty.usbmodem1101 # Serial port (check your system)

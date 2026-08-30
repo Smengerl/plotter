@@ -145,7 +145,7 @@ class PipelineRunner:
             description: "Optional text"  # optional — shown below name
             steps:
               - step: load_image
-                label: "Load Source Image"  # optional — defaults to the step key
+                label: "Load Source Image"  # optional — overrides the step's own name
                 config: {}
               - step: stylise_canny
                 config: {style_res: 1024}

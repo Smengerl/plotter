@@ -137,7 +137,7 @@ class StyliseInformativeStep(StylizerStep):
     inform_style     1        --inform-style
     """
 
-    name = "stylise_informative"
+    name = "Informative drawings"
 
     def __init__(self, config: dict | None = None) -> None:
         super().__init__(config)

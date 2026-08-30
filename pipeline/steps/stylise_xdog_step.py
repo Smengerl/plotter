@@ -43,6 +43,8 @@ class StyliseXDoGStep(StylizerStep):
     threshold      20.0     --threshold
     """
 
+    name = "XDoG sketch"
+
     def _stylise(self, ctx: ImageContext) -> "npt.NDArray[np.uint8]":
         c = self.config
         sigma: float = float(c.get("sigma", 0.4))

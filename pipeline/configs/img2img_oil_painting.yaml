@@ -26,7 +26,6 @@ steps:
   # Step 1: Load input image
   # source_path is provided via CLI --input (no path needed here)
   - step: load_image
-    label: "Load Input Image"
     config:
       style_res: 512
 
@@ -35,7 +34,6 @@ steps:
   # This step modifies the input image to match the specified style,
   # without ControlNet conditioning.
   - step: stylise_img2img
-    label: "Stylize: Img2Img Oil Painting"
     config:
       # Style prompt - adjust to your artistic goal
       prompt: "oil painting, impressionist style, vibrant colors, beautiful brushstrokes"
@@ -60,5 +58,4 @@ steps:
   # Step 3: Save output image
   # output_path is provided via CLI --output (no path needed here)
   - step: save_image
-    label: "Save Stylized Image"
     config: {}

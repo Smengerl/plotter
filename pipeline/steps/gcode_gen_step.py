@@ -65,6 +65,8 @@ class GCodeGenStep(PipelineStep):
     pen_delay_ms            100             --pen-delay-ms
     """
 
+    name = "Generate G-code (legacy)"
+
     def process(self, ctx: ImageContext) -> ImageContext:
         c = self.config
         logger.info("GCodeGenStep — target=%.0fx%.0f mm, feedrate_draw=%s, feedrate_travel=%s",

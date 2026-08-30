@@ -20,13 +20,11 @@ steps:
   # Step 1: Load input image
   # source_path is provided via CLI --input (no path needed here)
   - step: load_image
-    label: "Load Input Image"
     config:
       style_res: 512
 
   # Step 2: Apply artistic style
   - step: stylise_controlnet
-    label: "Stylize: ControlNet Technical Blueprint"
     config:
       prompt: "technical drawing, engineering blueprint, architectural plan, precise lines, white lines on dark background, schematic, monochrome"
       negative_prompt: "painting, color, watercolor, photorealistic, blurry, organic, artistic"
@@ -46,5 +44,4 @@ steps:
   # Step 3: Save output image
   # output_path is provided via CLI --output (no path needed here)
   - step: save_image
-    label: "Save Stylized Image"
     config: {}

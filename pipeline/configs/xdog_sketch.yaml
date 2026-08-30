@@ -23,12 +23,10 @@ steps:
   # Step 1: Load input image
   # source_path is provided via CLI --input (no path needed here)
   - step: load_image
-    label: "Load Input Image"
     config: {}
 
   # Step 2: Apply XDoG sketch filter
   - step: stylise_xdog
-    label: "Stylize: XDoG Sketch"
     config:
       style_res: 1024 # Longest side of intermediate image in pixels
 
@@ -41,5 +39,4 @@ steps:
   # Step 3: Save output image
   # output_path is provided via CLI --output (no path needed here)
   - step: save_image
-    label: "Save Stylized Image"
     config: {}

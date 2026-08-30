@@ -59,6 +59,8 @@ class SendGcodeStep(PipelineStep):
     completion_timeout          300                        (internal, seconds)
     """
 
+    name = "Send G-code to plotter"
+
     def requires(self) -> list[str]:
         return ["intermediates.gcode_lines"]
 

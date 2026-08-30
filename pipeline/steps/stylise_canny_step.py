@@ -39,6 +39,8 @@ class StyliseCannyStep(StylizerStep):
     canny_blur        3        --canny-blur
     """
 
+    name = "Canny edge detection"
+
     def _stylise(self, ctx: ImageContext) -> "npt.NDArray[np.uint8]":
         c = self.config
         low: int = int(c.get("canny_low", 50))

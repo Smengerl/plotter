@@ -265,9 +265,9 @@ class TestRunnerIntegration:
         with pytest.raises(MissingContextError) as exc_info:
             runner.run(ctx)
         assert exc_info.value.missing_key == "image"
-        # step_name is the step's display name — the registry key here, since
+        # step_name is the step's display name — the class default here, since
         # the config sets no "label".
-        assert exc_info.value.step_name == "save_image"
+        assert exc_info.value.step_name == SaveImageStep.name
 
     def test_runner_saves_image_when_ctx_image_present(self, tmp_path: Path) -> None:
         out = tmp_path / "runner_out.png"

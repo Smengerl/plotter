@@ -204,7 +204,7 @@ class GCodeFromSvgStep(PipelineStep):
     linesort       bool    True                Optimize path order
     """
 
-    name = "gcode_from_svg"
+    name = "Generate G-code"
 
     def requires(self) -> list[str]:
         return ["intermediates.paths"]

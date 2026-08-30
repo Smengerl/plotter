@@ -70,6 +70,8 @@ class LoadImageStep(PipelineStep):
                             0 or None = load at full resolution.
     """
 
+    name = "Load input image"
+
     def requires(self) -> list[str]:
         return []
 

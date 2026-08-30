@@ -32,7 +32,7 @@ class TestStyliseControlNetStepBasics:
     def test_initialization_default_config(self):
         """Test step creates with default configuration."""
         step = StyliseControlNetStep()
-        assert step.name == "stylise_controlnet"
+        assert step.name == "ControlNet style transfer"
         assert step.prompt == "oil painting, masterpiece, detailed"
         assert step.negative_prompt == "blurry, distorted, low quality"
         assert step.controlnet_type == "lineart"
@@ -226,4 +226,4 @@ class TestStyliseControlNetIntegration:
         # Just verify it can be instantiated - don't call _load_models()
         # to avoid expensive GPU operations in tests
         assert step is not None
-        assert step.name == "stylise_controlnet"
+        assert step.name == "ControlNet style transfer"

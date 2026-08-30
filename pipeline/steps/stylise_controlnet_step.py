@@ -91,7 +91,7 @@ class StyliseControlNetStep(DiffusionStylizerStep):
     binary_threshold            128                                               Binarization thr.
     """
 
-    name = "stylise_controlnet"
+    name = "ControlNet style transfer"
 
     _DEFAULT_BASE_MODEL = "runwayml/stable-diffusion-v1-5"
     _DEFAULT_CONTROLNET_MODEL = "lllyasviel/control_v11p_sd15_lineart"
