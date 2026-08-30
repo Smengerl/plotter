@@ -1,8 +1,8 @@
 # Electronics Guide
 
 > ⚠️ **Work in progress** — see [TODO.md](TODO.md) for known open issues
-> (optical-endstop polarity / `$5`, and the not-yet-implemented reduced
-> solenoid holding current).
+> (optical-endstop polarity / `$5`, solenoid holding-current tuning, and
+> on-hardware verification).
 
 This document covers the controller setup, wiring, pin mapping, and component details for the G-code Pen Plotter.
 For firmware and GRBL configuration see [firmware/README.md](firmware/README.md).
@@ -53,9 +53,10 @@ match this table.
 - **Energized (`M3`) = pen UP.** Never leave it energized: keep travel moves
   short and make sure every plot ends on `M5`
   (see `pipeline/configs/grbl_a4_pen.toml`).
-- A **reduced holding current** during pen-up (pull in at `S1000`, then hold
-  at ~`S350`) is planned but **not yet implemented** — see the
-  [Solenoid pen lift](#solenoid-pen-lift) section and [TODO.md](TODO.md).
+- The G-code profile (`grbl_a4_pen.toml`) pulls the pen up at full drive
+  (`M3 S1000`) then holds it at `M3 S350` (~35 % PWM) to limit coil heat —
+  **the hold value still needs tuning on the real machine**, see
+  [Solenoid pen lift](#solenoid-pen-lift).
 
 ## Controller and shield
 
@@ -223,32 +224,20 @@ for long** — the coil overheats.
 | `M3 S1000` | energized (PWM ~100 %) | UP |
 | `M5` | de-energized | DOWN (drawing) |
 
-The G-code templates in `pipeline/configs/grbl_a4_pen.toml` follow this: `M5`
-before each drawn path, `M3 S1000` for travel moves, and every file ends on
-`M5`. Keep travel moves short (path ordering / `linesort` is on by default).
-
-### Planned: reduced holding current (not yet implemented)
+### Reduced holding current
 
 A pull solenoid needs full current only to *move* the plunger; *holding* it
-needs far less. With PWM on D11 this can be exploited to cut the pen-up heat
-to roughly a third:
+needs far less. `pipeline/configs/grbl_a4_pen.toml` exploits the PWM on D11:
+each pen-up pulls in at `M3 S1000`, dwells 50 ms, then drops to `M3 S350`
+(~35 % duty), and every file ends on `M5`. This keeps the coil at roughly a
+third of full power during travel.
 
-1. **Firmware / settings** — nothing to change; `VARIABLE_SPINDLE` already
-   gives PWM, and `$30=1000` maps `S1000` → 100 % duty.
-2. **G-code profile** — in `pipeline/configs/grbl_a4_pen.toml`, change the
-   per-path pen-up template so it pulls in at full current, then drops to a
-   hold level, e.g.:
-
-   ```toml
-   line_end = "M3 S1000\nG4 P0.05\nM3 S350\n"   # pull in, then hold at ~35 %
-   ```
-
-   Tune the hold value (`S250`–`S500`) to the lowest that reliably keeps the
-   pen lifted. `document_start` would get the same treatment.
-3. **Verify** — run a long plot and check the coil temperature by hand
-   afterwards; it should be no more than warm.
-
-Until this is done, the mitigation is purely "short travels + end on `M5`".
+- Firmware / settings: nothing to change (`VARIABLE_SPINDLE` gives PWM,
+  `$30=1000` maps `S1000` → 100 %).
+- **Tune `S350` on the real machine** (`S_HOLD` in the toml, used in both
+  `document_start` and `line_end`): the lowest value that still holds the pen
+  fully up during a travel move. Raise it if the pen drifts down; lower it if
+  the coil still gets more than warm after a long plot.
 
 ## Hardware verification before flashing GRBL
 

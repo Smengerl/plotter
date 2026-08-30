@@ -25,12 +25,11 @@ params via `$`). Remaining:
   the real module output (beam clear vs. blocked) and set `$5` on the board.
   Also confirm the two parallel X switches can share D9 without an output
   clash (open-collector / wired-OR).
-- [ ] **Reduced solenoid holding current — not yet implemented.** With PWM on
-  D11 the pen-up drive can pull in at `S1000` then hold at ~`S350` to cut the
-  coil heat. Change `line_end` (and `document_start`) in
-  `pipeline/configs/grbl_a4_pen.toml` to `M3 S1000` → `G4 P0.05` → `M3 S350`,
-  tune the hold value, verify coil temperature after a long plot. Firmware
-  needs no change. Full write-up in electronics.md → "Solenoid pen lift".
+- [ ] **Tune the solenoid holding current.** `grbl_a4_pen.toml` now pulls the
+  pen up at `S1000` then holds at `S350` (~35 % PWM). Find the lowest hold
+  value that reliably keeps the pen up during travel, and check the coil is
+  no more than warm after a long plot. Update `S_HOLD` in both
+  `document_start` and `line_end`.
 - [ ] **`$130` (X max travel) must be taught** — testing.md TC5b-G. Verify the
   teach procedure (home X_MIN, jog to X_MAX, read MPos) works on the hardware.
 - [ ] **Verify homing + solenoid on the real board** now that `config.h` is
