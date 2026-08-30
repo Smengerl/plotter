@@ -11,22 +11,34 @@ Inline `TODO:` markers throughout the docs point back here.
 
 ## Hardware / firmware
 
-- [ ] **Endstop wiring is described two incompatible ways.**
-  - `firmware/src/config.h`, `BOM.md` and `electronics.md` §Endstops:
-    **2 optical endstops total** — `D9 = X_MIN`, `D10 = Y_MIN`, both axes home
-    toward MIN (`HOMING_CYCLE_0 = X | Y`).
-  - `firmware/test/tc2_x_endstops/` + `testing.md` TC2 / TC6-G +
-    `electronics.md` verification table: **2 endstops on the X axis**
-    (`D10 = X_MAX`), no Y endstop.
-  - These are mutually exclusive. Decide the real layout, then fix `testing.md`
-    TC2/TC6-G, `electronics.md`, and the test sketch. Note: under GRBL 1.1 on
-    the Uno, X and Y each have exactly one limit pin — "X_MAX on D10" only
-    exists in the standalone test sketch.
-- [ ] **`testing.md` TC9-G vs. the old firmware/README TC9-G** used opposite
-  M3/M5 order. `testing.md` now has `M5` (pen down) → dwell → `M3 S1000`
-  (pen up); confirm this matches the assembled hardware and the
-  `grbl_a4_pen.toml` templates.
-- [ ] **GRBL startup banner**: `testing.md` §2.0 shows
+The machine layout is now settled and captured in
+[electronics.md → Machine configuration](electronics.md#machine-configuration-canonical):
+**2 optical endstops both on X (X_MIN + X_MAX) on D9, no Y endstop, X-only
+homing, solenoid on D11 via `VARIABLE_SPINDLE`.** `config.h`, `electronics.md`,
+`testing.md` and `firmware/README.md` were updated to match. Remaining:
+
+- [ ] **Optical-endstop polarity / `$5` is unverified.** `config.h` sets
+  `DEFAULT_INVERT_LIMIT_PINS 1` with the rationale "HIGH when open, LOW when
+  triggered" — but in GRBL 1.1 that polarity means `$5` should be **0**
+  (`$5=1` → *HIGH* = triggered). Measure the real module output (beam clear
+  vs. blocked), set `$5`, fix the comment. Also confirm the two parallel X
+  switches can share D9 without an output clash (open-collector / wired-OR).
+- [ ] **Reduced solenoid holding current — not yet implemented.** With PWM on
+  D11 the pen-up drive can pull in at `S1000` then hold at ~`S350` to cut the
+  coil heat. Change `line_end` (and `document_start`) in
+  `pipeline/configs/grbl_a4_pen.toml` to `M3 S1000` → `G4 P0.05` → `M3 S350`,
+  tune the hold value, verify coil temperature after a long plot. Firmware
+  needs no change. Full write-up in electronics.md → "Solenoid pen lift".
+- [ ] **`firmware/test/tc2_x_endstops` needs updating.** It reads X_MAX on D10;
+  production wiring has both X switches on D9. Rework it to drive toward each
+  end and let the operator confirm which end was reached (no second pin).
+  Rename the sketch / PlatformIO env to `tc2_endstops`.
+- [ ] **`config.h` `DEFAULT_X_MAX_TRAVEL` is a placeholder (220 mm).** Real
+  value comes from testing.md TC5b-G ("teach") and lives in `$130`; verify
+  the teach procedure works on the hardware.
+- [ ] **`testing.md` TC9-G M3/M5 order** — `M5` (pen down) → dwell → `M3 S1000`
+  (pen up). Confirm against the assembled hardware.
+- [ ] **GRBL startup banner** — `testing.md` §2.0 shows
   `Grbl 1.1h ['$' for help]` + `[MSG:Caution: Unlocked]`; confirm the exact
   strings the shipped build prints.
 

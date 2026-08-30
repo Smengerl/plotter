@@ -12,16 +12,25 @@
     - Arduino Uno (ATmega328P)
     - Arduino CNC Shield v3
     - 2× NEMA 17 stepper motors (X = carriage, Y = paper feed)
-    - 2× Optical endstops (X_MIN / Y_MIN on the CNC shield)
-    - Solenoid pen-lift on the spindle PWM output (D11 on CNC Shield)
+    - 2× optical endstops, BOTH on the X axis (X_MIN + X_MAX), wired in
+      parallel onto the X_LIMIT pin (D9). Y has NO endstop.
+    - Solenoid pen-lift on the spindle PWM output (D11); de-energized = pen
+      down (drawing), energized = pen up. VARIABLE_SPINDLE must stay enabled.
     - 12 V power supply
 
   Key design decisions:
     - Z axis is DISABLED (only X and Y are used for a 2-axis plotter)
-    - Spindle PWM output (D11) drives the pen-lift solenoid via a MOSFET
-    - Homing enabled on X and Y; home position = front-left corner
-    - Soft limits enabled once work area is measured
+    - Spindle PWM output (D11) drives the pen-lift solenoid via a MOSFET;
+      Z_LIMIT is relocated to D12 (unused) by VARIABLE_SPINDLE
+    - Homing on X ONLY, toward X_MIN. GRBL cannot tell X_MIN from X_MAX (they
+      share the X_LIMIT pin), so the usable X length is measured once and
+      stored in $130 — see testing.md "TC5b-G Teach the X-axis length".
+    - Y is never homed; Y = 0 is the position at power-up / after $X
+    - Soft limits ($20) enabled only after $130 has been taught
     - Steps/mm tuned for 2GT belt + 20T pulley + A4988 @ full-step (no MS jumpers)
+
+  The canonical wiring table lives in electronics.md
+  ("Machine configuration"); this file must stay in sync with it.
 */
 
 #ifndef config_h
@@ -57,11 +66,20 @@
 #define DEFAULT_Z_ACCELERATION (10.0 * 60.0 * 60.0) // unused
 
 // Work area — A4 paper (210 × 297 mm) with a small safety margin
-#define DEFAULT_X_MAX_TRAVEL 220.0 // mm
-#define DEFAULT_Y_MAX_TRAVEL 300.0 // mm
+// X_MAX_TRAVEL is a placeholder: measure it once (home X_MIN, jog to X_MAX)
+// and store the real value in $130 — see testing.md "TC5b-G".
+#define DEFAULT_X_MAX_TRAVEL 220.0 // mm (placeholder — teach $130)
+#define DEFAULT_Y_MAX_TRAVEL 300.0 // mm (no endstop; soft-limit bound only)
 #define DEFAULT_Z_MAX_TRAVEL 5.0   // mm (unused, keep small)
 
 // Spindle — repurposed as solenoid (pen up/down via M3/M5 or S0/S1000)
+// VARIABLE_SPINDLE is required: it puts the PWM/enable output on D11 (the pin
+// the solenoid MOSFET is wired to) and moves the unused Z_LIMIT to D12.
+// Without it, GRBL would drive D12 and read D11 as a limit input.
+// PWM also enables a future reduced holding current (pull in at S1000, then
+// hold at ~S350) to keep the solenoid cool — see electronics.md and
+// pipeline/configs/grbl_a4_pen.toml.
+#define VARIABLE_SPINDLE
 #define DEFAULT_SPINDLE_RPM_MAX 1000.0
 #define DEFAULT_SPINDLE_RPM_MIN 0.0
 
@@ -89,6 +107,13 @@
 
 // Pin logic
 #define DEFAULT_INVERT_ST_ENABLE 0  // A4988: LOW = enabled (correct default)
+// TODO (see TODO.md): this value is UNVERIFIED and the rationale below is
+// self-contradictory for GRBL 1.1. In GRBL 1.1, $5=1 means "pin HIGH =
+// triggered"; $5=0 means "pin LOW = triggered". If the modules really are
+// "HIGH when open / LOW when triggered", the correct value is 0, not 1.
+// Measure the actual module output (beam clear vs. blocked) with a meter and
+// set this accordingly, then fix the comment. Also confirm the two parallel
+// X switches can share D9 (open-collector / wired-OR) without output clash.
 #define DEFAULT_INVERT_LIMIT_PINS 1 // Optical endstops are HIGH when open,
                                     // LOW when triggered → invert so GRBL
                                     // sees active-high as "triggered"
@@ -103,20 +128,22 @@
 #define DEFAULT_LASER_MODE 0
 
 // ── Homing ────────────────────────────────────────────────────────────────────
-// Home both axes in a single cycle (2-axis machine, no Z homing needed)
+// X only. Y has no endstop (paper feed); Z is disabled.
 #define DEFAULT_HOMING_ENABLE 1
-#define DEFAULT_HOMING_DIR_MASK 0         // Both axes home toward MIN switches
+#define DEFAULT_HOMING_DIR_MASK 0         // X homes toward MIN
 #define DEFAULT_HOMING_FEED_RATE 50.0     // mm/min (slow locate pass)
 #define DEFAULT_HOMING_SEEK_RATE 800.0    // mm/min (fast search pass)
 #define DEFAULT_HOMING_DEBOUNCE_DELAY 250 // ms
 #define DEFAULT_HOMING_PULLOFF 5.0        // mm (back off after homing)
 
-// Force alarm on power-up until homing cycle completes
+// Force alarm on power-up until the homing cycle completes
 #define HOMING_INIT_LOCK
 
-// Homing cycle: home X and Y simultaneously (no Z axis)
-#define HOMING_CYCLE_0 ((1 << X_AXIS) | (1 << Y_AXIS))
-// Leave HOMING_CYCLE_1 / HOMING_CYCLE_2 undefined (no Z homing)
+// Homing cycle: X only. Both X switches (X_MIN + X_MAX) sit on the X_LIMIT
+// pin, so $H homes to X_MIN and X_MAX is only a hard-limit backstop; the
+// usable length is taught into $130 (testing.md "TC5b-G").
+#define HOMING_CYCLE_0 (1 << X_AXIS)
+// Leave HOMING_CYCLE_1 / HOMING_CYCLE_2 undefined (no Y/Z homing)
 
 // ── GRBL behaviour ────────────────────────────────────────────────────────────
 // Baud rate

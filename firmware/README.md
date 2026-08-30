@@ -101,18 +101,26 @@ $110=3000    ; X max rate (mm/min)
 $111=3000    ; Y max rate (mm/min)
 $120=200     ; X acceleration (mm/s²)
 $121=200     ; Y acceleration (mm/s²)
-$130=220     ; X max travel (mm) — A4 width + margin
-$131=300     ; Y max travel (mm) — A4 height + margin
-$20=0        ; Soft limits OFF (enable to 1 after homing is verified)
+$130=220     ; X max travel (mm) — PLACEHOLDER, teach it (see below)
+$131=300     ; Y max travel (mm) — soft-limit bound only (Y has no endstop)
+$5=1         ; invert limit pins — UNVERIFIED, check module polarity (see ../TODO.md)
+$20=0        ; Soft limits OFF (enable to 1 only after $130 is taught)
 $21=0        ; Hard limits OFF (enable to 1 after wiring is verified)
 $22=1        ; Homing cycle ON
-$23=0        ; Homing direction: toward MIN switches
+$23=0        ; Homing direction: X toward MIN
 $24=50       ; Homing feed rate (mm/min)
 $25=800      ; Homing seek rate (mm/min)
 $27=5        ; Homing pull-off (mm)
+$30=1000     ; Max spindle "RPM" → maps S1000 to full solenoid drive
+$31=0        ; Min spindle "RPM"
 ```
 
-Perform a homing cycle with `$H` after the settings are saved.
+`$H` homes the **X axis only** — Y has no endstop, Z is disabled. GRBL cannot
+tell X_MIN from X_MAX (they share one limit pin), so after homing you must
+**measure the X length and store it in `$130`** — see
+[testing.md → TC5b-G "Teach the X-axis length"](../testing.md#tc5b-g--teach-the-x-axis-length).
+The full electrical layout is in
+[electronics.md → Machine configuration](../electronics.md#machine-configuration-canonical).
 
 ### Steps/mm calculation
 

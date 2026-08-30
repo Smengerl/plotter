@@ -108,13 +108,17 @@ pio run -e tc1_x_axis -t upload
 
 ### TC2 — X-Axis Endstops
 
-> **TODO** ([TODO.md](TODO.md)): this test assumes **two endstops on the X axis**
-> (`D9 = X_MIN`, `D10 = X_MAX`). `firmware/src/config.h`, `BOM.md` and
-> `electronics.md` §Endstops instead describe **one endstop per axis**
-> (`D9 = X_MIN`, `D10 = Y_MIN`, both axes home). Resolve the real wiring before
-> trusting this step.
+The machine has **two optical endstops, both on the X axis** (X_MIN + X_MAX),
+and none on Y — see [electronics.md → Machine configuration](electronics.md#machine-configuration-canonical).
 
-**Goal:** Verify both X-axis optical endstops are wired to the correct pins and fire at the correct ends.
+> **Wiring note.** In the *production* GRBL wiring both X switches share the
+> `X_LIMIT` pin (D9). This standalone sketch instead reads X_MAX on D10 as a
+> convenience, so for TC2 wire X_MAX's signal to the **Y-** header
+> temporarily, then move both switches onto the **X-** header before flashing
+> GRBL. (TODO, see [TODO.md](TODO.md): update the sketch so it exercises both
+> switches through D9 and just asks the operator which end was reached.)
+
+**Goal:** Verify both X-axis optical endstops fire at the correct ends and in the correct sense.
 
 **Flash:**
 
@@ -250,12 +254,16 @@ Connect at **115200 baud**. Use the MDI (Manual Data Input) console to send comm
 $H
 ```
 
+Only the **X axis** homes (`HOMING_CYCLE_0 = X`). Y has no endstop and is not
+homed; Z is disabled.
+
 **Expected sequence:**
 
 1. Carriage accelerates toward X_MIN.
 2. Slows down and touches X_MIN.
 3. Backs off by `$27` (5 mm pull-off).
-4. GRBL responds with `ok`; machine position is set to X=0, Y=0.
+4. GRBL responds with `ok`; machine position X is set to 0. (Y stays at its
+   power-up value — Y is not homed.)
 
 | Response | Meaning |
 |----------|---------|
@@ -263,11 +271,48 @@ $H
 | `ALARM:8` | Endstop not reached within travel limit — check endstop wiring |
 | `ALARM:9` | Endstop still triggered after pull-off — check sensor alignment |
 
+After this, run **TC5b-G** to measure and store the X-axis length.
+
+---
+
+### TC5b-G — Teach the X-axis length
+
+GRBL homes X against X_MIN only. X_MAX shares the same limit pin, so its
+position must be measured once and stored in `$130`.
+
+```gcode
+$21=1                 ; enable hard limits so X_MAX stops the jog
+$H                    ; home to X_MIN → machine X = 0
+```
+
+Then jog toward X_MAX in small steps until GRBL raises `ALARM:1`:
+
+```gcode
+$J=G91 X20 F500       ; repeat until ALARM:1 (X_MAX reached)
+```
+
+```gcode
+?                     ; note the last MPos:X before the alarm = usable X length
+$X                    ; clear the alarm
+$130=<that value minus ~3 mm>   ; store X max travel
+$20=1                 ; enable soft limits — moves are now bounded
+```
+
+Re-run whenever the belt, pulleys or switch positions change.
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| No `ALARM:1` at the far end | X_MAX not wired to `X_LIMIT` (D9), or `$21=0` | Check both X switches share D9; set `$21=1` |
+| `ALARM:1` immediately on `$H` | X_MAX (or X_MIN) stuck triggered, or `$5` inverted | Check optical alignment; verify `$5` (see TODO.md) |
+
 ---
 
 ### TC6-G — Endstop Signals in Idle State
 
-**Goal:** Confirm both endstops read as open when the carriage is clear of all switches, and that each can be detected individually.
+**Goal:** Confirm both X endstops read as open when the carriage is clear, and that each one is seen by GRBL.
+
+Both X switches sit on the `X_LIMIT` pin, so GRBL reports **`Pn:X` for either
+one** — it cannot tell them apart. There is no `Pn:Y` (Y has no endstop).
 
 **Step 1 — Status check with carriage in the middle:**
 
@@ -287,11 +332,8 @@ Block the X_MIN optical sensor with a finger, then send `?`.
 Expected: status contains `Pn:X`. Unblock — confirm `Pn:X` disappears.
 
 **Step 3 — Trigger X_MAX by hand:**  
-Block the X_MAX optical sensor — confirm `Pn:X` appears, then disappears when released.
-
-> **TODO** ([TODO.md](TODO.md)): depends on the unresolved endstop-wiring
-> question (see TC2). If `D10` is the Y limit pin, blocking that sensor shows
-> `Pn:Y`, not `Pn:X`, and this step needs rewriting.
+Block the X_MAX optical sensor — confirm `Pn:X` appears again (same flag as
+X_MIN), then disappears when released.
 
 | Observation | Meaning |
 |-------------|---------|
@@ -353,7 +395,10 @@ G90
 
 **Goal:** Verify GRBL feeds paper correctly in both directions.
 
-Insert a sheet of paper into the paper bail first.
+Y has no endstop and is never homed — GRBL treats the current position as
+`Y = 0`. Insert a sheet of paper into the paper bail first; that position is
+your origin. If soft limits are on (`$20=1`), a `Y-` move past 0 is refused,
+so send `G92 Y0` after loading paper if you need headroom for the OUT move.
 
 ```gcode
 $X                  ; clear alarm
