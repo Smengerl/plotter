@@ -56,13 +56,25 @@ homing, solenoid on D11 via `VARIABLE_SPINDLE`.** `config.h`, `electronics.md`,
   pipeline with stem `plotter`; "Send to Plotter" returns HTTP 422 without it.
   Add one (`load_image → vectorise → gcode_from_svg → send_gcode`).
 
-## Packaging / installation
+## Documentation gaps
 
-- [ ] **`PyYAML` (and `fastapi`/`uvicorn`) live only in the `gui` extra.**
-  The docs now use `pip install -e "pipeline/[gui]"` as the baseline, but a
-  bare `pip install -e pipeline/` still cannot run `pipeline-run` on a YAML
-  config (`PipelineRunner.from_yaml` needs PyYAML). Move `PyYAML` into core
-  `dependencies` in `pipeline/pyproject.toml`.
+- [ ] **No schematic / wiring diagram.** `electronics.md` describes the 5 V/GND
+  distribution board and the solenoid MOSFET circuit in text + ASCII only.
+  Add a proper schematic (or at least annotated photos) for: the MOSFET
+  gate/flyback/pull-down circuit, and how the two X optical endstops are
+  combined onto D9.
+- [ ] **No complete GRBL `$$` reference, and calibration is thin.**
+  `firmware/README.md` has a first-run checklist of ~18 settings, but no full
+  table of every `$n` with its meaning/units, and no guidance on: tuning
+  `$100/$101` against a measured travel, `$120/$121` acceleration, direction
+  inversion (`$3`), or squaring/skew of the drawing. `testing.md` TC5b-G
+  covers only the X-length teach. Write a "GRBL settings & calibration"
+  section (in `firmware/README.md` or a new `firmware/GRBL.md`).
+- [ ] **`send_gcode` gives no success/failure feedback.** Neither the CLI nor
+  the GUI reports whether a plot finished cleanly, stalled, or hit an alarm.
+  Decide the mechanism (step raises on GRBL error / writes a status into
+  `ctx`; GUI surfaces it in the log panel) and document it. See discussion in
+  the session notes.
 
 ## Docs / tests
 

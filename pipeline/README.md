@@ -80,10 +80,10 @@ python3.13 -m venv .venv
 ### Install the pipeline package
 
 ```bash
-# Core only — CLI, OpenCV + NN stylizers, vectorise, G-code
+# Core only — the full CLI (all stylizers, vectorise, G-code, serial send)
 .venv/bin/pip install -e pipeline/
 
-# Core + web GUI (recommended default)
+# Core + web GUI server (recommended default)
 .venv/bin/pip install -e "pipeline/[gui]"
 
 # Add the Stable Diffusion backends (ControlNet, Img2Img)

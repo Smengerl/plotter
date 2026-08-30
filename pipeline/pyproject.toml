@@ -16,7 +16,8 @@ dependencies = [
     "opencv-python==4.9.0.80",
     "Pillow>=10.0,<13",
 
-    # Vectorisation & GCode
+    # Config + vectorisation & GCode
+    "PyYAML>=6.0",          # PipelineRunner.from_yaml — needed by the CLI too
     "vpype==1.15.0",
     "vpype-gcode==0.13.0",
     "pygrbl_streamer @ git+https://github.com/offerrall/PyGrbl_Streamer.git",
@@ -44,12 +45,11 @@ diffusers = [
     "accelerate",
 ]
 
-# Web GUI server
+# Web GUI server (PyYAML is a core dependency, not listed here)
 gui = [
     "fastapi>=0.110,<1",
     "uvicorn[standard]>=0.29,<1",
     "python-multipart>=0.0.9",
-    "PyYAML>=6.0",
 ]
 
 # Development & testing
