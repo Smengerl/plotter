@@ -1,10 +1,6 @@
 # GitHub Copilot Instructions for Plotter Project
 
-> **TODO** (see `../TODO.md`): parts of this file are stale — there is no
-> `requirements.txt` (the project uses `pyproject.toml`), no
-> `setup_pipeline.sh`, and the test count is no longer 62. Treat the
-> `requirements.txt` structure and the "62 tests" figure below as outdated;
-> use `pip install -e "pipeline/[gui]"` and "all tests pass".
+Known open issues for the project are tracked in [`../TODO.md`](../TODO.md).
 
 **Language**: English (all code comments, docstrings, and documentation must be in English)
 
@@ -59,30 +55,10 @@ For detailed step parameters and architecture, see **`pipeline/README.md`**.
 
 **Python Version**: 3.13 (required by vpype 1.15.x; use `python3.13 -m venv .venv`)
 
-**requirements.txt Structure**:
-```
-# 1. CORE — image processing, numerics
-numpy>=1.25,<3
-opencv-python==4.9.0.80
-Pillow>=10.0,<13
-
-# 2. VECTORIZATION & GCODE — vpype ecosystem
-vpype==1.15.0
-vpype-gcode==0.13.0
-pygrbl_streamer @ git+https://github.com/offerrall/PyGrbl_Streamer.git
-pyserial>=3.5
-
-# 3. NEURAL NETWORKS — edge detection models
-controlnet-aux==0.0.10
-torch
-torchvision
-timm>=0.9,<2
-huggingface-hub>=0.20,<2
-onnxruntime>=1.16,<2
-
-# 4. TESTS
-pytest>=9.0
-```
+All dependencies are declared in `pipeline/pyproject.toml` — core
+`dependencies` plus the `gui`, `diffusers` and `dev` optional-dependency
+groups. Install with `pip install -e "pipeline/[gui]"` (add `,diffusers` /
+`,dev` as needed). There is no `requirements.txt`.
 
 ## Logging
 
@@ -110,7 +86,7 @@ logger.error("Error requiring attention")
 
 **Before Commit**:
 1. Run `.venv/bin/pytest pipeline/tests/ -v`
-2. Confirm all 62+ tests pass
+2. Confirm all tests pass
 3. No German comments/docstrings in code
 4. All new functions have English docstrings with type hints
 
@@ -171,7 +147,7 @@ Example: Adding a new stylizer
 - [ ] Type hints on all function signatures
 - [ ] Google-style docstrings
 - [ ] No unused imports
-- [ ] `.venv/bin/pytest pipeline/tests/` passes (62+ tests)
+- [ ] `.venv/bin/pytest pipeline/tests/` passes
 - [ ] No hardcoded German text in output/errors
 - [ ] If modifying pipeline steps: `pipeline/README.md` updated
 

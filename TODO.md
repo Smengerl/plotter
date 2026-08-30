@@ -29,8 +29,6 @@ Inline `TODO:` markers throughout the docs point back here.
 - [ ] **GRBL startup banner**: `testing.md` §2.0 shows
   `Grbl 1.1h ['$' for help]` + `[MSG:Caution: Unlocked]`; confirm the exact
   strings the shipped build prints.
-- [ ] `.gitignore` still contains `firmware/grbl/` although `firmware/grbl` is
-  a registered submodule (`.gitmodules`). Harmless but confusing — remove.
 
 ## Pipeline configs
 
@@ -54,10 +52,6 @@ Inline `TODO:` markers throughout the docs point back here.
   bare `pip install -e pipeline/` still cannot run `pipeline-run` on a YAML
   config (`PipelineRunner.from_yaml` needs PyYAML). Move `PyYAML` into core
   `dependencies` in `pipeline/pyproject.toml`.
-- [ ] **`setup_pipeline.sh` / `requirements.txt` do not exist** (removed in the
-  pyproject migration). Still referenced by `.github/copilot-instructions.md`
-  (flagged there with a TODO note; the structure block and the "62 tests"
-  figure need removing).
 - [ ] **License mismatch**: `LICENSE.txt` + root `README.md` say CC BY-SA 4.0
   (whole project); `pipeline/pyproject.toml` says MIT. Decide the split
   (e.g. hardware/docs CC BY-SA, code MIT) and state it explicitly.
