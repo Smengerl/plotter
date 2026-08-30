@@ -27,3 +27,11 @@ Because this is a hobbyist project, automated tests may be limited. Include manu
 The full test and commissioning procedure (hardware sketches, GRBL integration,
 pipeline tests, end-to-end plot) is in [testing.md](testing.md). Known open
 issues are tracked in [TODO.md](TODO.md).
+
+## Licensing of contributions
+
+This repo is licensed per component (see the README "License" section). By
+submitting a contribution you agree it is released under the license of the
+area you touch: **GPL-3.0-or-later** for `firmware/`, **MIT** for `pipeline/`,
+**CC BY-SA 4.0** for hardware design and documentation. Keep the SPDX headers
+in `firmware/` sources intact.

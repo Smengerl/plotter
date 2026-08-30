@@ -1,6 +1,24 @@
+SCOPE OF THIS FILE
+=================================================================
+
+This project is licensed per component (see the "License" section of
+README.md):
+
+  - Hardware design (print/, BOM.md) and documentation (*.md)
+        -> Creative Commons Attribution-ShareAlike 4.0 (this file)
+  - firmware/ (excluding the firmware/grbl/ submodule)
+        -> GNU GPL v3.0 or later (firmware/LICENSE) — required because it
+           is a derivative of and is linked with GRBL (GPLv3)
+  - firmware/grbl/  -> GNU GPL v3.0 (upstream gnea/grbl, unchanged)
+  - pipeline/       -> MIT License (pipeline/LICENSE)
+
+The text below applies to the hardware design and documentation only.
+
+=================================================================
+
 Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 
-Copyright (c) 2026 smengerl
+Copyright (c) 2026 Simon Gerlach
 
 This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 
 International License. To view a copy of this license, visit 

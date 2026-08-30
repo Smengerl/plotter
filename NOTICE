@@ -1,0 +1,31 @@
+G-code Pen Plotter — third-party notices
+=================================================================
+
+This repository bundles or builds upon the following third-party work.
+
+
+GRBL
+-----------------------------------------------------------------
+Location:  firmware/grbl/  (git submodule, gnea/grbl)
+License:   GNU General Public License v3.0
+           see firmware/grbl/COPYING
+
+    Grbl - Embedded CNC g-code interpreter and motion-controller
+    Copyright (c) 2011-2016 Sungeun K. Jeon for Gnea Research LLC
+    Copyright (c) 2009-2011 Simen Svale Skogsrud
+    Copyright (c) 2011 Jens Geisler
+
+The firmware in firmware/src/ and firmware/test/ is a derivative work
+of GRBL (it reuses GRBL headers, is compiled and linked together with
+the GRBL sources, and firmware/src/grbl_main_shim.c is copied from
+grbl/grbl/main.c). It is therefore distributed under GPL-3.0-or-later
+(firmware/LICENSE).
+
+
+Host pipeline dependencies
+-----------------------------------------------------------------
+The Python pipeline in pipeline/ depends on third-party packages
+(numpy, opencv-python, Pillow, vpype, vpype-gcode, torch, diffusers,
+FastAPI, PyGrbl_Streamer, ...) that are installed from PyPI / Git and
+are NOT vendored in this repository. Each keeps its own license; see
+the respective project.

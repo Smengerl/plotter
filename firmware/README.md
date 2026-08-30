@@ -164,3 +164,12 @@ pio device monitor                    # 115200 baud
 
 - Generating G-code from images (this project's pipeline) and third-party
   SVG→G-code / G-code sender tools: [../pipeline/README.md](../pipeline/README.md).
+
+## License
+
+The firmware in `src/` and `test/` is licensed **GPL-3.0-or-later**
+([LICENSE](LICENSE)) — it is a derivative of and is compiled/linked together
+with [GRBL](https://github.com/gnea/grbl) (GPLv3), so it inherits GRBL's
+copyleft. `src/grbl_main_shim.c` is copied from GRBL's `main.c`. The
+`grbl/` submodule is upstream GRBL, unchanged (`grbl/COPYING`). See the
+[project-wide licensing table](../README.md#license).

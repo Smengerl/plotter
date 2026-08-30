@@ -1,4 +1,7 @@
 /*
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Copyright (c) 2026 Simon Gerlach
+
   config.h  —  Plotter-specific GRBL compile-time configuration
   ---------------------------------------------------------------
   This file REPLACES grbl/grbl/config.h for this build.

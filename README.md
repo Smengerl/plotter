@@ -2,8 +2,9 @@
 
 [![Status](https://img.shields.io/badge/status-WIP-orange)](TODO.md)
 [![3D Printing](https://img.shields.io/badge/3D_printing-STL-green)](#)
-[![C/C++](https://img.shields.io/badge/C/C++-firmware-green)](#)
-[![License](https://img.shields.io/badge/license-CC%20BY--SA%204.0-blue)](http://creativecommons.org/licenses/by-sa/4.0/)
+[![Firmware](https://img.shields.io/badge/firmware-GPL--3.0--or--later-blue)](firmware/LICENSE)
+[![Pipeline](https://img.shields.io/badge/pipeline-MIT-blue)](pipeline/LICENSE)
+[![Hardware & docs](https://img.shields.io/badge/hardware%20%26%20docs-CC%20BY--SA%204.0-blue)](LICENSE.txt)
 
 > ⚠️ **Work in progress.** This project is under active development — hardware
 > wiring, firmware configuration and the software pipeline are all still
@@ -28,7 +29,8 @@ It comes with a GUI toolset to transform images provided by the user to drawings
 - [Firmware](#firmware) — see [firmware/README.md](firmware/README.md) for full details
 - [Testing & commissioning](#testing) — see [testing.md](testing.md) for the full procedure
 - [Software for host computer](#software-for-host-computer) — see [pipeline/README.md](pipeline/README.md) for full details
-- [License and Acknowledgements](#license-and-acknowledgements)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
 
 ## Overview
 
@@ -165,7 +167,10 @@ See **[pipeline/README.md](pipeline/README.md)** for the full procedure.
 
 ## Acknowledgements
 
-Thanks to the open-source community and suppliers of affordable components. If you found or adapted any parts from other projects, please credit them in the repository history or in a CONTRIBUTORS file.
+The firmware is built on [GRBL](https://github.com/gnea/grbl) by Sungeun K. Jeon
+(Gnea Research LLC), Simen Svale Skogsrud and Jens Geisler. Thanks to the
+open-source community and the suppliers of affordable components. Third-party
+notices are collected in [NOTICE](NOTICE).
 
 ## Development
 
@@ -176,7 +181,18 @@ All .stl, .png and assembly pictures are automatically exported via my Fusion ad
 
 ## License
 
-This project is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0) — see `LICENSE.txt` for details or visit <http://creativecommons.org/licenses/by-sa/4.0/>
+This project is **licensed per component** — the parts have different origins
+and obligations:
+
+| Part | License | Why |
+| --- | --- | --- |
+| Firmware — [`firmware/`](firmware/LICENSE) (except the submodule) | **GPL-3.0-or-later** | It is a derivative of [GRBL](https://github.com/gnea/grbl): it reuses GRBL headers, is compiled and linked into one binary with the GRBL sources, and [`firmware/src/grbl_main_shim.c`](firmware/src/grbl_main_shim.c) is copied from GRBL's `main.c`. GRBL is GPLv3, so the combined firmware must be too. |
+| GRBL — [`firmware/grbl/`](firmware/grbl/COPYING) | **GPL-3.0** | Upstream `gnea/grbl`, included unchanged as a git submodule. |
+| Host software — [`pipeline/`](pipeline/LICENSE) | **MIT** | Separate Python program that only talks to GRBL over the serial port (arm's-length, no shared code), so it is not bound by GRBL's license and is kept permissive. |
+| Hardware design (`print/`, `BOM.md`) and documentation (`*.md`) | **CC BY-SA 4.0** — see [`LICENSE.txt`](LICENSE.txt) | Not software; ShareAlike keeps derivative hardware/docs open. |
+
+Each area carries its own `LICENSE` file and, for `firmware/`, SPDX headers in
+the source. Third-party attributions: [NOTICE](NOTICE).
 
 ## Authors
 

@@ -1,4 +1,7 @@
 /*
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Copyright (c) 2026 Simon Gerlach
+
   TC4 – Pen Lift (Solenoid) Test
   ================================
   Standalone Arduino sketch – NO GRBL required.

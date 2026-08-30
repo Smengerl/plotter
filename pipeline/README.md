@@ -23,6 +23,7 @@ For where this fits in the overall bring-up, see
 6. [Adding Custom Steps](#adding-custom-steps)
 7. [Overriding Paths via CLI](#overriding-paths-via-cli)
 8. [Alternative tools](#alternative-tools)
+9. [License](#license)
 
 ---
 
@@ -710,3 +711,12 @@ boundaries — see the profile in [configs/grbl_a4_pen.toml](configs/grbl_a4_pen
 - [CNCjs](https://cnc.js.org/) — browser-based, runs as a Node.js server
 
 Connect at 115200 baud. Only one process may hold the serial port at a time.
+
+---
+
+## License
+
+This pipeline is licensed **MIT** ([LICENSE](LICENSE)). It talks to GRBL only
+over the serial port (no shared code with the GPLv3 firmware), so it is not
+bound by GRBL's copyleft. See the
+[project-wide licensing table](../README.md#license).

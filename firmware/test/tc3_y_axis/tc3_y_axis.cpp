@@ -1,4 +1,7 @@
 /*
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Copyright (c) 2026 Simon Gerlach
+
   TC3 – Y-Axis Movement Test
   ==========================
   Standalone Arduino sketch – NO GRBL required.

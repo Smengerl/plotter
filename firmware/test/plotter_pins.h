@@ -1,4 +1,7 @@
 /*
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Copyright (c) 2026 Simon Gerlach
+
   plotter_pins.h
   ==============
   Translate GRBL pin definitions (AVR port bit numbers from cpu_map.h)

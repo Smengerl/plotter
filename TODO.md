@@ -52,9 +52,6 @@ Inline `TODO:` markers throughout the docs point back here.
   bare `pip install -e pipeline/` still cannot run `pipeline-run` on a YAML
   config (`PipelineRunner.from_yaml` needs PyYAML). Move `PyYAML` into core
   `dependencies` in `pipeline/pyproject.toml`.
-- [ ] **License mismatch**: `LICENSE.txt` + root `README.md` say CC BY-SA 4.0
-  (whole project); `pipeline/pyproject.toml` says MIT. Decide the split
-  (e.g. hardware/docs CC BY-SA, code MIT) and state it explicitly.
 
 ## Docs / tests
 

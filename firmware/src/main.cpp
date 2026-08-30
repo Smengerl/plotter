@@ -1,4 +1,7 @@
 /*
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Copyright (c) 2026 Simon Gerlach
+
   main.cpp  —  PlatformIO entry point for GRBL on the G-code Pen Plotter
   -----------------------------------------------------------------------
   This file is the Arduino-framework wrapper that calls the standard GRBL
