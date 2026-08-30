@@ -4,7 +4,7 @@ Thanks for your interest in contributing to this project! Contributions are welc
 
 ## How to contribute
 
-1. Fork the repository and create a feature branch 
+1. Fork the repository and create a feature branch.
 2. Make your changes in a clearly named branch (e.g., `fix/export-naming` or `feat/add-step-through-ui`).
 3. Write clear commit messages and keep changes focused.
 4. Open a Pull Request describing what you changed and why.
@@ -12,17 +12,22 @@ Thanks for your interest in contributing to this project! Contributions are welc
 ## Reporting issues
 
 - Search existing issues before opening a new one.
-- Provide clear steps to reproduce, expected vs actual behavior
+- Provide clear steps to reproduce, expected vs actual behavior.
 
 ## Coding style
 
-- Follow commong coding style and best practice.
 - Keep functions small and add comments for non-obvious logic.
-- Keep print/stl, print/png folder structure when changing the mechanics (as used by my fusion plugins, see other project in my Github space)
+- Keep the `print/stl`, `print/png` folder structure when changing the mechanics (as used by my Fusion plugins, see other project in my GitHub space).
+- For `pipeline/` code, `.github/copilot-instructions.md` is the source of
+  truth: English-only comments/docstrings, type hints on every signature,
+  Google-style docstrings. A PR with non-English comments/docstrings will be
+  asked to fix them before merge.
 
 ## Testing
 
-Because this is a hobbyist project, automated tests may be limited. Include manual testing steps in your PR description and screenshots where appropriate.
+Run `.venv/bin/pytest pipeline/tests/ -v` before opening a PR — it must pass.
+For hardware or firmware changes, also include manual testing steps (which of
+the `testing.md` cases you ran) and photos where appropriate.
 
 The full test and commissioning procedure (hardware sketches, GRBL integration,
 pipeline tests, end-to-end plot) is in [testing.md](testing.md). Known open

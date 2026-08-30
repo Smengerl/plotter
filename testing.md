@@ -39,7 +39,8 @@ Run the phases in order:
 
 **Host software** (only needed from Phase 3 onward)
 
-6. Python 3.13 and the project virtualenv installed — see
+6. Python **3.13** (not 3.14 — `vpype` requires `<3.14`) and the project
+   virtualenv installed — see
    [pipeline/README.md → Installation](pipeline/README.md#installation).
 
 **GRBL settings** (only needed from Phase 2 onward)
@@ -479,7 +480,8 @@ It runs entirely on the host PC — **no plotter connection is required**.
 
 ### Phase 3 Prerequisites
 
-- Python 3.13 and the project virtualenv set up — see
+- Python **3.13** (not 3.14 — `vpype` requires `<3.14`) and the project
+  virtualenv set up — see
   [pipeline/README.md → Installation](pipeline/README.md#installation)
   (`python3.13 -m venv .venv && .venv/bin/pip install -e "pipeline/[gui]"`).
 
