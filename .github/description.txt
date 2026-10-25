@@ -1,1 +1,1 @@
-A compact, open-source G-code pen plotter designed with affordable components for makers and DIY enthusiasts.
+Open-source pen plotter that turns your photos into pen drawings: 3D-printed frame, GRBL firmware, AI line-art pipeline.

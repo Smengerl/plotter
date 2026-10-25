@@ -6,18 +6,23 @@
 [![Pipeline](https://img.shields.io/badge/pipeline-MIT-blue)](pipeline/LICENSE)
 [![Hardware & docs](https://img.shields.io/badge/hardware%20%26%20docs-CC%20BY--SA%204.0-blue)](LICENSE.txt)
 
-> ⚠️ **Work in progress.** This project is under active development — hardware
-> wiring, firmware configuration and the software pipeline are all still
-> changing, and some documents have drifted apart during past refactors.
-> Known contradictions and errors are tracked in **[TODO.md](TODO.md)**;
-> inline `TODO:` markers in the docs point there. Expect updates.
-
 This plotter draws vector graphics in G-code format using a pen. It is compatible with pens up to 11 mm in diameter, relies on inexpensive and widely available components, and uses a mostly 3D-printed frame with a few off-the-shelf mechanical parts. A set of test cases guides the user to verify the functionality of each hardware component before running GRBL.
 
 The plotter's firmware is based on GRBL v1.1, which is a widely used open-source CNC controller firmware.
 It comes with a GUI toolset to transform images provided by the user to drawings in different styles via AI (technical drawing, pencil drawing, oil painting etc.) to send them to the plotter for drawing.
 
 ![Assembly overview](./print/zsb/full.png)
+
+> ⚠️ **Work in progress.** Hardware wiring, firmware configuration and the software pipeline are still changing. Known issues are tracked in **[TODO.md](TODO.md)**.
+
+## One photo, four ways to draw it
+
+The pipeline turns any image into pen-ready line art. All of these were generated from the same input photo:
+
+| Photo | ControlNet | Canny | Adaptive |
+| :---: | :---: | :---: | :---: |
+| <img src="./docs/examples/photo.png" width="200" alt="Input photo"> | <img src="./docs/examples/controlnet.png" width="200" alt="ControlNet line art"> | <img src="./docs/examples/canny.png" width="200" alt="Canny edges"> | <img src="./docs/examples/adaptive.png" width="200" alt="Adaptive threshold"> |
+
 
 # Table of contents
 
