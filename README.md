@@ -17,7 +17,7 @@ It comes with a GUI toolset to transform images provided by the user to drawings
 
 ## One photo, four ways to draw it
 
-The pipeline turns any image into pen-ready line art. All of these were generated from the same input photo:
+The pipeline turns any image into pen-ready line art. All of these were generated from the same input photo (an AI-generated image, not a real person):
 
 | Photo | ControlNet | Canny | Adaptive |
 | :---: | :---: | :---: | :---: |

@@ -485,7 +485,7 @@ It runs entirely on the host PC — **no plotter connection is required**.
 
 - All hardware tests (Phase 1 + Phase 2) should have passed before an end-to-end plot is attempted, but Phase 3 can be run independently at any time.
 
-The test image used throughout Phase 3 & 4 is `pipeline/input/testimage.png`.
+The test image used throughout Phase 3 & 4 is `pipeline/input/testimage.png` (an AI-generated image, not a real person).
 
 Two configs are used below:
 - `pipeline/examples/standard_pipeline.yaml` — offline: image → sketch →
